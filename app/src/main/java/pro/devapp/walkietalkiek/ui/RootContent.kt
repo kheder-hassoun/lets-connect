@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -16,6 +17,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.toSize
@@ -28,6 +31,7 @@ import pro.devapp.walkietalkiek.model.MainScreenAction
 import pro.devapp.walkietalkiek.model.MainScreenEvent
 import pro.devapp.walkietalkiek.service.WalkieService
 import pro.devapp.walkietalkiek.ui.components.BottomTabs
+import pro.devapp.walkietalkiek.ui.components.MainTopBar
 import pro.devapp.walkietalkiek.ui.components.RailTabs
 import pro.devapp.walkietalkiek.ui.components.RequiredPermissionsNotification
 import pro.devapp.walkietalkiek.ui.components.TabsContent
@@ -48,6 +52,9 @@ internal fun RootContent() {
     DroidPTTTheme {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
+            topBar = {
+                MainTopBar(state = state.value)
+            }
         ) { innerPadding ->
             val windowSize = with(LocalDensity.current) {
                 currentWindowSize().toSize().toDpSize()
@@ -90,6 +97,15 @@ internal fun RootContent() {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    Color(0xFF050505),
+                                    Color(0xFF0D0D0D),
+                                    Color(0xFF050505)
+                                )
+                            )
+                        )
                         .padding(innerPadding)
                 ) {
                     TabsContent(

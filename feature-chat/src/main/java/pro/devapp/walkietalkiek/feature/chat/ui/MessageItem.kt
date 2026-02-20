@@ -11,18 +11,16 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import pro.devapp.walkietalkiek.core.theme.onPrimaryLight
-import pro.devapp.walkietalkiek.core.theme.onSurfaceLight
-import pro.devapp.walkietalkiek.core.theme.primaryLight
-import pro.devapp.walkietalkiek.core.theme.secondaryLight
-import pro.devapp.walkietalkiek.core.theme.surfaceLight
 import pro.devapp.walkietalkiek.feature.chat.model.ChatMessageModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -34,8 +32,17 @@ internal fun MessageItem(
     isOutgoing: Boolean
 ) {
     val alignment: Alignment.Horizontal = if (isOutgoing) Alignment.End else Alignment.Start
-    val backgroundColor = if (isOutgoing) primaryLight else surfaceLight
-    val textColor = if (isOutgoing) onPrimaryLight else onSurfaceLight
+    val backgroundColor = if (isOutgoing) {
+        Color(0xCCFF8A00)
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f)
+    }
+    val textColor = if (isOutgoing) {
+        MaterialTheme.colorScheme.onPrimary
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+    val senderColor = Color(0xFFFFB347)
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -57,19 +64,25 @@ internal fun MessageItem(
                 bottomStart = if (isOutgoing) 16.dp else 4.dp,
                 bottomEnd = if (isOutgoing) 4.dp else 16.dp
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 5.dp)
         ) {
             Column(
                 modifier = Modifier.padding(12.dp)
             ) {
                 if (!isOutgoing) {
-                    Text(
-                        text = message.sender,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = secondaryLight,
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
+                    Surface(
+                        shape = RoundedCornerShape(999.dp),
+                        color = Color(0x1FFF8A00),
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    ) {
+                        Text(
+                            text = message.sender,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = senderColor,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
                 }
 
                 Text(
@@ -96,7 +109,7 @@ internal fun MessageItem(
                         Text(
                             text = if (message.isRead) "✓✓" else "✓",
                             fontSize = 11.sp,
-                            color = if (message.isRead) secondaryLight else textColor.copy(alpha = 0.7f)
+                            color = if (message.isRead) Color(0xFFFFD180) else textColor.copy(alpha = 0.7f)
                         )
                     }
                 }
