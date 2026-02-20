@@ -17,9 +17,19 @@ internal class StopRecordingReducer(
         action: PttAction.StopRecording,
         getState: () -> PttScreenState
     ): Reducer.Result<PttScreenState, PttAction, PttEvent?> {
+        val state = getState()
+        if (!state.isRecording) {
+            return Reducer.Result(
+                state = state,
+                event = null
+            )
+        }
         voiceRecorder.stopRecord()
         return Reducer.Result(
-            state = getState(),
+            state = state.copy(
+                isRecording = false,
+                remainingTalkSeconds = state.talkDurationSeconds
+            ),
             event = null
         )
     }

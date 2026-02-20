@@ -10,6 +10,8 @@ import pro.devapp.walkietalkiek.feature.ptt.reducer.ConnectedDevicesUpdatedReduc
 import pro.devapp.walkietalkiek.feature.ptt.reducer.InitScreenReducer
 import pro.devapp.walkietalkiek.feature.ptt.reducer.StartRecordingReducer
 import pro.devapp.walkietalkiek.feature.ptt.reducer.StopRecordingReducer
+import pro.devapp.walkietalkiek.feature.ptt.reducer.TalkDurationChangedReducer
+import pro.devapp.walkietalkiek.feature.ptt.reducer.TalkTimerTickReducer
 import pro.devapp.walkietalkiek.feature.ptt.reducer.VoiceDataReceivedReducer
 
 fun Module.registerPttDi() {
@@ -28,6 +30,8 @@ private fun Module.reducersDi() {
     factoryOf(::StartRecordingReducer)
     factoryOf(::StopRecordingReducer)
     factoryOf(::VoiceDataReceivedReducer)
+    factoryOf(::TalkTimerTickReducer)
+    factoryOf(::TalkDurationChangedReducer)
     factory {
         PttActionProcessor(
             reducers = setOf(
@@ -35,7 +39,9 @@ private fun Module.reducersDi() {
                 get(ConnectedDevicesUpdatedReducer::class),
                 get(StartRecordingReducer::class),
                 get(StopRecordingReducer::class),
-                get(VoiceDataReceivedReducer::class)
+                get(VoiceDataReceivedReducer::class),
+                get(TalkTimerTickReducer::class),
+                get(TalkDurationChangedReducer::class)
             ),
             initStateFactory = get(),
             coroutineContextProvider = get()

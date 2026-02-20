@@ -10,6 +10,7 @@ import pro.devapp.walkietalkiek.feature.settings.SettingsContent
 import pro.devapp.walkietalkiek.model.MainScreenAction
 import pro.devapp.walkietalkiek.model.MainScreenState
 import pro.devapp.walkietalkiek.model.MainTab
+import pro.devapp.walkietalkiek.ui.AboutContent
 import pro.devapp.walkietalkiek.ui.OffContent
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,6 +29,9 @@ fun TabsContent(
             }
             MainTab.SETTINGS -> {
                 SettingsContent()
+            }
+            MainTab.ABOUT -> {
+                AboutContent()
             }
             MainTab.CHAT -> {
                 ChatTab()

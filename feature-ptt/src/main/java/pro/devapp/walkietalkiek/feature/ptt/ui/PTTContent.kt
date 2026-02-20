@@ -21,7 +21,7 @@ fun PTTContent(
     val state = viewModel.state.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.onAction(PttAction.InitScreen)
+        viewModel.onPttAction(PttAction.InitScreen)
         viewModel.startCollectingConnectedDevices()
     }
 
@@ -32,13 +32,13 @@ fun PTTContent(
         // Landscape mode
         PTTContentLandscape(
             state = state.value,
-            onAction = viewModel::onAction
+            onAction = viewModel::onPttAction
         )
     } else {
         // Portrait mode
         PTTContentPortrait(
             state = state.value,
-            onAction = viewModel::onAction
+            onAction = viewModel::onPttAction
         )
     }
 }

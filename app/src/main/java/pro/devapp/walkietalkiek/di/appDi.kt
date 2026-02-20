@@ -3,10 +3,12 @@ package pro.devapp.walkietalkiek.di
 import org.koin.androidx.viewmodel.dsl.viewModelOf
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.factoryOf
+import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import pro.devapp.walkietalkiek.MainViewMode
 import pro.devapp.walkietalkiek.PermissionState
 import pro.devapp.walkietalkiek.core.mvi.CoroutineContextProvider
+import pro.devapp.walkietalkiek.core.settings.AppSettingsRepository
 import pro.devapp.walkietalkiek.factory.MainScreenInitStateFactory
 import pro.devapp.walkietalkiek.factory.MainTabsFactory
 import pro.devapp.walkietalkiek.feature.chat.di.registerChatDi
@@ -34,6 +36,7 @@ private fun Module.coreDi() {
     factoryOf(::CoroutineContextProvider)
     factoryOf(::PermissionState)
     factoryOf(::NotificationController)
+    singleOf(::AppSettingsRepository)
 }
 
 private fun Module.factoriesDi() {

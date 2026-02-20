@@ -15,7 +15,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -23,7 +22,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
 import pro.devapp.walkietalkiek.feature.chat.model.ChatMessageModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,14 +33,11 @@ internal fun ChatContent(
     onSendMessage: (String) -> Unit = {}
 ) {
     val listState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
 
-    // Auto-scroll to bottom when messages are updated
+    // Keep newest message visible, including first message.
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
-            coroutineScope.launch {
-                listState.animateScrollToItem(messages.size - 1)
-            }
+            listState.scrollToItem(messages.size - 1)
         }
     }
 

@@ -9,11 +9,6 @@ class MainTabsFactory {
     fun createTabs(): List<MainTabItem> {
         return listOf(
             MainTabItem(
-                title = "PTT",
-                icon = R.drawable.ptt,
-                screen = MainTab.PTT
-            ),
-            MainTabItem(
                 title = "Chat",
                 icon = R.drawable.chat,
                 screen = MainTab.CHAT
@@ -22,6 +17,16 @@ class MainTabsFactory {
                 title = "Settings",
                 icon = R.drawable.settings,
                 screen = MainTab.SETTINGS
+            ),
+            MainTabItem(
+                title = "PTT",
+                icon = R.drawable.ptt,
+                screen = MainTab.PTT
+            ),
+            MainTabItem(
+                title = "About",
+                icon = R.drawable.about,
+                screen = MainTab.ABOUT
             ),
             MainTabItem(
                 title = "Exit",

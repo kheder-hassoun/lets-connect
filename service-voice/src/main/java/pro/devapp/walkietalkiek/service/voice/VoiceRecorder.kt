@@ -5,6 +5,7 @@ import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import androidx.annotation.RequiresPermission
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import pro.devapp.walkietalkiek.core.mvi.CoroutineContextProvider
@@ -26,6 +27,7 @@ class VoiceRecorder(
 ) {
     private val channelConfig = AudioFormat.CHANNEL_IN_MONO
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private val coroutineScope = coroutineContextProvider.createScope(
         coroutineContextProvider.io.limitedParallelism(1)
     )

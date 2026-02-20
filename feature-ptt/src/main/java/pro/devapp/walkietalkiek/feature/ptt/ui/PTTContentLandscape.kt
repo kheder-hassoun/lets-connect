@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
@@ -21,7 +22,7 @@ internal fun PTTContentLandscape(
     state: PttScreenState,
     onAction: (PttAction) -> Unit,
 ) {
-    val canTalk = state.myIP != "-" && state.myIP.isNotBlank()
+    val canTalk = state.myIP != "-" && state.myIP != "--" && state.myIP.isNotBlank()
 
     Row(
         modifier = Modifier
@@ -56,6 +57,7 @@ internal fun PTTContentLandscape(
             Box(
                 modifier = Modifier
                     .padding(16.dp)
+                    .offset(y = 28.dp)
                     .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
@@ -64,12 +66,11 @@ internal fun PTTContentLandscape(
                         .width(150.dp)
                         .padding(8.dp),
                     isOnline = canTalk,
-                    onPress = {
-                        onAction(PttAction.StartRecording)
-                    },
-                    onRelease = {
-                        onAction(PttAction.StopRecording)
-                    }
+                    isRecording = state.isRecording,
+                    remainingSeconds = state.remainingTalkSeconds,
+                    totalSeconds = state.talkDurationSeconds,
+                    onPress = { onAction(PttAction.StartRecording) },
+                    onRelease = { onAction(PttAction.StopRecording) }
                 )
             }
             WaveCanvas(

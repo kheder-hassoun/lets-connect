@@ -51,7 +51,7 @@ fun MainTopBar(
         ) {
             Column {
                 Text(
-                    text = "DROID PTT",
+                    text = "K.H-PTT",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold

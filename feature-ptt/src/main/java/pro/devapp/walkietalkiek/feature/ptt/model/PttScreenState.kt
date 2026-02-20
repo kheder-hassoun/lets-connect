@@ -6,7 +6,10 @@ internal data class PttScreenState(
     val isConnected: Boolean,
     val myIP: String,
     val connectedDevices: List<ClientModel>,
-    val voiceData: ByteArray? = null
+    val voiceData: ByteArray? = null,
+    val isRecording: Boolean = false,
+    val talkDurationSeconds: Int = 20,
+    val remainingTalkSeconds: Int = 20
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -18,6 +21,9 @@ internal data class PttScreenState(
         if (myIP != other.myIP) return false
         if (connectedDevices != other.connectedDevices) return false
         if (!voiceData.contentEquals(other.voiceData)) return false
+        if (isRecording != other.isRecording) return false
+        if (talkDurationSeconds != other.talkDurationSeconds) return false
+        if (remainingTalkSeconds != other.remainingTalkSeconds) return false
 
         return true
     }
@@ -27,6 +33,9 @@ internal data class PttScreenState(
         result = 31 * result + myIP.hashCode()
         result = 31 * result + connectedDevices.hashCode()
         result = 31 * result + (voiceData?.contentHashCode() ?: 0)
+        result = 31 * result + isRecording.hashCode()
+        result = 31 * result + talkDurationSeconds
+        result = 31 * result + remainingTalkSeconds
         return result
     }
 }

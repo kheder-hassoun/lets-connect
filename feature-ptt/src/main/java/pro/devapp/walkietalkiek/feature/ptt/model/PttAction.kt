@@ -10,6 +10,8 @@ internal sealed interface PttAction {
     ): PttAction
     data object StartRecording : PttAction
     data object StopRecording : PttAction
+    data class TalkTimerTick(val remainingSeconds: Int) : PttAction
+    data class TalkDurationChanged(val seconds: Int) : PttAction
     data class VoiceDataReceived(
         val voiceData: ByteArray
     ): PttAction {

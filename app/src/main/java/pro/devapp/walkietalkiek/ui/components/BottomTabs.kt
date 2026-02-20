@@ -11,14 +11,22 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.Composable
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import pro.devapp.walkietalkiek.model.MainScreenAction
 import pro.devapp.walkietalkiek.model.MainScreenState
+import pro.devapp.walkietalkiek.model.MainTab
 
 @Composable
 fun BottomTabs(
@@ -40,8 +48,20 @@ fun BottomTabs(
             windowInsets = WindowInsets.navigationBars
         ) {
             screenState.mainTabs.forEach {
+                val isPtt = it.screen == MainTab.PTT
+                val isSelected = it.screen == screenState.currentTab
+                val pulseTransition = rememberInfiniteTransition(label = "ptt-nav")
+                val pulseScale by pulseTransition.animateFloat(
+                    initialValue = 1f,
+                    targetValue = 1.08f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(700),
+                        repeatMode = RepeatMode.Reverse
+                    ),
+                    label = "ptt-nav-scale"
+                )
                 NavigationBarItem(
-                    selected = it.screen == screenState.currentTab,
+                    selected = isSelected,
                     alwaysShowLabel = true,
                     onClick = {
                         onAction(
@@ -51,10 +71,26 @@ fun BottomTabs(
                         )
                     },
                     icon = {
-                        Icon(
-                            painter = painterResource(it.icon),
-                            contentDescription = it.title
-                        )
+                        if (isPtt) {
+                            Surface(
+                                shape = RoundedCornerShape(999.dp),
+                                color = if (isSelected) Color(0x33FF8A00) else Color(0x1AFFFFFF),
+                                shadowElevation = if (isSelected) 10.dp else 2.dp
+                            ) {
+                                Icon(
+                                    painter = painterResource(it.icon),
+                                    contentDescription = it.title,
+                                    modifier = Modifier
+                                        .padding(10.dp)
+                                        .scale(if (isSelected) pulseScale else 1f)
+                                )
+                            }
+                        } else {
+                            Icon(
+                                painter = painterResource(it.icon),
+                                contentDescription = it.title
+                            )
+                        }
                     },
                     label = {
                         Text(

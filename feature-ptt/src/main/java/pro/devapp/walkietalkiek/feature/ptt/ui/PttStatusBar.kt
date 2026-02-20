@@ -29,8 +29,17 @@ internal fun PttStatusBar(
 
     val localText = if (canTalk) "Local Online" else "Local Offline"
     val peersText = "Peers: ${state.connectedDevices.count { it.isConnected }}"
-    val pttText = if (canTalk) "PTT Enabled" else "PTT Disabled"
+    val pttText = when {
+        !canTalk -> "PTT Disabled"
+        state.isRecording -> "PTT Talking"
+        else -> "PTT Enabled"
+    }
     val ipText = "IP: ${state.myIP}"
+    val timerText = if (state.isRecording) {
+        "Talk Time Left: ${state.remainingTalkSeconds}s"
+    } else {
+        "Max Talk Time: ${state.talkDurationSeconds}s"
+    }
 
     Column(
         modifier = modifier
@@ -74,6 +83,13 @@ internal fun PttStatusBar(
         )
         Text(
             text = ipText,
+            style = MaterialTheme.typography.bodyMedium,
+            color = textColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            text = timerText,
             style = MaterialTheme.typography.bodyMedium,
             color = textColor,
             maxLines = 1,

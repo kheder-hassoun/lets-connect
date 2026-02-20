@@ -17,9 +17,19 @@ internal class StartRecordingReducer(
         action: PttAction.StartRecording,
         getState: () -> PttScreenState
     ): Reducer.Result<PttScreenState, PttAction, PttEvent?> {
+        val state = getState()
+        if (state.isRecording) {
+            return Reducer.Result(
+                state = state,
+                event = null
+            )
+        }
         voiceRecorder.startRecord()
         return Reducer.Result(
-            state = getState(),
+            state = state.copy(
+                isRecording = true,
+                remainingTalkSeconds = state.talkDurationSeconds
+            ),
             event = null
         )
     }
