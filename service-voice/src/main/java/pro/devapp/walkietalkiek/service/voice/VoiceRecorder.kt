@@ -21,7 +21,8 @@ import kotlin.let
 
 class VoiceRecorder(
     private val chanelController: MessageController,
-    private val coroutineContextProvider: CoroutineContextProvider
+    private val coroutineContextProvider: CoroutineContextProvider,
+    private val pttTonePlayer: PttTonePlayer
 ) {
     private val channelConfig = AudioFormat.CHANNEL_IN_MONO
 
@@ -35,6 +36,7 @@ class VoiceRecorder(
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
     fun create() {
         Timber.Forest.i("create")
+        pttTonePlayer.init()
         val minRate = getMinRate()
         minRate?.let  {
             Timber.Forest.i("minRate: $it")
@@ -61,10 +63,12 @@ class VoiceRecorder(
         audioRecord?.apply {
             release()
         }
+        pttTonePlayer.release()
     }
 
     fun startRecord() {
         Timber.Forest.i("startRecord")
+        pttTonePlayer.play()
         audioRecord?.apply {
             startRecording()
         }

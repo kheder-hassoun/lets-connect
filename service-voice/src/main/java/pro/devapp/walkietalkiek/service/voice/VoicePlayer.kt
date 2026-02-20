@@ -18,11 +18,14 @@ import kotlin.arrayOf
 import kotlin.let
 
 class VoicePlayer(
-    private val socketServer: SocketServer
+    private val socketServer: SocketServer,
+    private val pttTonePlayer: PttTonePlayer
 ) {
     private val channelConfig = AudioFormat.CHANNEL_IN_MONO
     private var audioTrack: AudioTrack? = null
     private var bufferSize = 0
+    private var lastVoicePacketAt = 0L
+    private val remoteSessionGapMs = 1200L
 
     private val _voiceDataFlow = MutableSharedFlow<ByteArray>(
         replay = 1,
@@ -32,6 +35,7 @@ class VoicePlayer(
         get() = _voiceDataFlow
 
     fun create() {
+        pttTonePlayer.init()
         val minRate = getMinRate()
         minRate?.let { sampleRate ->
             val minBufferSize = AudioTrack.getMinBufferSize(
@@ -72,7 +76,16 @@ class VoicePlayer(
     }
 
     private fun play(bytes: ByteArray) {
-        Timber.Forest.i("play ${bytes.size} - ${bytes[0]} ${bytes[1]}")
+        val now = System.currentTimeMillis()
+        if (now - lastVoicePacketAt > remoteSessionGapMs) {
+            // Play an attention tone once at the start of each remote speaking burst.
+            pttTonePlayer.play()
+        }
+        lastVoicePacketAt = now
+
+        val b0 = bytes.firstOrNull() ?: 0
+        val b1 = bytes.getOrNull(1) ?: 0
+        Timber.Forest.i("play ${bytes.size} - $b0 $b1")
         if (audioTrack?.playState == AudioTrack.PLAYSTATE_STOPPED) {
             Timber.Forest.w("PLAYER STOPPED!!!")
         }
@@ -86,6 +99,7 @@ class VoicePlayer(
             stop()
             release()
         }
+        pttTonePlayer.release()
     }
 
 
