@@ -23,6 +23,7 @@ internal class CheckPermissionsReducer(
     ): Reducer.Result<MainScreenState, MainScreenAction, MainScreenEvent?> {
         val isNotificationPermissionGranted = permissionState.isNotificationPermissionGranted()
         val isAudioRecordPermissionGranted = permissionState.isAudioRecordPermissionGranted()
+        val isFineLocationPermissionGranted = permissionState.isFineLocationPermissionGranted()
         val requestPermissions = mutableListOf<String>()
         if (isNotificationPermissionGranted.not()) {
             requestPermissions.add(Manifest.permission.POST_NOTIFICATIONS)
@@ -30,8 +31,12 @@ internal class CheckPermissionsReducer(
         if (isAudioRecordPermissionGranted.not()) {
             requestPermissions.add(Manifest.permission.RECORD_AUDIO)
         }
+        if (isFineLocationPermissionGranted.not()) {
+            requestPermissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
         return if (isNotificationPermissionGranted.not()
             || isAudioRecordPermissionGranted.not()
+            || isFineLocationPermissionGranted.not()
         ) {
             Reducer.Result(
                 state = getState().copy(

@@ -4,7 +4,6 @@ import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
 import android.os.Build
-import androidx.annotation.RequiresExtension
 import kotlinx.coroutines.launch
 import pro.devapp.walkietalkiek.core.mvi.CoroutineContextProvider
 import timber.log.Timber
@@ -28,10 +27,6 @@ internal class ClientInfoResolver(
         LinkedBlockingQueue<Runnable>()
     )
 
-    @RequiresExtension(
-        extension = Build.VERSION_CODES.TIRAMISU,
-        version = 7
-    )
     fun resolve(
         nsdInfo: NsdServiceInfo,
         resultListener: (socketAddress: InetSocketAddress, nsdServiceInfo: NsdServiceInfo) -> Unit
@@ -39,14 +34,33 @@ internal class ClientInfoResolver(
         Timber.i("resolve")
         scope.launch {
             Timber.i("resolveNext $nsdInfo")
-            nsdManager.registerServiceInfoCallback(nsdInfo, executor,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                resolveWithServiceInfoCallback(nsdInfo, resultListener)
+            } else {
+                resolveWithLegacyApi(nsdInfo, resultListener)
+            }
+        }
+    }
+
+    private fun resolveWithServiceInfoCallback(
+        nsdInfo: NsdServiceInfo,
+        resultListener: (socketAddress: InetSocketAddress, nsdServiceInfo: NsdServiceInfo) -> Unit
+    ) {
+        nsdManager.registerServiceInfoCallback(
+            nsdInfo,
+            executor,
             object : NsdManager.ServiceInfoCallback {
                 override fun onServiceInfoCallbackRegistrationFailed(errorCode: Int) {
-                    Timber.i("onResolveFailed")
+                    Timber.i("onResolveFailed: $errorCode")
                 }
 
                 override fun onServiceUpdated(serviceInfo: NsdServiceInfo) {
-                    val socketAddress = InetSocketAddress(serviceInfo.hostAddresses.first(), serviceInfo.port)
+                    val hostAddress = serviceInfo.hostAddresses.firstOrNull()
+                    if (hostAddress == null) {
+                        Timber.i("onServiceUpdated without host: $serviceInfo")
+                        return
+                    }
+                    val socketAddress = InetSocketAddress(hostAddress, serviceInfo.port)
                     Timber.i("onServiceResolved: $socketAddress")
                     if (!socketAddress.address.isMulticastAddress) {
                         resultListener(socketAddress, serviceInfo)
@@ -58,22 +72,33 @@ internal class ClientInfoResolver(
                 }
 
                 override fun onServiceInfoCallbackUnregistered() {
-
+                    Timber.i("onServiceInfoCallbackUnregistered")
                 }
-            })
-//            nsdManager.resolveService(nsdInfo, object : NsdManager.ResolveListener {
-//                override fun onResolveFailed(serviceInfo: NsdServiceInfo, errorCode: Int) {
-//                    Timber.i("onResolveFailed")
-//                }
-//
-//                override fun onServiceResolved(serviceInfo: NsdServiceInfo) {
-//                    val socketAddress = InetSocketAddress(serviceInfo.host, serviceInfo.port)
-//                    Timber.i("onServiceResolved: $socketAddress")
-//                    if (!socketAddress.address.isMulticastAddress) {
-//                        resultListener(socketAddress, serviceInfo)
-//                    }
-//                }
-//            })
-        }
+            }
+        )
+    }
+
+    private fun resolveWithLegacyApi(
+        nsdInfo: NsdServiceInfo,
+        resultListener: (socketAddress: InetSocketAddress, nsdServiceInfo: NsdServiceInfo) -> Unit
+    ) {
+        nsdManager.resolveService(nsdInfo, object : NsdManager.ResolveListener {
+            override fun onResolveFailed(serviceInfo: NsdServiceInfo, errorCode: Int) {
+                Timber.i("onResolveFailed: $errorCode $serviceInfo")
+            }
+
+            override fun onServiceResolved(serviceInfo: NsdServiceInfo) {
+                val host = serviceInfo.host
+                if (host == null) {
+                    Timber.i("onServiceResolved without host: $serviceInfo")
+                    return
+                }
+                val socketAddress = InetSocketAddress(host, serviceInfo.port)
+                Timber.i("onServiceResolved: $socketAddress")
+                if (!socketAddress.address.isMulticastAddress) {
+                    resultListener(socketAddress, serviceInfo)
+                }
+            }
+        })
     }
 }

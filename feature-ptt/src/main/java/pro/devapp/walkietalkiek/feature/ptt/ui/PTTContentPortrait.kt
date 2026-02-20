@@ -19,11 +19,17 @@ internal fun PTTContentPortrait(
     state: PttScreenState,
     onAction: (PttAction) -> Unit,
 ) {
+    val canTalk = state.myIP != "-" && state.myIP.isNotBlank()
+
     Column {
 
         MyDeviceInfo(
-            isOnline = state.isConnected,
+            isOnline = canTalk,
             addressIp = state.myIP
+        )
+        PttStatusBar(
+            state = state,
+            canTalk = canTalk
         )
 
         state.connectedDevices.forEach {
@@ -43,7 +49,7 @@ internal fun PTTContentPortrait(
                 modifier = Modifier
                     .width(150.dp)
                     .padding(8.dp),
-                isOnline = state.isConnected,
+                isOnline = canTalk,
                 onPress = {
                     onAction(PttAction.StartRecording)
                 },

@@ -21,6 +21,8 @@ internal fun PTTContentLandscape(
     state: PttScreenState,
     onAction: (PttAction) -> Unit,
 ) {
+    val canTalk = state.myIP != "-" && state.myIP.isNotBlank()
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -44,8 +46,12 @@ internal fun PTTContentLandscape(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             MyDeviceInfo(
-                isOnline = state.isConnected,
+                isOnline = canTalk,
                 addressIp = state.myIP
+            )
+            PttStatusBar(
+                state = state,
+                canTalk = canTalk
             )
             Box(
                 modifier = Modifier
@@ -57,7 +63,7 @@ internal fun PTTContentLandscape(
                     modifier = Modifier
                         .width(150.dp)
                         .padding(8.dp),
-                    isOnline = state.isConnected,
+                    isOnline = canTalk,
                     onPress = {
                         onAction(PttAction.StartRecording)
                     },

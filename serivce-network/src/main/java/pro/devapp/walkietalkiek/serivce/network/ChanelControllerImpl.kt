@@ -5,7 +5,6 @@ import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
 import android.os.Build
 import android.util.Base64
-import androidx.annotation.RequiresExtension
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -132,16 +131,23 @@ internal class ChanelControllerImpl(
         }
     }
 
-    @RequiresExtension(extension = Build.VERSION_CODES.TIRAMISU, version = 7)
     override fun onServiceLost(nsdServiceInfo: NsdServiceInfo) {
         Timber.Forest.i("onServiceLost: $nsdServiceInfo")
-        nsdServiceInfo.hostAddresses.firstOrNull()?.hostAddress?.let {
+        extractHostAddress(nsdServiceInfo)?.let {
             connectedDevicesRepository.setHostDisconnected(it)
         }
 
         if (nsdServiceInfo.serviceName == currentServiceName) {
             Timber.Forest.i("onServiceLost: SELF")
             return
+        }
+    }
+
+    private fun extractHostAddress(nsdServiceInfo: NsdServiceInfo): String? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            nsdServiceInfo.hostAddresses.firstOrNull()?.hostAddress
+        } else {
+            nsdServiceInfo.host?.hostAddress
         }
     }
 }
