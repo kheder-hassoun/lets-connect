@@ -4,7 +4,6 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.SoundPool
 import pro.devapp.walkietalkiek.core.settings.AppSettingsRepository
-import pro.devapp.walkietalkiek.core.settings.PttToneProfile
 import timber.log.Timber
 
 class PttTonePlayer(
@@ -15,20 +14,17 @@ class PttTonePlayer(
     private var toneSoundId: Int? = null
     private var isLoaded = false
     private var toneResId = 0
-    private var activeToneProfile: PttToneProfile? = null
 
     fun init() {
-        val profile = appSettingsRepository.settings.value.toneProfile
-        if (soundPool != null && profile == activeToneProfile) {
+        if (soundPool != null) {
             return
         }
         release()
-        toneResId = resolveToneResId(profile)
+        toneResId = resolveToneResId()
         if (toneResId == 0) {
             Timber.Forest.w("PTT tone file not found. Expected raw resource: ptt_tone")
             return
         }
-        activeToneProfile = profile
 
         soundPool = SoundPool.Builder()
             .setMaxStreams(2)
@@ -51,8 +47,10 @@ class PttTonePlayer(
     }
 
     fun play() {
-        val profile = appSettingsRepository.settings.value.toneProfile
-        if (profile != activeToneProfile || toneResId == 0 || soundPool == null) {
+        if (!appSettingsRepository.settings.value.toneEnabled) {
+            return
+        }
+        if (toneResId == 0 || soundPool == null) {
             init()
         }
         if (!isLoaded) {
@@ -83,18 +81,5 @@ class PttTonePlayer(
             "raw",
             context.packageName
         )
-    }
-
-    private fun resolveToneResId(profile: PttToneProfile): Int {
-        val name = when (profile) {
-            PttToneProfile.CLASSIC -> "ptt_tone"
-            PttToneProfile.SOFT -> "ptt_tone_soft"
-            PttToneProfile.SHARP -> "ptt_tone_sharp"
-        }
-        val requested = context.resources.getIdentifier(name, "raw", context.packageName)
-        if (requested != 0) {
-            return requested
-        }
-        return resolveToneResId()
     }
 }

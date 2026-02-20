@@ -8,9 +8,9 @@ internal data class PttScreenState(
     val connectedDevices: List<ClientModel>,
     val voiceData: ByteArray? = null,
     val isRecording: Boolean = false,
-    val talkDurationSeconds: Int = 20,
-    val remainingTalkSeconds: Int = 20,
-    val remainingTalkMillis: Long = 20_000L
+    val talkDurationSeconds: Int = 10,
+    val remainingTalkSeconds: Int = 10,
+    val remainingTalkMillis: Long = 10_000L
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

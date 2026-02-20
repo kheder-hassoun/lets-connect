@@ -18,7 +18,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.dp
 import org.koin.compose.koinInject
 import pro.devapp.walkietalkiek.core.settings.AppSettingsRepository
-import pro.devapp.walkietalkiek.core.settings.PttToneProfile
 import kotlin.math.roundToInt
 
 @Composable
@@ -83,18 +82,19 @@ fun SettingsContent() {
                     modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    PttToneProfile.entries.forEach { profile ->
-                        FilterChip(
-                            selected = settings.toneProfile == profile,
-                            onClick = {
-                                settingsRepository.updateToneProfile(profile)
-                            },
-                            label = { Text(profile.name.lowercase().replaceFirstChar { it.uppercase() }) }
-                        )
-                    }
+                    FilterChip(
+                        selected = settings.toneEnabled,
+                        onClick = { settingsRepository.updateToneEnabled(true) },
+                        label = { Text("On") }
+                    )
+                    FilterChip(
+                        selected = !settings.toneEnabled,
+                        onClick = { settingsRepository.updateToneEnabled(false) },
+                        label = { Text("Off") }
+                    )
                 }
                 Text(
-                    text = "Tone files: ptt_tone / ptt_tone_soft / ptt_tone_sharp",
+                    text = "Plays tone before transmit/receive when On",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )

@@ -39,7 +39,7 @@ fun PTTButton(
     isRecording: Boolean = false,
     remainingSeconds: Int = 0,
     remainingMillis: Long = 0L,
-    totalSeconds: Int = 20,
+    totalSeconds: Int = 10,
     onPress: () -> Unit = {},
     onRelease: () -> Unit = {}
 ) {
@@ -140,7 +140,7 @@ fun PTTButton(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.mic),
+                painter = painterResource(id = R.drawable.ptt_call),
                 contentDescription = "Push to talk",
                 modifier = Modifier
                     .padding(28.dp)

@@ -1,11 +1,13 @@
 package pro.devapp.walkietalkiek.ui.components
 
+import android.widget.ImageView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -18,6 +20,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import pro.devapp.walkietalkiek.model.MainScreenState
 
 @Composable
@@ -50,12 +53,28 @@ fun MainTopBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text(
-                    text = "K.H-PTT",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    AndroidView(
+                        factory = { ctx ->
+                            ImageView(ctx).apply {
+                                setImageDrawable(ctx.packageManager.getApplicationIcon(ctx.packageName))
+                                scaleType = ImageView.ScaleType.CENTER_CROP
+                            }
+                        },
+                        modifier = Modifier
+                            .size(20.dp)
+                            .padding(top = 1.dp)
+                    )
+                    Text(
+                        text = "K.H-PTT",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
                 Text(
                     text = "Local voice over LAN",
                     style = MaterialTheme.typography.labelMedium,

@@ -15,21 +15,14 @@ class AppSettingsRepository {
         )
     }
 
-    fun updateToneProfile(profile: PttToneProfile) {
+    fun updateToneEnabled(enabled: Boolean) {
         _settings.value = _settings.value.copy(
-            toneProfile = profile
+            toneEnabled = enabled
         )
     }
 }
 
 data class AppSettings(
-    val talkDurationSeconds: Int = 20,
-    val toneProfile: PttToneProfile = PttToneProfile.CLASSIC
+    val talkDurationSeconds: Int = 10,
+    val toneEnabled: Boolean = true
 )
-
-enum class PttToneProfile {
-    CLASSIC,
-    SOFT,
-    SHARP
-}
-
