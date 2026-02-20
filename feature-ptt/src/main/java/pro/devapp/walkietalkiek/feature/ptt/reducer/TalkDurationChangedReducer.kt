@@ -17,10 +17,10 @@ internal class TalkDurationChangedReducer :
         return Reducer.Result(
             state = getState().copy(
                 talkDurationSeconds = action.seconds.coerceAtLeast(5),
-                remainingTalkSeconds = action.seconds.coerceAtLeast(5)
+                remainingTalkSeconds = action.seconds.coerceAtLeast(5),
+                remainingTalkMillis = action.seconds.coerceAtLeast(5) * 1000L
             ),
             event = null
         )
     }
 }
-

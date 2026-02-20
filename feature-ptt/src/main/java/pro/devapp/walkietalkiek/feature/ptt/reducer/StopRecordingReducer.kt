@@ -28,7 +28,8 @@ internal class StopRecordingReducer(
         return Reducer.Result(
             state = state.copy(
                 isRecording = false,
-                remainingTalkSeconds = state.talkDurationSeconds
+                remainingTalkSeconds = state.talkDurationSeconds,
+                remainingTalkMillis = state.talkDurationSeconds * 1000L
             ),
             event = null
         )

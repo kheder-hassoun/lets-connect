@@ -52,12 +52,14 @@ internal class PttViewModel(
     private fun startTalkTimer() {
         stopTalkTimer()
         talkTimerJob = viewModelScope.launch {
-            var remain = appSettingsRepository.settings.value.talkDurationSeconds
-            onPttAction(PttAction.TalkTimerTick(remain))
-            while (remain > 0) {
-                delay(1000L)
-                remain -= 1
-                onPttAction(PttAction.TalkTimerTick(remain))
+            val totalMillis = appSettingsRepository.settings.value.talkDurationSeconds * 1000L
+            val tickMillis = 100L
+            var remainMillis = totalMillis
+            onPttAction(PttAction.TalkTimerTick(remainMillis))
+            while (remainMillis > 0) {
+                delay(tickMillis)
+                remainMillis = (remainMillis - tickMillis).coerceAtLeast(0L)
+                onPttAction(PttAction.TalkTimerTick(remainMillis))
             }
             onPttAction(PttAction.StopRecording)
         }

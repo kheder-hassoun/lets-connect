@@ -28,7 +28,8 @@ internal class StartRecordingReducer(
         return Reducer.Result(
             state = state.copy(
                 isRecording = true,
-                remainingTalkSeconds = state.talkDurationSeconds
+                remainingTalkSeconds = state.talkDurationSeconds,
+                remainingTalkMillis = state.talkDurationSeconds * 1000L
             ),
             event = null
         )

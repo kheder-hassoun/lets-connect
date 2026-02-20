@@ -57,17 +57,18 @@ internal fun PTTContentLandscape(
             Box(
                 modifier = Modifier
                     .padding(16.dp)
-                    .offset(y = 28.dp)
+                    .offset(y = 56.dp)
                     .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
                 PTTButton(
                     modifier = Modifier
-                        .width(150.dp)
+                        .width(220.dp)
                         .padding(8.dp),
                     isOnline = canTalk,
                     isRecording = state.isRecording,
                     remainingSeconds = state.remainingTalkSeconds,
+                    remainingMillis = state.remainingTalkMillis,
                     totalSeconds = state.talkDurationSeconds,
                     onPress = { onAction(PttAction.StartRecording) },
                     onRelease = { onAction(PttAction.StopRecording) }

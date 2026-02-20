@@ -1,8 +1,10 @@
 package pro.devapp.walkietalkiek.feature.ptt.ui
 
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -19,11 +21,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
@@ -38,6 +38,7 @@ fun PTTButton(
     isOnline: Boolean = true,
     isRecording: Boolean = false,
     remainingSeconds: Int = 0,
+    remainingMillis: Long = 0L,
     totalSeconds: Int = 20,
     onPress: () -> Unit = {},
     onRelease: () -> Unit = {}
@@ -54,10 +55,14 @@ fun PTTButton(
     )
 
     val safeTotal = totalSeconds.coerceAtLeast(1)
-    val fraction = (remainingSeconds.toFloat() / safeTotal.toFloat()).coerceIn(0f, 1f)
-    val ringColor = if (isOnline) Color(0x55FF9A1A) else Color(0x2AFFFFFF)
-    val ringProgressColor = Color(0xFFFFA726)
-    val liquidBaseColor = if (isOnline) Color(0x33FF8A00) else Color(0x14000000)
+    val totalMillis = safeTotal * 1000L
+    val targetFraction = (remainingMillis.toFloat() / totalMillis.toFloat()).coerceIn(0f, 1f)
+    val fraction by animateFloatAsState(
+        targetValue = targetFraction,
+        animationSpec = tween(durationMillis = 120, easing = LinearEasing),
+        label = "liquid-level"
+    )
+    val liquidBaseColor = if (isOnline) Color(0x33FF8A00) else Color(0x22000000)
     val liquidGradient = Brush.verticalGradient(
         colors = listOf(
             Color(0xFFFFD180),
@@ -70,22 +75,9 @@ fun PTTButton(
         modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
-        Canvas(modifier = Modifier.size(184.dp)) {
+        Canvas(modifier = Modifier.size(228.dp)) {
             val center = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f)
-            val outerRadius = size.minDimension / 2.25f
-            val innerRadius = outerRadius - 12.dp.toPx()
-
-            drawCircle(color = ringColor, radius = outerRadius, center = center)
-            drawArc(
-                color = ringProgressColor,
-                startAngle = -90f,
-                sweepAngle = 360f * fraction,
-                useCenter = false,
-                topLeft = androidx.compose.ui.geometry.Offset(center.x - outerRadius, center.y - outerRadius),
-                size = Size(outerRadius * 2, outerRadius * 2),
-                style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round),
-                alpha = if (isRecording) 0.95f else 0.55f
-            )
+            val innerRadius = size.minDimension / 2.5f
 
             drawCircle(color = Color(0xFF181818), radius = innerRadius, center = center)
 
@@ -131,7 +123,7 @@ fun PTTButton(
 
         Box(
             modifier = Modifier
-                .size(126.dp)
+                .size(168.dp)
                 .pointerInput(isOnline) {
                     detectTapGestures(
                         onPress = {
@@ -151,7 +143,7 @@ fun PTTButton(
                 painter = painterResource(id = R.drawable.mic),
                 contentDescription = "Push to talk",
                 modifier = Modifier
-                    .padding(20.dp)
+                    .padding(28.dp)
                     .fillMaxSize(),
                 tint = if (isRecording) Color(0xFFFFF3E0) else MaterialTheme.colorScheme.onSurface
             )

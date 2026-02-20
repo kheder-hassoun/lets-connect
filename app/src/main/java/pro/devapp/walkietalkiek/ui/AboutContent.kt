@@ -2,17 +2,26 @@ package pro.devapp.walkietalkiek.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.Image
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import pro.devapp.walkietalkiek.BuildConfig
+import pro.devapp.walkietalkiek.R
 
 @Composable
 fun AboutContent() {
@@ -28,6 +37,16 @@ fun AboutContent() {
             )
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
+                Row {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                        contentDescription = "App icon",
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(CircleShape)
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = "K.H-PTT",
                     style = MaterialTheme.typography.headlineSmall,
