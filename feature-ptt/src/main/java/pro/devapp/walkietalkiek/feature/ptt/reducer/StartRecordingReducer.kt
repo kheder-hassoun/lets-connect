@@ -4,10 +4,13 @@ import pro.devapp.walkietalkiek.core.mvi.Reducer
 import pro.devapp.walkietalkiek.feature.ptt.model.PttAction
 import pro.devapp.walkietalkiek.feature.ptt.model.PttEvent
 import pro.devapp.walkietalkiek.feature.ptt.model.PttScreenState
+import pro.devapp.walkietalkiek.serivce.network.FloorControlProtocol
+import pro.devapp.walkietalkiek.serivce.network.MessageController
 import pro.devapp.walkietalkiek.service.voice.VoiceRecorder
 
 internal class StartRecordingReducer(
-    private val voiceRecorder: VoiceRecorder
+    private val voiceRecorder: VoiceRecorder,
+    private val messageController: MessageController
 )
     : Reducer<PttAction.StartRecording, PttScreenState, PttAction, PttEvent> {
 
@@ -24,10 +27,19 @@ internal class StartRecordingReducer(
                 event = null
             )
         }
+        val isFloorBusyByRemote = state.floorOwnerHostAddress != null && !state.isFloorHeldByMe
+        if (isFloorBusyByRemote) {
+            return Reducer.Result(
+                state = state,
+                event = null
+            )
+        }
+        messageController.sendMessage(FloorControlProtocol.acquirePacket())
         voiceRecorder.startRecord()
         return Reducer.Result(
             state = state.copy(
                 isRecording = true,
+                isFloorHeldByMe = true,
                 remainingTalkSeconds = state.talkDurationSeconds,
                 remainingTalkMillis = state.talkDurationSeconds * 1000L
             ),

@@ -8,6 +8,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import pro.devapp.walkietalkiek.core.mvi.CoroutineContextProvider
 import pro.devapp.walkietalkiek.serivce.network.data.ConnectedDevicesRepository
+import pro.devapp.walkietalkiek.serivce.network.data.PttFloorRepository
 import timber.log.Timber
 import java.io.DataInputStream
 import java.io.DataOutputStream
@@ -19,6 +20,7 @@ import java.util.concurrent.TimeUnit
 
 class SocketClient (
     private val connectedDevicesRepository: ConnectedDevicesRepository,
+    private val pttFloorRepository: PttFloorRepository,
     private val coroutineContextProvider: CoroutineContextProvider
 ) {
     private val sockets = ConcurrentHashMap<String, Socket>()
@@ -160,6 +162,13 @@ class SocketClient (
                     } else {
                         val message = String(data).trim()
                         Timber.Forest.i("message: $message from $hostAddress")
+                        val controlCommand = FloorControlProtocol.parse(message)
+                        if (controlCommand != null) {
+                            when (controlCommand) {
+                                FloorControlCommand.Acquire -> pttFloorRepository.acquire(hostAddress)
+                                FloorControlCommand.Release -> pttFloorRepository.release(hostAddress)
+                            }
+                        }
                     }
                     connectedDevicesRepository.storeDataReceivedTime(hostAddress)
                 }

@@ -6,6 +6,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import pro.devapp.walkietalkiek.core.mvi.CoroutineContextProvider
 import pro.devapp.walkietalkiek.serivce.network.data.ConnectedDevicesRepository
+import pro.devapp.walkietalkiek.serivce.network.data.PttFloorRepository
 import pro.devapp.walkietalkiek.serivce.network.data.TextMessagesRepository
 import timber.log.Timber
 import java.io.DataInputStream
@@ -21,6 +22,7 @@ class SocketServer(
     private val connectedDevicesRepository: ConnectedDevicesRepository,
     private val clientSocket: SocketClient,
     private val textMessagesRepository: TextMessagesRepository,
+    private val pttFloorRepository: PttFloorRepository,
     private val coroutineContextProvider: CoroutineContextProvider
 ) {
 
@@ -167,7 +169,13 @@ class SocketServer(
         } else {
             val message = String(data).trim()
             Timber.Forest.i("message: $message from $hostAddress")
-            if (message == "ping"){
+            val controlCommand = FloorControlProtocol.parse(message)
+            if (controlCommand != null) {
+                when (controlCommand) {
+                    FloorControlCommand.Acquire -> pttFloorRepository.acquire(hostAddress)
+                    FloorControlCommand.Release -> pttFloorRepository.release(hostAddress)
+                }
+            } else if (message == "ping"){
                 clientSocket.sendMessageToHost(
                     hostAddress = hostAddress,
                     data = "pong".toByteArray()

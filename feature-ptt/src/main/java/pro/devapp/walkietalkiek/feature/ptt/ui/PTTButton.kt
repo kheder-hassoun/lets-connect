@@ -38,6 +38,8 @@ fun PTTButton(
     modifier: Modifier = Modifier,
     buttonSize: Dp = 228.dp,
     isOnline: Boolean = true,
+    isEnabled: Boolean = true,
+    isLockedByRemote: Boolean = false,
     isRecording: Boolean = false,
     remainingSeconds: Int = 0,
     remainingMillis: Long = 0L,
@@ -132,10 +134,10 @@ fun PTTButton(
         Box(
             modifier = Modifier
                 .size(touchSize)
-                .pointerInput(isOnline) {
+                .pointerInput(isEnabled) {
                     detectTapGestures(
                         onPress = {
-                            if (!isOnline) return@detectTapGestures
+                            if (!isEnabled) return@detectTapGestures
                             try {
                                 onPress()
                                 awaitRelease()
@@ -153,15 +155,27 @@ fun PTTButton(
                 modifier = Modifier
                     .padding(iconPadding)
                     .fillMaxSize(),
-                tint = if (isRecording) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                tint = when {
+                    isRecording -> MaterialTheme.colorScheme.onPrimary
+                    !isEnabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
+                    else -> MaterialTheme.colorScheme.onSurface
+                }
             )
         }
 
-        val timerLabel = if (isRecording) "$remainingSeconds s" else "$totalSeconds s"
+        val timerLabel = when {
+            isRecording -> "$remainingSeconds s"
+            isLockedByRemote -> "Busy"
+            else -> "$totalSeconds s"
+        }
         Text(
             text = timerLabel,
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = timerBottomPadding),
-            color = if (isRecording) accentSoft else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
+            color = when {
+                isRecording -> accentSoft
+                isLockedByRemote -> Color(0xFFFF6B6B)
+                else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+            },
             style = if (isRecording) MaterialTheme.typography.labelLarge else MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold
         )

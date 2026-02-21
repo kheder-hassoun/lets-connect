@@ -7,6 +7,7 @@ import android.media.MediaRecorder
 import androidx.annotation.RequiresPermission
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import pro.devapp.walkietalkiek.core.mvi.CoroutineContextProvider
 import pro.devapp.walkietalkiek.serivce.network.MessageController
@@ -76,6 +77,8 @@ class VoiceRecorder(
     private fun startReading() {
         Timber.Forest.i("startReading")
         coroutineScope.launch {
+            // Give FLOOR_TAKEN control event a head-start before any voice packet is sent.
+            delay(PRE_TRANSMIT_GUARD_MS)
             val rawFrame = ByteArray(readBufferSize)
             val outgoingFrame = ByteArray(readBufferSize + 1)
             outgoingFrame[0] = AUDIO_PACKET_PREFIX
@@ -125,3 +128,4 @@ private const val FRAME_DURATION_MS = 20
 private const val AUDIO_RECORD_FRAMES_IN_BUFFER = 4
 private const val MIN_FRAME_BYTES = 256
 private const val DEFAULT_FRAME_BYTES = 640
+private const val PRE_TRANSMIT_GUARD_MS = 180L

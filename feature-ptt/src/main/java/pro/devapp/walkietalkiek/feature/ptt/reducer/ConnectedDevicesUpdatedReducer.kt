@@ -14,7 +14,6 @@ internal class ConnectedDevicesUpdatedReducer
         action: PttAction.ConnectedDevicesUpdated,
         getState: () -> PttScreenState
     ): Reducer.Result<PttScreenState, PttAction, PttEvent?> {
-
         return Reducer.Result(
             state = getState().copy(
                 connectedDevices = action.connectedDevices,

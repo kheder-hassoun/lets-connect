@@ -9,12 +9,17 @@ import pro.devapp.walkietalkiek.core.settings.AppSettingsRepository
 import pro.devapp.walkietalkiek.feature.ptt.model.PttAction
 import pro.devapp.walkietalkiek.feature.ptt.model.PttEvent
 import pro.devapp.walkietalkiek.feature.ptt.model.PttScreenState
+import pro.devapp.walkietalkiek.serivce.network.FloorControlProtocol
+import pro.devapp.walkietalkiek.serivce.network.MessageController
 import pro.devapp.walkietalkiek.serivce.network.data.ConnectedDevicesRepository
+import pro.devapp.walkietalkiek.serivce.network.data.PttFloorRepository
 import pro.devapp.walkietalkiek.service.voice.VoicePlayer
 
 internal class PttViewModel(
     actionProcessor: PttActionProcessor,
     private val connectedDevicesRepository: ConnectedDevicesRepository,
+    private val messageController: MessageController,
+    private val pttFloorRepository: PttFloorRepository,
     private val voicePlayer: VoicePlayer,
     private val appSettingsRepository: AppSettingsRepository
 ): MviViewModel<PttScreenState, PttAction, PttEvent>(
@@ -27,13 +32,30 @@ internal class PttViewModel(
         if (collectorsStarted) return
         collectorsStarted = true
         viewModelScope.launch {
+            var lastConnectedHosts = emptySet<String>()
             connectedDevicesRepository.clientsFlow.collect {
+                val connectedHosts = it.asSequence()
+                    .filter { client -> client.isConnected }
+                    .map { client -> client.hostAddress }
+                    .toSet()
+                val newConnectedHosts = connectedHosts - lastConnectedHosts
+                if (newConnectedHosts.isNotEmpty() && state.value.isRecording) {
+                    // Event-driven re-announce: a peer connected while I hold PTT,
+                    // so send floor taken once more to synchronize lock state.
+                    messageController.sendMessage(FloorControlProtocol.acquirePacket())
+                }
+                lastConnectedHosts = connectedHosts
                 onPttAction(PttAction.ConnectedDevicesUpdated(it))
             }
         }
         viewModelScope.launch {
+            var lastWaveUpdateAt = 0L
             voicePlayer.voiceDataFlow.collect {
-                onPttAction(PttAction.VoiceDataReceived(it))
+                val now = System.currentTimeMillis()
+                if (now - lastWaveUpdateAt >= WAVE_UI_UPDATE_THROTTLE_MS) {
+                    onPttAction(PttAction.VoiceDataReceived(it))
+                    lastWaveUpdateAt = now
+                }
             }
         }
         viewModelScope.launch {
@@ -41,12 +63,28 @@ internal class PttViewModel(
                 onPttAction(PttAction.TalkDurationChanged(it.talkDurationSeconds))
             }
         }
+        viewModelScope.launch {
+            pttFloorRepository.currentFloorOwnerHost.collect {
+                onPttAction(PttAction.FloorOwnerChanged(it))
+            }
+        }
     }
 
     fun onPttAction(action: PttAction) {
         when (action) {
-            PttAction.StartRecording -> startTalkTimer()
-            PttAction.StopRecording -> stopTalkTimer()
+            PttAction.StartRecording -> {
+                val currentState = state.value
+                val isBlockedByRemote = currentState.floorOwnerHostAddress != null &&
+                    !currentState.isFloorHeldByMe
+                if (!currentState.isRecording && !isBlockedByRemote) {
+                    startTalkTimer()
+                }
+            }
+            PttAction.StopRecording -> {
+                if (state.value.isRecording) {
+                    stopTalkTimer()
+                }
+            }
             else -> Unit
         }
         onAction(action)
@@ -73,3 +111,5 @@ internal class PttViewModel(
         talkTimerJob = null
     }
 }
+
+private const val WAVE_UI_UPDATE_THROTTLE_MS = 70L

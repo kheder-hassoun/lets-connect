@@ -8,6 +8,8 @@ internal data class PttScreenState(
     val connectedDevices: List<ClientModel>,
     val voiceData: ByteArray? = null,
     val isRecording: Boolean = false,
+    val isFloorHeldByMe: Boolean = false,
+    val floorOwnerHostAddress: String? = null,
     val talkDurationSeconds: Int = 10,
     val remainingTalkSeconds: Int = 10,
     val remainingTalkMillis: Long = 10_000L
@@ -23,6 +25,8 @@ internal data class PttScreenState(
         if (connectedDevices != other.connectedDevices) return false
         if (!voiceData.contentEquals(other.voiceData)) return false
         if (isRecording != other.isRecording) return false
+        if (isFloorHeldByMe != other.isFloorHeldByMe) return false
+        if (floorOwnerHostAddress != other.floorOwnerHostAddress) return false
         if (talkDurationSeconds != other.talkDurationSeconds) return false
         if (remainingTalkSeconds != other.remainingTalkSeconds) return false
         if (remainingTalkMillis != other.remainingTalkMillis) return false
@@ -36,6 +40,8 @@ internal data class PttScreenState(
         result = 31 * result + connectedDevices.hashCode()
         result = 31 * result + (voiceData?.contentHashCode() ?: 0)
         result = 31 * result + isRecording.hashCode()
+        result = 31 * result + isFloorHeldByMe.hashCode()
+        result = 31 * result + (floorOwnerHostAddress?.hashCode() ?: 0)
         result = 31 * result + talkDurationSeconds
         result = 31 * result + remainingTalkSeconds
         result = 31 * result + remainingTalkMillis.hashCode()

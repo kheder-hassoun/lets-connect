@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import pro.devapp.walkietalkiek.core.mvi.CoroutineContextProvider
 import pro.devapp.walkietalkiek.serivce.network.data.ConnectedDevicesRepository
 import pro.devapp.walkietalkiek.serivce.network.data.DeviceInfoRepository
+import pro.devapp.walkietalkiek.serivce.network.data.PttFloorRepository
 import timber.log.Timber
 
 private const val SERVICE_TYPE = "_wfwt._tcp" /* WiFi Walkie Talkie */
@@ -33,6 +34,7 @@ internal class ChanelControllerImpl(
     context: Context,
     private val deviceInfoRepository: DeviceInfoRepository,
     private val connectedDevicesRepository: ConnectedDevicesRepository,
+    private val pttFloorRepository: PttFloorRepository,
     private val client: SocketClient,
     private val server: SocketServer,
     private val coroutineContextProvider: CoroutineContextProvider,
@@ -48,6 +50,7 @@ internal class ChanelControllerImpl(
 
     override fun startDiscovery() {
         connectedDevicesRepository.clearAll()
+        pttFloorRepository.clear()
         pingScope = coroutineContextProvider.createScope(
             coroutineContextProvider.io
         )
@@ -63,6 +66,7 @@ internal class ChanelControllerImpl(
         client.stop()
         server.stop()
         connectedDevicesRepository.clearAll()
+        pttFloorRepository.clear()
         pingScope?.cancel()
     }
 

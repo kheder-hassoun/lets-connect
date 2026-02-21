@@ -24,6 +24,10 @@ internal fun PTTContentPortrait(
     val hasValidIp = state.myIP != "-" && state.myIP != "--" && state.myIP.isNotBlank()
     val hasConnectedPeers = state.connectedDevices.any { it.isConnected }
     val canTalk = hasValidIp || hasConnectedPeers
+    val isFloorBusyByRemote = state.floorOwnerHostAddress != null &&
+        !state.isFloorHeldByMe &&
+        !state.isRecording
+    val canPressPtt = (canTalk && !isFloorBusyByRemote) || state.isRecording
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp
@@ -61,6 +65,8 @@ internal fun PTTContentPortrait(
                 modifier = Modifier.padding(8.dp),
                 buttonSize = buttonSize,
                 isOnline = canTalk,
+                isEnabled = canPressPtt,
+                isLockedByRemote = isFloorBusyByRemote,
                 isRecording = state.isRecording,
                 remainingSeconds = state.remainingTalkSeconds,
                 remainingMillis = state.remainingTalkMillis,

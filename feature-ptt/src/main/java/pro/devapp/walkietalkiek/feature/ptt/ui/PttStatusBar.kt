@@ -29,13 +29,18 @@ internal fun PttStatusBar(
 ) {
     val totalPeers = state.connectedDevices.size
     val connectedPeers = state.connectedDevices.count { it.isConnected }
+    val isFloorBusyByRemote = state.floorOwnerHostAddress != null &&
+        !state.isFloorHeldByMe &&
+        !state.isRecording
     val modeColor = when {
         state.isRecording -> Color(0xFFFFA726)
+        isFloorBusyByRemote -> Color(0xFFFF6B6B)
         canTalk -> Color(0xFF56E39F)
         else -> Color(0xFFFF6B6B)
     }
     val modeLabel = when {
         state.isRecording -> "Talking"
+        isFloorBusyByRemote -> "Busy"
         canTalk -> "Enabled"
         else -> "Disabled"
     }
@@ -43,6 +48,8 @@ internal fun PttStatusBar(
     val localLabel = if (canTalk) "Online" else "Offline"
     val timerLabel = if (state.isRecording) {
         "Time Left ${state.remainingTalkSeconds}s"
+    } else if (isFloorBusyByRemote) {
+        "Channel Busy"
     } else {
         "Max Talk ${state.talkDurationSeconds}s"
     }
@@ -110,7 +117,11 @@ internal fun PttStatusBar(
 
             InfoPill(
                 modifier = Modifier.fillMaxWidth(),
-                label = "IP: ${state.myIP}"
+                label = if (isFloorBusyByRemote) {
+                    "Speaker: ${state.floorOwnerHostAddress}"
+                } else {
+                    "IP: ${state.myIP}"
+                }
             )
         }
     }
