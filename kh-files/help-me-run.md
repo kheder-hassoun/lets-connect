@@ -19,3 +19,24 @@ APK output will be here:
 
 app\build\outputs\apk\debug\app-debug.apk
 
+
+
+
+
+
+
+
+
+------------------------ relase 
+build relas apk
+
+.\gradlew.bat :app:assembleRelease
+
+
+
+install it to a connected devices 
+
+ .\gradlew.bat :app:installRelease
+
+
+ 
