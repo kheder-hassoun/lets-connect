@@ -35,14 +35,14 @@ internal fun MessageItem(
 ) {
     val alignment: Alignment.Horizontal = if (isOutgoing) Alignment.End else Alignment.Start
     val backgroundColor = if (isOutgoing) {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+        MaterialTheme.colorScheme.primaryContainer
     } else {
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f)
+        MaterialTheme.colorScheme.secondaryContainer
     }
     val textColor = if (isOutgoing) {
-        MaterialTheme.colorScheme.onPrimary
+        MaterialTheme.colorScheme.onPrimaryContainer
     } else {
-        MaterialTheme.colorScheme.onSurface
+        MaterialTheme.colorScheme.onSecondaryContainer
     }
     val senderColor = MaterialTheme.colorScheme.secondary
 

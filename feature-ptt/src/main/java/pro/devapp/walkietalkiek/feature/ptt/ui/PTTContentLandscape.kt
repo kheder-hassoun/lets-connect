@@ -21,7 +21,9 @@ internal fun PTTContentLandscape(
     state: PttScreenState,
     onAction: (PttAction) -> Unit,
 ) {
-    val canTalk = state.myIP != "-" && state.myIP != "--" && state.myIP.isNotBlank()
+    val hasValidIp = state.myIP != "-" && state.myIP != "--" && state.myIP.isNotBlank()
+    val hasConnectedPeers = state.connectedDevices.any { it.isConnected }
+    val canTalk = hasValidIp || hasConnectedPeers
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp

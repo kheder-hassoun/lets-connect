@@ -1,6 +1,7 @@
 package pro.devapp.walkietalkiek.ui
 
 import android.content.Intent
+import android.graphics.Rect
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -14,13 +15,17 @@ import androidx.compose.material3.adaptive.currentWindowSize
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldLayout
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.toSize
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
@@ -31,6 +36,7 @@ import pro.devapp.walkietalkiek.core.settings.AppSettingsRepository
 import pro.devapp.walkietalkiek.core.theme.DroidPTTTheme
 import pro.devapp.walkietalkiek.model.MainScreenAction
 import pro.devapp.walkietalkiek.model.MainScreenEvent
+import pro.devapp.walkietalkiek.model.MainTab
 import pro.devapp.walkietalkiek.service.WalkieService
 import pro.devapp.walkietalkiek.ui.components.BottomTabs
 import pro.devapp.walkietalkiek.ui.components.MainTopBar
@@ -63,6 +69,9 @@ internal fun RootContent() {
             val windowSize = with(LocalDensity.current) {
                 currentWindowSize().toSize().toDpSize()
             }
+            val imeVisible = rememberKeyboardVisible()
+            val hideBottomTabsForChatIme =
+                state.value.currentTab == MainTab.CHAT && imeVisible
 
             val navLayoutType = if (windowSize.width > windowSize.height) {
                 // Landscape mode
@@ -77,10 +86,12 @@ internal fun RootContent() {
                 navigationSuite = {
                     when (navLayoutType) {
                         NavigationSuiteType.NavigationBar -> {
-                            BottomTabs(
-                                screenState = state.value,
-                                onAction = viewModel::onAction
-                            )
+                            if (!hideBottomTabsForChatIme) {
+                                BottomTabs(
+                                    screenState = state.value,
+                                    onAction = viewModel::onAction
+                                )
+                            }
                         }
 
                         NavigationSuiteType.NavigationRail -> {
@@ -159,4 +170,34 @@ internal fun RootContent() {
         }
     }
 
+}
+
+@Composable
+private fun rememberKeyboardVisible(): Boolean {
+    val view = LocalView.current
+    val isKeyboardVisible = remember { mutableStateOf(false) }
+
+    DisposableEffect(view) {
+        val rect = Rect()
+        val listener = android.view.ViewTreeObserver.OnGlobalLayoutListener {
+            view.getWindowVisibleDisplayFrame(rect)
+            val screenHeight = view.rootView.height
+            val keypadHeight = screenHeight - rect.bottom
+            val keyboardRatio = keypadHeight.toFloat() / screenHeight.toFloat().coerceAtLeast(1f)
+            val shouldShow = keyboardRatio > 0.15f
+            val shouldHide = keyboardRatio < 0.10f
+
+            when {
+                !isKeyboardVisible.value && shouldShow -> isKeyboardVisible.value = true
+                isKeyboardVisible.value && shouldHide -> isKeyboardVisible.value = false
+            }
+        }
+
+        view.viewTreeObserver.addOnGlobalLayoutListener(listener)
+        onDispose {
+            view.viewTreeObserver.removeOnGlobalLayoutListener(listener)
+        }
+    }
+
+    return isKeyboardVisible.value
 }

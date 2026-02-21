@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import pro.devapp.walkietalkiek.model.MainScreenAction
@@ -99,8 +100,10 @@ fun BottomTabs(
                     label = {
                         Text(
                             text = it.title,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.labelSmall,
+                            textAlign = TextAlign.Center
                         )
                     },
                     colors = NavigationBarItemDefaults.colors(
