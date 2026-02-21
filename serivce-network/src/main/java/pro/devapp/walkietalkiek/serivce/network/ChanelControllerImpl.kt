@@ -14,12 +14,11 @@ import pro.devapp.walkietalkiek.core.mvi.CoroutineContextProvider
 import pro.devapp.walkietalkiek.serivce.network.data.ConnectedDevicesRepository
 import pro.devapp.walkietalkiek.serivce.network.data.DeviceInfoRepository
 import timber.log.Timber
-import java.nio.ByteBuffer
 
 private const val SERVICE_TYPE = "_wfwt._tcp" /* WiFi Walkie Talkie */
 
 interface MessageController{
-    fun sendMessage(byteBuffer: ByteBuffer)
+    fun sendMessage(data: ByteArray)
 }
 
 interface ClientController{
@@ -68,9 +67,9 @@ internal class ChanelControllerImpl(
         nsdManager.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, discoveryListener)
     }
 
-    override fun sendMessage(byteBuffer: ByteBuffer) {
-        client.sendMessage(byteBuffer)
-        server.sendMessage(byteBuffer)
+    override fun sendMessage(data: ByteArray) {
+        client.sendMessage(data)
+        server.sendMessage(data)
     }
 
     private fun registerNsdService(port: Int) {
@@ -105,8 +104,8 @@ internal class ChanelControllerImpl(
     }
 
     private fun ping() {
-        server.sendMessage(ByteBuffer.wrap("ping".toByteArray()))
-        client.sendMessage(ByteBuffer.wrap("ping".toByteArray()))
+        server.sendMessage("ping".toByteArray())
+        client.sendMessage("ping".toByteArray())
     }
 
     override fun onServiceFound(serviceInfo: NsdServiceInfo) {
@@ -123,8 +122,13 @@ internal class ChanelControllerImpl(
 
         clientInfoResolver.resolve(serviceInfo) { inetSocketAddress, nsdServiceInfo ->
             Timber.Forest.i("Resolve: ${nsdServiceInfo.serviceName}")
+            val hostAddress = inetSocketAddress.address?.hostAddress
+            if (hostAddress.isNullOrBlank()) {
+                Timber.Forest.w("Resolved host address is null/blank for ${nsdServiceInfo.serviceName}")
+                return@resolve
+            }
             connectedDevicesRepository.addHostInfo(
-                inetSocketAddress.address.hostAddress,
+                hostAddress,
                 nsdServiceInfo.serviceName
             )
             client.addClient(inetSocketAddress)
@@ -143,6 +147,7 @@ internal class ChanelControllerImpl(
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun extractHostAddress(nsdServiceInfo: NsdServiceInfo): String? {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             nsdServiceInfo.hostAddresses.firstOrNull()?.hostAddress

@@ -37,6 +37,8 @@ import pro.devapp.walkietalkiek.core.theme.DroidPTTTheme
 import pro.devapp.walkietalkiek.model.MainScreenAction
 import pro.devapp.walkietalkiek.model.MainScreenEvent
 import pro.devapp.walkietalkiek.model.MainTab
+import pro.devapp.walkietalkiek.serivce.network.data.ConnectedDevicesRepository
+import pro.devapp.walkietalkiek.serivce.network.data.DeviceInfoRepository
 import pro.devapp.walkietalkiek.service.WalkieService
 import pro.devapp.walkietalkiek.ui.components.BottomTabs
 import pro.devapp.walkietalkiek.ui.components.MainTopBar
@@ -52,6 +54,12 @@ internal fun RootContent() {
     val state = viewModel.state.collectAsState()
     val settingsRepository = koinInject<AppSettingsRepository>()
     val settings = settingsRepository.settings.collectAsState()
+    val connectedDevicesRepository = koinInject<ConnectedDevicesRepository>()
+    val deviceInfoRepository = koinInject<DeviceInfoRepository>()
+    val connectedDevices = connectedDevicesRepository.clientsFlow.collectAsState(initial = emptyList())
+    val hasConnectedPeers = connectedDevices.value.any { it.isConnected }
+    val hasValidIp = deviceInfoRepository.getCurrentIp()?.isNotBlank() == true
+    val isPttEnabled = hasValidIp || hasConnectedPeers
 
     val context = LocalContext.current
 
@@ -63,7 +71,10 @@ internal fun RootContent() {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = {
-                MainTopBar(state = state.value)
+                MainTopBar(
+                    state = state.value,
+                    isPttEnabled = isPttEnabled
+                )
             }
         ) { innerPadding ->
             val windowSize = with(LocalDensity.current) {

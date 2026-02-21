@@ -13,8 +13,6 @@ import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.net.InetSocketAddress
 import java.net.Socket
-import java.nio.ByteBuffer
-import java.util.Arrays
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.TimeUnit
@@ -53,16 +51,16 @@ class SocketClient (
     /**
      * Data for sending
      */
-    private val outputQueueMap = ConcurrentHashMap<String, LinkedBlockingDeque<ByteBuffer>>()
+    private val outputQueueMap = ConcurrentHashMap<String, LinkedBlockingDeque<ByteArray>>()
 
-    fun sendMessage(byteBuffer: ByteBuffer) {
+    fun sendMessage(data: ByteArray) {
         outputQueueMap.forEach { item ->
-            item.value.add(byteBuffer)
+            item.value.offerLast(data.copyOf())
         }
     }
 
-    fun sendMessageToHost(hostAddress: String, byteBuffer: ByteBuffer) {
-        outputQueueMap[hostAddress]?.add(byteBuffer)
+    fun sendMessageToHost(hostAddress: String, data: ByteArray) {
+        outputQueueMap[hostAddress]?.offerLast(data.copyOf())
     }
 
     fun addClient(socketAddress: InetSocketAddress) {
@@ -136,41 +134,38 @@ class SocketClient (
     }
 
     private fun handleConnection(socket: Socket) {
+        val hostAddress = socket.inetAddress?.hostAddress
+        if (hostAddress.isNullOrBlank()) {
+            Timber.Forest.w("Socket host address is null/blank. Closing socket.")
+            socket.close()
+            return
+        }
         val readingFuture = readDataScope.launch {
             try {
                 val dataInput = DataInputStream(socket.getInputStream())
-                val byteArray = ByteArray(8192 * 8)
-                Timber.Forest.i("Started reading ${socket.inetAddress.hostAddress}")
+                Timber.Forest.i("Started reading $hostAddress")
                 while (!socket.isClosed && !socket.isInputShutdown) {
-                    val readCount = dataInput.read(byteArray)
-                    if (readCount > 0) {
-                        val data = ByteArray(readCount)
-                        System.arraycopy(byteArray, 0, data, 0, readCount)
-                        if (data.size > 20) {
-                            dataListener?.invoke(data)
-                            Timber.Forest.i("message: audio ${data.size} from ${socket.inetAddress.hostAddress}")
-                        } else {
-                            val message = String(data).trim()
-                            Timber.Forest.i("message: $message from ${socket.inetAddress.hostAddress}")
-//                            if (message == "ping"){
-//                                clientSocket.sendMessageToHost(
-//                                    hostAddress = hostAddress,
-//                                    byteBuffer = ByteBuffer.wrap("pong".toByteArray())
-//                                )
-//                            } else if (message != "pong" && message.isNotEmpty()) {
-//                                textMessagesRepository.addMessage(
-//                                    message = message,
-//                                    hostAddress = hostAddress
-//                                )
-//                            }
-                        }
-                        connectedDevicesRepository.storeDataReceivedTime(socket.inetAddress.hostAddress)
+                    val packetSize = dataInput.readInt()
+                    if (packetSize <= 0 || packetSize > MAX_PACKET_SIZE) {
+                        Timber.Forest.w("Skip invalid packet size: $packetSize")
+                        continue
                     }
-                    Arrays.fill(byteArray, 0)
+                    val data = ByteArray(packetSize)
+                    dataInput.readFully(data)
+                    if (data.isNotEmpty() && data[0] == AUDIO_PACKET_PREFIX) {
+                        val audioPayload = data.copyOfRange(1, data.size)
+                        if (audioPayload.isNotEmpty()) {
+                            dataListener?.invoke(audioPayload)
+                        }
+                    } else {
+                        val message = String(data).trim()
+                        Timber.Forest.i("message: $message from $hostAddress")
+                    }
+                    connectedDevicesRepository.storeDataReceivedTime(hostAddress)
                 }
             } catch (e: Exception) {
                 Timber.Forest.w(e)
-                removeClient(socket.inetAddress.hostAddress)
+                removeClient(hostAddress)
             } finally {
 
             }
@@ -182,18 +177,18 @@ class SocketClient (
                 while (socket.isConnected && !socket.isClosed) {
                     try {
                         val buf =
-                            if (outputQueueMap[socket.inetAddress.hostAddress]?.isEmpty() == true) {
-                                outputQueueMap[socket.inetAddress.hostAddress]?.pollFirst(
-                                    1000,
+                            if (outputQueueMap[hostAddress]?.isEmpty() == true) {
+                                outputQueueMap[hostAddress]?.pollFirst(
+                                    250,
                                     TimeUnit.MILLISECONDS
                                 )
                             } else {
-                                outputQueueMap[socket.inetAddress.hostAddress]?.pollFirst()
+                                outputQueueMap[hostAddress]?.pollFirst()
                             }
-                        buf?.let { byteArray ->
-                            outputStream.write(byteArray.array())
+                        buf?.let { payload ->
+                            outputStream.writeInt(payload.size)
+                            outputStream.write(payload)
                             outputStream.flush()
-                            Timber.Forest.i("send data to ${socket.inetAddress.hostAddress}")
                         }
                         errorCounter = 0
                     } catch (e: Exception) {
@@ -208,9 +203,12 @@ class SocketClient (
                 Timber.Forest.w(e)
             } finally {
                 readingFuture.cancel()
-                removeClient(socket.inetAddress.hostAddress)
-                Timber.Forest.i("remove ${socket.inetAddress.hostAddress}")
+                removeClient(hostAddress)
+                Timber.Forest.i("remove $hostAddress")
             }
         }
     }
 }
+
+private const val AUDIO_PACKET_PREFIX: Byte = 1
+private const val MAX_PACKET_SIZE = 256 * 1024

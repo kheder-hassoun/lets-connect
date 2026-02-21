@@ -1,18 +1,22 @@
 package pro.devapp.walkietalkiek.feature.ptt.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import pro.devapp.walkietalkiek.feature.ptt.model.PttScreenState
@@ -23,85 +27,151 @@ internal fun PttStatusBar(
     canTalk: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val backgroundColor = if (canTalk) {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-    } else {
-        Color(0x14B0BEC5)
+    val connectedPeers = state.connectedDevices.count { it.isConnected }
+    val modeColor = when {
+        state.isRecording -> Color(0xFFFFA726)
+        canTalk -> Color(0xFF56E39F)
+        else -> Color(0xFFFF6B6B)
     }
-    val outlineColor = if (canTalk) {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
-    } else {
-        Color(0x66B0BEC5)
+    val modeLabel = when {
+        state.isRecording -> "Talking"
+        canTalk -> "Enabled"
+        else -> "Disabled"
     }
-    val textColor = MaterialTheme.colorScheme.onBackground
-
-    val localText = if (canTalk) "Local Online" else "Local Offline"
-    val peersText = "Peers: ${state.connectedDevices.count { it.isConnected }}"
-    val pttText = when {
-        !canTalk -> "PTT Disabled"
-        state.isRecording -> "PTT Talking"
-        else -> "PTT Enabled"
-    }
-    val ipText = "IP: ${state.myIP}"
-    val timerText = if (state.isRecording) {
-        "Talk Time Left: ${state.remainingTalkSeconds}s"
+    val localColor = if (canTalk) Color(0xFF56E39F) else Color(0xFFFF6B6B)
+    val localLabel = if (canTalk) "Online" else "Offline"
+    val timerLabel = if (state.isRecording) {
+        "Time Left ${state.remainingTalkSeconds}s"
     } else {
-        "Max Talk Time: ${state.talkDurationSeconds}s"
+        "Max Talk ${state.talkDurationSeconds}s"
     }
 
-    Column(
+    Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .background(
-                color = backgroundColor,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .padding(horizontal = 12.dp, vertical = 10.dp)
+            .padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.84f),
+        tonalElevation = 8.dp,
+        shadowElevation = 8.dp
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            modeColor.copy(alpha = 0.14f),
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                            Color.Transparent
+                        )
+                    )
+                )
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.26f),
+                    shape = RoundedCornerShape(18.dp)
+                )
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                StatusPill(
+                    modifier = Modifier.weight(1f),
+                    title = "LOCAL",
+                    value = localLabel,
+                    tint = localColor
+                )
+                StatusPill(
+                    modifier = Modifier.weight(1f),
+                    title = "PTT",
+                    value = modeLabel,
+                    tint = modeColor
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                InfoPill(
+                    modifier = Modifier.weight(1f),
+                    label = "Peers: $connectedPeers"
+                )
+                InfoPill(
+                    modifier = Modifier.weight(1f),
+                    label = timerLabel
+                )
+            }
+
+            InfoPill(
+                modifier = Modifier.fillMaxWidth(),
+                label = "IP: ${state.myIP}"
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatusPill(
+    modifier: Modifier = Modifier,
+    title: String,
+    value: String,
+    tint: Color
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = tint.copy(alpha = 0.14f),
+        tonalElevation = 0.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             Text(
-                text = localText,
-                style = MaterialTheme.typography.labelLarge,
-                color = textColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                text = title,
+                style = MaterialTheme.typography.labelSmall,
+                color = tint.copy(alpha = 0.9f),
+                fontWeight = FontWeight.Bold
             )
             Text(
-                text = pttText,
+                text = value,
                 style = MaterialTheme.typography.labelLarge,
-                color = textColor,
+                color = tint,
+                fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
         }
-        HorizontalDivider(
-            modifier = Modifier.padding(vertical = 6.dp),
-            color = outlineColor
-        )
-        Text(
-            text = peersText,
-            style = MaterialTheme.typography.bodyMedium,
-            color = textColor,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Text(
-            text = ipText,
-            style = MaterialTheme.typography.bodyMedium,
-            color = textColor,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Text(
-            text = timerText,
-            style = MaterialTheme.typography.bodyMedium,
-            color = textColor,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
+    }
+}
+
+@Composable
+private fun InfoPill(
+    modifier: Modifier = Modifier,
+    label: String
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
