@@ -29,12 +29,14 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import pro.devapp.walkietalkiek.feature.ptt.R
 
 @Composable
 fun PTTButton(
     modifier: Modifier = Modifier,
+    buttonSize: Dp = 228.dp,
     isOnline: Boolean = true,
     isRecording: Boolean = false,
     remainingSeconds: Int = 0,
@@ -62,20 +64,26 @@ fun PTTButton(
         animationSpec = tween(durationMillis = 120, easing = LinearEasing),
         label = "liquid-level"
     )
-    val liquidBaseColor = if (isOnline) Color(0x33FF8A00) else Color(0x22000000)
+    val accent = MaterialTheme.colorScheme.primary
+    val accentSoft = MaterialTheme.colorScheme.secondary
+    val accentDeep = MaterialTheme.colorScheme.tertiary
+    val liquidBaseColor = if (isOnline) accent.copy(alpha = 0.2f) else Color(0x22000000)
     val liquidGradient = Brush.verticalGradient(
         colors = listOf(
-            Color(0xFFFFD180),
-            Color(0xFFFF8A00),
-            Color(0xFFCC5C00)
+            accentSoft,
+            accent,
+            accentDeep
         )
     )
+    val touchSize = buttonSize * 0.74f
+    val iconPadding = (buttonSize * 0.12f).coerceAtLeast(18.dp)
+    val timerBottomPadding = (buttonSize * 0.01f).coerceAtLeast(2.dp)
 
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
-        Canvas(modifier = Modifier.size(228.dp)) {
+        Canvas(modifier = Modifier.size(buttonSize)) {
             val center = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f)
             val innerRadius = size.minDimension / 2.5f
 
@@ -123,7 +131,7 @@ fun PTTButton(
 
         Box(
             modifier = Modifier
-                .size(168.dp)
+                .size(touchSize)
                 .pointerInput(isOnline) {
                     detectTapGestures(
                         onPress = {
@@ -143,17 +151,17 @@ fun PTTButton(
                 painter = painterResource(id = R.drawable.ptt_call),
                 contentDescription = "Push to talk",
                 modifier = Modifier
-                    .padding(28.dp)
+                    .padding(iconPadding)
                     .fillMaxSize(),
-                tint = if (isRecording) Color(0xFFFFF3E0) else MaterialTheme.colorScheme.onSurface
+                tint = if (isRecording) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
             )
         }
 
         val timerLabel = if (isRecording) "$remainingSeconds s" else "$totalSeconds s"
         Text(
             text = timerLabel,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 2.dp),
-            color = if (isRecording) Color(0xFFFFD180) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = timerBottomPadding),
+            color = if (isRecording) accentSoft else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
             style = if (isRecording) MaterialTheme.typography.labelLarge else MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold
         )

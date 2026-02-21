@@ -25,7 +25,9 @@ import androidx.compose.ui.unit.toSize
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
 import org.koin.androidx.compose.getViewModel
+import org.koin.compose.koinInject
 import pro.devapp.walkietalkiek.MainViewMode
+import pro.devapp.walkietalkiek.core.settings.AppSettingsRepository
 import pro.devapp.walkietalkiek.core.theme.DroidPTTTheme
 import pro.devapp.walkietalkiek.model.MainScreenAction
 import pro.devapp.walkietalkiek.model.MainScreenEvent
@@ -42,6 +44,8 @@ import pro.devapp.walkietalkiek.ui.components.TabsContent
 internal fun RootContent() {
     val viewModel: MainViewMode = getViewModel()
     val state = viewModel.state.collectAsState()
+    val settingsRepository = koinInject<AppSettingsRepository>()
+    val settings = settingsRepository.settings.collectAsState()
 
     val context = LocalContext.current
 
@@ -49,7 +53,7 @@ internal fun RootContent() {
         viewModel.onAction(MainScreenAction.InitApp)
     }
 
-    DroidPTTTheme {
+    DroidPTTTheme(themeColor = settings.value.themeColor) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = {

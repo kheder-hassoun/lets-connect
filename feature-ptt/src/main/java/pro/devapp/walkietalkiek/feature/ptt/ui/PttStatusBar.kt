@@ -23,8 +23,16 @@ internal fun PttStatusBar(
     canTalk: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val backgroundColor = if (canTalk) Color(0x1AFFA726) else Color(0x14B0BEC5)
-    val outlineColor = if (canTalk) Color(0x66FFA726) else Color(0x66B0BEC5)
+    val backgroundColor = if (canTalk) {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+    } else {
+        Color(0x14B0BEC5)
+    }
+    val outlineColor = if (canTalk) {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+    } else {
+        Color(0x66B0BEC5)
+    }
     val textColor = MaterialTheme.colorScheme.onBackground
 
     val localText = if (canTalk) "Local Online" else "Local Offline"

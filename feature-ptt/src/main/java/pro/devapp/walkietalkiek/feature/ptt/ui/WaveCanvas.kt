@@ -1,6 +1,7 @@
 package pro.devapp.walkietalkiek.feature.ptt.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
@@ -20,10 +21,11 @@ import kotlin.math.min
 @Composable
 fun WaveCanvas(
     modifier: Modifier = Modifier,
-    color: Color = Color(0xFFF57C00), // Matches orange theme (secondaryLight)
+    color: Color? = null,
     data: ByteArray? = null,
     sampleRate: Int = 80
 ) {
+    val waveColor = color ?: MaterialTheme.colorScheme.primary
     // State for waveform data
     val queueForChart = remember { LinkedList<Float>() }
     val waveformData = remember { mutableStateListOf<Float>() }
@@ -70,7 +72,7 @@ fun WaveCanvas(
             val startY = (canvasHeight - h) / 2
 
             drawLine(
-                color = color,
+                color = waveColor,
                 start = Offset(xOffset, startY),
                 end = Offset(xOffset, startY + h),
                 strokeWidth = strokeWidthPx,

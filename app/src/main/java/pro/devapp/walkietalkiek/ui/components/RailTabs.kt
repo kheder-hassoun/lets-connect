@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
@@ -25,6 +26,7 @@ fun RailTabs(
     screenState: MainScreenState,
     onAction: (MainScreenAction) -> Unit = {}
 ) {
+    val accent = MaterialTheme.colorScheme.primary
     val windowInsets = WindowInsets.navigationBars
     Surface(
         modifier = modifier.padding(horizontal = 10.dp, vertical = 10.dp),
@@ -62,9 +64,9 @@ fun RailTabs(
                         )
                     },
                     colors = NavigationRailItemDefaults.colors(
-                        selectedIconColor = Color(0xFFFFA726),
-                        selectedTextColor = Color(0xFFFFA726),
-                        indicatorColor = Color(0x26FF8A00),
+                        selectedIconColor = accent,
+                        selectedTextColor = accent,
+                        indicatorColor = accent.copy(alpha = 0.2f),
                         unselectedIconColor = Color(0xFF9E9E9E),
                         unselectedTextColor = Color(0xFF9E9E9E)
                     )

@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -33,6 +34,13 @@ internal fun ChatContent(
     onSendMessage: (String) -> Unit = {}
 ) {
     val listState = rememberLazyListState()
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
+    val edgePadding = (screenWidth * 0.025f).coerceIn(8.dp, 20.dp)
+    val emptyStatePadding = (screenWidth * 0.05f).coerceIn(12.dp, 32.dp)
+    val messageSpacing = (screenHeight * 0.012f).coerceIn(6.dp, 14.dp)
+    val inputReserveBottom = (screenHeight * 0.13f).coerceIn(84.dp, 140.dp)
 
     // Keep newest message visible, including first message.
     LaunchedEffect(messages.size) {
@@ -59,7 +67,7 @@ internal fun ChatContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = emptyStatePadding),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -77,12 +85,12 @@ internal fun ChatContent(
             modifier = Modifier
                 .fillMaxSize(),
             contentPadding = PaddingValues(
-                start = 10.dp,
-                end = 10.dp,
-                top = 10.dp,
-                bottom = 96.dp
+                start = edgePadding,
+                end = edgePadding,
+                top = edgePadding,
+                bottom = inputReserveBottom
             ),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(messageSpacing)
         ) {
             items(messages) { message ->
                 MessageItem(

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationBarItem
@@ -34,6 +35,9 @@ fun BottomTabs(
     screenState: MainScreenState,
     onAction: (MainScreenAction) -> Unit = {}
 ) {
+    val accent = MaterialTheme.colorScheme.primary
+    val selectedChipColor = accent.copy(alpha = 0.24f)
+    val indicatorColor = accent.copy(alpha = 0.2f)
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -74,7 +78,7 @@ fun BottomTabs(
                         if (isPtt) {
                             Surface(
                                 shape = RoundedCornerShape(999.dp),
-                                color = if (isSelected) Color(0x33FF8A00) else Color(0x1AFFFFFF),
+                                color = if (isSelected) selectedChipColor else Color(0x1AFFFFFF),
                                 shadowElevation = if (isSelected) 10.dp else 2.dp
                             ) {
                                 Icon(
@@ -100,9 +104,9 @@ fun BottomTabs(
                         )
                     },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color(0xFFFFA726),
-                        selectedTextColor = Color(0xFFFFA726),
-                        indicatorColor = Color(0x26FF8A00),
+                        selectedIconColor = accent,
+                        selectedTextColor = accent,
+                        indicatorColor = indicatorColor,
                         unselectedIconColor = Color(0xFF9E9E9E),
                         unselectedTextColor = Color(0xFF9E9E9E)
                     )

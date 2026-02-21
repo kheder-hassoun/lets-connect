@@ -13,7 +13,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
@@ -25,21 +24,21 @@ fun RequiredPermissionsNotification(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFFFFA726)) // Orange
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.92f))
             .padding(16.dp),
         horizontalAlignment = Alignment.Start
     ) {
         Text(
             text = "Permissions required:",
             style = MaterialTheme.typography.titleMedium,
-            color = Color.Black
+            color = MaterialTheme.colorScheme.onPrimary
         )
         Spacer(modifier = Modifier.height(4.dp))
         requiredPermissions.forEach { permission ->
             Text(
                 text = permission,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Black
+                color = MaterialTheme.colorScheme.onPrimary
             )
         }
         Spacer(modifier = Modifier.height(8.dp))

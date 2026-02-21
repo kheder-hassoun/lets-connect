@@ -28,6 +28,8 @@ fun MainTopBar(
     modifier: Modifier = Modifier,
     state: MainScreenState
 ) {
+    val accent = MaterialTheme.colorScheme.primary
+    val accentSoft = MaterialTheme.colorScheme.secondary
     Surface(
         modifier = modifier
             .statusBarsPadding()
@@ -42,8 +44,8 @@ fun MainTopBar(
                 .background(
                     brush = Brush.linearGradient(
                         colors = listOf(
-                            Color(0x66FF8A00),
-                            Color(0x33FF8A00),
+                            accent.copy(alpha = 0.4f),
+                            accentSoft.copy(alpha = 0.26f),
                             Color(0x1F0D0D0D)
                         )
                     )
@@ -83,13 +85,13 @@ fun MainTopBar(
             }
             Surface(
                 shape = RoundedCornerShape(999.dp),
-                color = Color(0x22FF8A00)
+                color = accent.copy(alpha = 0.18f)
             ) {
                 Text(
                     text = state.currentTab.name,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                     style = MaterialTheme.typography.labelLarge,
-                    color = Color(0xFFFFB347),
+                    color = accentSoft,
                     fontWeight = FontWeight.SemiBold
                 )
             }

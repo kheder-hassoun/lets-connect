@@ -20,9 +20,25 @@ class AppSettingsRepository {
             toneEnabled = enabled
         )
     }
+
+    fun updateThemeColor(themeColor: ThemeColor) {
+        _settings.value = _settings.value.copy(
+            themeColor = themeColor
+        )
+    }
 }
 
 data class AppSettings(
     val talkDurationSeconds: Int = 10,
-    val toneEnabled: Boolean = true
+    val toneEnabled: Boolean = true,
+    val themeColor: ThemeColor = ThemeColor.PURPLE
 )
+
+enum class ThemeColor(val title: String) {
+    PURPLE("Purple"),
+    ORANGE("Orange"),
+    RED("Red"),
+    BLUE("Blue"),
+    GREEN("Green"),
+    YELLOW("Yellow")
+}
