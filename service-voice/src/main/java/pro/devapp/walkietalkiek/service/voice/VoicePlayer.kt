@@ -3,7 +3,6 @@ package pro.devapp.walkietalkiek.service.voice
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioManager
-import android.media.AudioRecord
 import android.media.AudioTrack
 import android.os.Build
 import pro.devapp.walkietalkiek.serivce.network.SocketClient
@@ -102,11 +101,11 @@ class VoicePlayer(
     private fun getSupportedSampleRate(): Int? {
         val rates = arrayOf(16000, 22050, 44100, 11025, 8000)
         rates.forEach {
-            val minBufferSize = AudioRecord.getMinBufferSize(
+            val minBufferSize = AudioTrack.getMinBufferSize(
                 it, channelConfig, AudioFormat.ENCODING_PCM_16BIT
             )
-            if (minBufferSize != AudioRecord.ERROR &&
-                minBufferSize != AudioRecord.ERROR_BAD_VALUE
+            if (minBufferSize != AudioTrack.ERROR &&
+                minBufferSize != AudioTrack.ERROR_BAD_VALUE
             ) {
                 return it
             }
