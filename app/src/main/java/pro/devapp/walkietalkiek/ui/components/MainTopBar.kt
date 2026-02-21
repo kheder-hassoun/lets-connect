@@ -30,6 +30,7 @@ fun MainTopBar(
 ) {
     val accent = MaterialTheme.colorScheme.primary
     val accentSoft = MaterialTheme.colorScheme.secondary
+    val currentTabTitle = state.mainTabs.firstOrNull { it.screen == state.currentTab }?.title ?: state.currentTab.name
     Surface(
         modifier = modifier
             .statusBarsPadding()
@@ -88,7 +89,7 @@ fun MainTopBar(
                 color = accent.copy(alpha = 0.18f)
             ) {
                 Text(
-                    text = state.currentTab.name,
+                    text = currentTabTitle,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                     style = MaterialTheme.typography.labelLarge,
                     color = accentSoft,

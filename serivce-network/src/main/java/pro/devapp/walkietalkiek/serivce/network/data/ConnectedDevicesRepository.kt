@@ -67,4 +67,9 @@ class ConnectedDevicesRepository {
         )
         publishChanges()
     }
+
+    fun clearAll() {
+        clients.clear()
+        publishChanges()
+    }
 }

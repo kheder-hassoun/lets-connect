@@ -26,6 +26,10 @@ class AppSettingsRepository {
             themeColor = themeColor
         )
     }
+
+    fun resetToDefaults() {
+        _settings.value = AppSettings()
+    }
 }
 
 data class AppSettings(

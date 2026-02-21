@@ -29,7 +29,7 @@ class MainTabsFactory {
                 screen = MainTab.ABOUT
             ),
             MainTabItem(
-                title = "Exit",
+                title = "Fix",
                 icon = R.drawable.power_off,
                 screen = MainTab.OFF
             ),

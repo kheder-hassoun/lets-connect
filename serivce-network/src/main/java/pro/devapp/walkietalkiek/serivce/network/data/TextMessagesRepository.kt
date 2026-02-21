@@ -33,4 +33,8 @@ class TextMessagesRepository(
         currentMessages.add(newMessage)
         _messagesFlow.tryEmit(currentMessages)
     }
+
+    fun clearAll() {
+        _messagesFlow.tryEmit(emptyList())
+    }
 }
