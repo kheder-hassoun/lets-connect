@@ -21,8 +21,11 @@ internal class PttViewModel(
     actionProcessor = actionProcessor
 ) {
     private var talkTimerJob: Job? = null
+    private var collectorsStarted = false
 
     fun startCollectingConnectedDevices() {
+        if (collectorsStarted) return
+        collectorsStarted = true
         viewModelScope.launch {
             connectedDevicesRepository.clientsFlow.collect {
                 onPttAction(PttAction.ConnectedDevicesUpdated(it))

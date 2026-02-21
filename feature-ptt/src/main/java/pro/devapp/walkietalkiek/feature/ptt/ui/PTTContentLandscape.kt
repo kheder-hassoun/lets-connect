@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -34,7 +35,7 @@ internal fun PTTContentLandscape(
 
     Row(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxSize()
             .padding(contentPadding),
         verticalAlignment = Alignment.Top
     ) {
@@ -42,12 +43,9 @@ internal fun PTTContentLandscape(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            state.connectedDevices.forEach {
-                DeviceItem(
-                    isOnline = it.isConnected,
-                    address = "${it.hostAddress}:${it.port}"
-                )
-            }
+            ConnectedPeersList(
+                devices = state.connectedDevices
+            )
         }
         Column(
             modifier = Modifier.weight(1f),

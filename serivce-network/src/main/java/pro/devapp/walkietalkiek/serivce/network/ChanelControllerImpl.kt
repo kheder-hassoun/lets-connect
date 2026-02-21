@@ -16,6 +16,7 @@ import pro.devapp.walkietalkiek.serivce.network.data.DeviceInfoRepository
 import timber.log.Timber
 
 private const val SERVICE_TYPE = "_wfwt._tcp" /* WiFi Walkie Talkie */
+private const val STALE_CONNECTION_TIMEOUT_MS = 15_000L
 
 interface MessageController{
     fun sendMessage(data: ByteArray)
@@ -46,6 +47,7 @@ internal class ChanelControllerImpl(
     private var pingScope: CoroutineScope? = null
 
     override fun startDiscovery() {
+        connectedDevicesRepository.clearAll()
         pingScope = coroutineContextProvider.createScope(
             coroutineContextProvider.io
         )
@@ -60,6 +62,7 @@ internal class ChanelControllerImpl(
         }
         client.stop()
         server.stop()
+        connectedDevicesRepository.clearAll()
         pingScope?.cancel()
     }
 
@@ -96,6 +99,7 @@ internal class ChanelControllerImpl(
             )
             pingScope?.launch {
                 while (isActive) {
+                    connectedDevicesRepository.markStaleConnectionsDisconnected(STALE_CONNECTION_TIMEOUT_MS)
                     ping()
                     delay(5000L)
                 }
@@ -137,8 +141,11 @@ internal class ChanelControllerImpl(
 
     override fun onServiceLost(nsdServiceInfo: NsdServiceInfo) {
         Timber.Forest.i("onServiceLost: $nsdServiceInfo")
-        extractHostAddress(nsdServiceInfo)?.let {
-            connectedDevicesRepository.setHostDisconnected(it)
+        val hostAddress = extractHostAddress(nsdServiceInfo)
+        if (!hostAddress.isNullOrBlank()) {
+            connectedDevicesRepository.setHostDisconnected(hostAddress)
+        } else {
+            connectedDevicesRepository.setHostDisconnectedByName(nsdServiceInfo.serviceName)
         }
 
         if (nsdServiceInfo.serviceName == currentServiceName) {

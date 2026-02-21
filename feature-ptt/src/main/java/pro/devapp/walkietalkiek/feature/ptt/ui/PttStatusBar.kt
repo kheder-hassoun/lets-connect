@@ -27,6 +27,7 @@ internal fun PttStatusBar(
     canTalk: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val totalPeers = state.connectedDevices.size
     val connectedPeers = state.connectedDevices.count { it.isConnected }
     val modeColor = when {
         state.isRecording -> Color(0xFFFFA726)
@@ -99,7 +100,7 @@ internal fun PttStatusBar(
             ) {
                 InfoPill(
                     modifier = Modifier.weight(1f),
-                    label = "Peers: $connectedPeers"
+                    label = "Peers: $connectedPeers/$totalPeers"
                 )
                 InfoPill(
                     modifier = Modifier.weight(1f),
