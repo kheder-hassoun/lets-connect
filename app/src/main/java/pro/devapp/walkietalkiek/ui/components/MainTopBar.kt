@@ -69,7 +69,7 @@ fun MainTopBar(
                             .padding(top = 1.dp)
                     )
                     Text(
-                        text = "K.H-PTT",
+                        text = "Let's-Connect",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold

@@ -57,7 +57,7 @@ fun AboutContent() {
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "K.H-PTT",
+                    text = "Let's-Connect",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
