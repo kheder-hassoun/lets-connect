@@ -76,14 +76,27 @@ class VoicePlayer(
         val now = System.currentTimeMillis()
         if (now - lastVoicePacketAt > remoteSessionGapMs) {
             // Play an attention tone once at the start of each remote speaking burst.
-            pttTonePlayer.play()
+            runCatching {
+                pttTonePlayer.play()
+            }.onFailure { error ->
+                Timber.Forest.w(error, "PTT receive tone play failed")
+            }
         }
         lastVoicePacketAt = now
 
-        if (audioTrack?.playState == AudioTrack.PLAYSTATE_STOPPED) {
-            Timber.Forest.w("PLAYER STOPPED!!!")
+        runCatching {
+            val track = audioTrack ?: return@runCatching
+            if (track.state != AudioTrack.STATE_INITIALIZED) {
+                Timber.Forest.w("AudioTrack is not initialized; dropping incoming frame")
+                return@runCatching
+            }
+            if (track.playState != AudioTrack.PLAYSTATE_PLAYING) {
+                track.play()
+            }
+            track.write(bytes, 0, bytes.size, AudioTrack.WRITE_NON_BLOCKING)
+        }.onFailure { error ->
+            Timber.Forest.w(error, "Voice playback failed; dropping frame")
         }
-        audioTrack?.write(bytes, 0, bytes.size, AudioTrack.WRITE_NON_BLOCKING)
         _voiceDataFlow.tryEmit(bytes)
     }
 
@@ -91,8 +104,8 @@ class VoicePlayer(
         socketServer.dataListener = null
         socketClient.dataListener = null
         audioTrack?.apply {
-            stop()
-            release()
+            runCatching { stop() }
+            runCatching { release() }
         }
         pttTonePlayer.release()
     }

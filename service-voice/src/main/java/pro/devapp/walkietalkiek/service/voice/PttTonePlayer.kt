@@ -26,24 +26,29 @@ class PttTonePlayer(
             return
         }
 
-        soundPool = SoundPool.Builder()
-            .setMaxStreams(2)
-            .setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build()
-            )
-            .build()
-            .apply {
-                setOnLoadCompleteListener { _, _, status ->
-                    isLoaded = status == 0
-                    if (!isLoaded) {
-                        Timber.Forest.w("PTT tone failed to load, status=$status")
+        runCatching {
+            soundPool = SoundPool.Builder()
+                .setMaxStreams(2)
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
+                )
+                .build()
+                .apply {
+                    setOnLoadCompleteListener { _, _, status ->
+                        isLoaded = status == 0
+                        if (!isLoaded) {
+                            Timber.Forest.w("PTT tone failed to load, status=$status")
+                        }
                     }
                 }
-            }
-        toneSoundId = soundPool?.load(context, toneResId, 1)
+            toneSoundId = soundPool?.load(context, toneResId, 1)
+        }.onFailure { error ->
+            Timber.Forest.w(error, "Failed to initialize PTT tone player")
+            release()
+        }
     }
 
     fun play() {
@@ -57,14 +62,18 @@ class PttTonePlayer(
             return
         }
         toneSoundId?.let { soundId ->
-            soundPool?.play(
-                soundId,
-                1f,
-                1f,
-                1,
-                0,
-                1f
-            )
+            runCatching {
+                soundPool?.play(
+                    soundId,
+                    1f,
+                    1f,
+                    1,
+                    0,
+                    1f
+                )
+            }.onFailure { error ->
+                Timber.Forest.w(error, "PTT tone play failed")
+            }
         }
     }
 

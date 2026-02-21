@@ -64,7 +64,7 @@ internal fun PttStatusBar(
         isFloorBusyByRemote -> Color(0xFFFF6B6B)
         else -> Color(0xFF6FD3FF)
     }
-    val peersColor = if (connectedPeers > 0) Color(0xFF44D39D) else Color(0xFF9AA4B2)
+    val peersColor = if (connectedPeers > 0) Color(0xFFFF5CA8) else Color(0xFFB39BB2)
     val sortedPeers = remember(state.connectedDevices) {
         state.connectedDevices.sortedWith(
             compareByDescending<pro.devapp.walkietalkiek.serivce.network.data.model.ClientModel> { it.isConnected }
@@ -247,7 +247,7 @@ private fun PeersChipsRow(
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             previewPeers.forEach { peer ->
-                val chipColor = if (peer.isConnected) Color(0xFF3BD98A) else Color(0xFFFF8A80)
+                val chipColor = if (peer.isConnected) Color(0xFFFF5CA8) else Color(0xFFFFB3D1)
                 Surface(
                     shape = RoundedCornerShape(10.dp),
                     color = chipColor.copy(alpha = 0.16f)
