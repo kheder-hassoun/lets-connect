@@ -33,9 +33,10 @@ internal fun PTTContentLandscape(
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp
     val contentPadding = (screenWidth * 0.02f).coerceIn(10.dp, 28.dp)
-    val buttonSize = (screenHeight * 0.5f).coerceIn(170.dp, 260.dp)
+    val buttonSize = (screenHeight * 0.56f).coerceIn(190.dp, 290.dp)
     val waveHeight = (screenHeight * 0.055f).coerceIn(20.dp, 48.dp)
-    val buttonAreaHeight = (screenHeight * 0.6f).coerceIn(180.dp, 340.dp)
+    val buttonAreaHeight = (screenHeight * 0.68f).coerceIn(220.dp, 390.dp)
+    val peersPanelHeight = (screenHeight * 0.58f).coerceIn(170.dp, 360.dp)
 
     Row(
         modifier = Modifier
@@ -44,15 +45,16 @@ internal fun PTTContentLandscape(
         verticalAlignment = Alignment.Top
     ) {
         Column(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(0.4f),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             ConnectedPeersList(
+                modifier = Modifier.height(peersPanelHeight),
                 devices = state.connectedDevices
             )
         }
         Column(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(0.6f),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

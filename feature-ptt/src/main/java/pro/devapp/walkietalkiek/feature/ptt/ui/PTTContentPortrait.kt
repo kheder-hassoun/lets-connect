@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -32,8 +31,9 @@ internal fun PTTContentPortrait(
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp
     val contentPadding = (screenWidth * 0.035f).coerceIn(12.dp, 24.dp)
-    val buttonSize = screenWidth.coerceAtMost(screenHeight * 0.44f).coerceIn(180.dp, 300.dp)
-    val buttonAreaHeight = (screenHeight * 0.34f).coerceIn(220.dp, 360.dp)
+    val buttonSize = screenWidth.coerceAtMost(screenHeight * 0.48f).coerceIn(190.dp, 320.dp)
+    val buttonAreaHeight = (screenHeight * 0.4f).coerceIn(240.dp, 390.dp)
+    val peersPanelHeight = (screenHeight * 0.17f).coerceIn(96.dp, 148.dp)
     val waveHeight = (screenHeight * 0.075f).coerceIn(36.dp, 72.dp)
 
     Column(
@@ -47,11 +47,6 @@ internal fun PTTContentPortrait(
         PttStatusBar(
             state = state,
             canTalk = canTalk
-        )
-
-        ConnectedPeersList(
-            modifier = Modifier.heightIn(max = (screenHeight * 0.24f).coerceIn(120.dp, 240.dp)),
-            devices = state.connectedDevices
         )
 
         Box(
@@ -82,8 +77,14 @@ internal fun PTTContentPortrait(
                 .height(waveHeight),
             data = state.voiceData,
         )
+        ConnectedPeersList(
+            modifier = Modifier
+                .height(peersPanelHeight)
+                .padding(top = 4.dp),
+            devices = state.connectedDevices
+        )
         Spacer(
-            modifier = Modifier.height(16.dp)
+            modifier = Modifier.height(10.dp)
         )
     }
 }
