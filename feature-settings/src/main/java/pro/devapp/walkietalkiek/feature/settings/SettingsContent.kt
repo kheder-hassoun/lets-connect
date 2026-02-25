@@ -26,6 +26,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -40,6 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.koin.compose.koinInject
+import pro.devapp.walkietalkiek.core.flags.FeatureFlagsRepository
 import pro.devapp.walkietalkiek.core.settings.AppSettingsRepository
 import pro.devapp.walkietalkiek.core.settings.ThemeColor
 import kotlin.math.roundToInt
@@ -47,7 +49,9 @@ import kotlin.math.roundToInt
 @Composable
 fun SettingsContent() {
     val settingsRepository = koinInject<AppSettingsRepository>()
+    val featureFlagsRepository = koinInject<FeatureFlagsRepository>()
     val settings by settingsRepository.settings.collectAsState()
+    val flags by featureFlagsRepository.flags.collectAsState()
     var isThemeMenuExpanded by remember { mutableStateOf(false) }
 
     Column(
@@ -223,7 +227,96 @@ fun SettingsContent() {
             }
         }
 
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Feature Flags",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = "Runtime toggles for phased rollout (debug/ops use).",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+
+                FlagToggleRow(
+                    title = "MQTT Control Plane",
+                    description = "Switch signaling path from sockets to MQTT.",
+                    checked = flags.mqttControl,
+                    onCheckedChange = featureFlagsRepository::updateMqttControl
+                )
+                FlagToggleRow(
+                    title = "WebRTC Audio",
+                    description = "Use WebRTC media path for group audio.",
+                    checked = flags.webrtcAudio,
+                    onCheckedChange = featureFlagsRepository::updateWebrtcAudio
+                )
+                FlagToggleRow(
+                    title = "Central Settings",
+                    description = "Apply coordinator-driven settings sync.",
+                    checked = flags.centralSettings,
+                    onCheckedChange = featureFlagsRepository::updateCentralSettings
+                )
+                FlagToggleRow(
+                    title = "Floor Control V2",
+                    description = "Enable queue/lease-based floor arbitration.",
+                    checked = flags.floorV2,
+                    onCheckedChange = featureFlagsRepository::updateFloorV2
+                )
+                FlagToggleRow(
+                    title = "Observability V2",
+                    description = "Enable additional diagnostics and metrics.",
+                    checked = flags.observabilityV2,
+                    onCheckedChange = featureFlagsRepository::updateObservabilityV2
+                )
+            }
+        }
+
         Box(modifier = Modifier.size(2.dp))
+    }
+}
+
+@Composable
+private fun FlagToggleRow(
+    title: String,
+    description: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f)
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange
+        )
     }
 }
 

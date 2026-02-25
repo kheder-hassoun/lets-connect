@@ -5,6 +5,7 @@ import org.koin.core.module.Module
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
+import pro.devapp.walkietalkiek.core.flags.FeatureFlagsRepository
 import pro.devapp.walkietalkiek.MainViewMode
 import pro.devapp.walkietalkiek.PermissionState
 import pro.devapp.walkietalkiek.core.mvi.CoroutineContextProvider
@@ -37,6 +38,7 @@ private fun Module.coreDi() {
     factoryOf(::PermissionState)
     factoryOf(::NotificationController)
     singleOf(::AppSettingsRepository)
+    singleOf(::FeatureFlagsRepository)
 }
 
 private fun Module.factoriesDi() {
