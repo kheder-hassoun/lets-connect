@@ -28,3 +28,9 @@ All default to `false`.
 1. Inject `FeatureFlagsRepository`.
 2. Read `flags` `StateFlow` and branch behavior by flag.
 3. Keep legacy path available until pilot validation is complete.
+
+## Current Status
+
+- `mqttControl` now starts/stops a minimal MQTT control-plane controller in `WalkieService`.
+- It is a skeleton integration only (no topic publish/subscribe flow yet).
+- Default broker URL is `tcp://127.0.0.1:1883` and is intentionally placeholder for now.

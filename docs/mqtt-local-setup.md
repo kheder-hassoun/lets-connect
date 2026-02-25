@@ -52,6 +52,10 @@ Define runtime config values (debug build):
 - Username/password (optional for later phases)
 - Cluster ID (example: `venue-dev-01`)
 
+Current implementation note:
+- The first MQTT skeleton uses `tcp://127.0.0.1:1883` as a placeholder.
+- Next step will externalize broker host/port into app config/settings.
+
 ## Topic Convention (Phase 1)
 
 - `cluster/{clusterId}/presence`

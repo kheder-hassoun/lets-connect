@@ -9,12 +9,14 @@ import android.os.PowerManager
 import androidx.core.app.ServiceCompat
 import org.koin.android.ext.android.inject
 import pro.devapp.walkietalkiek.serivce.network.ClientController
+import pro.devapp.walkietalkiek.serivce.network.ControlPlaneController
 import pro.devapp.walkietalkiek.service.voice.VoicePlayer
 import pro.devapp.walkietalkiek.service.voice.VoiceRecorder
 
 class WalkieService: Service() {
 
     private val chanelController: ClientController by inject()
+    private val controlPlaneController: ControlPlaneController by inject()
     private val notificationController: NotificationController by inject()
     private val voiceRecorder: VoiceRecorder by inject()
     private val voicePlayer: VoicePlayer by inject()
@@ -28,6 +30,7 @@ class WalkieService: Service() {
     override fun onCreate() {
         super.onCreate()
         chanelController.startDiscovery()
+        controlPlaneController.start()
         setWakeLock()
         voicePlayer.create()
     }
@@ -52,6 +55,7 @@ class WalkieService: Service() {
         voiceRecorder.stopRecord()
         voiceRecorder.destroy()
         voicePlayer.shutdown()
+        controlPlaneController.stop()
         chanelController.stopDiscovery()
         releaseWakeLock()
     }

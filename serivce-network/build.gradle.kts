@@ -40,6 +40,7 @@ dependencies {
     implementation(libs.timber)
     implementation(libs.koin.core)
     implementation(libs.koin.android)
+    implementation(libs.eclipse.paho.client.mqttv3)
 
     implementation(libs.material)
     testImplementation(libs.junit)
