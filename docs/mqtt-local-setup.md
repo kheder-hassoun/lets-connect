@@ -53,8 +53,8 @@ Define runtime config values (debug build):
 - Cluster ID (example: `venue-dev-01`)
 
 Current implementation note:
-- The first MQTT skeleton uses `tcp://127.0.0.1:1883` as a placeholder.
-- Next step will externalize broker host/port into app config/settings.
+- Broker host/port/cluster ID are configurable at runtime in app Settings (`MQTT Control Config` section).
+- Initial implemented topic: `cluster/{clusterId}/presence` (online heartbeat logging).
 
 ## Topic Convention (Phase 1)
 
