@@ -39,6 +39,16 @@ The application follows a modular architecture with clear separation of concerns
 - **service-network**: Network discovery and communication
 - **service-voice**: Audio recording and playback services
 
+## Production Roadmap
+
+A detailed phased plan for production-grade scalability and reliability is available here:
+
+- [PRODUCTION_ROADMAP_README.md](PRODUCTION_ROADMAP_README.md)
+
+Phase 0 execution docs:
+
+- [docs/README.md](docs/README.md)
+
 ## Technical Stack
 
 - **Platform**: Android (API 24+)

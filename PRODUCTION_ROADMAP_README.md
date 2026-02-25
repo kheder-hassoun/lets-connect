@@ -1,357 +1,230 @@
-# Production Roadmap (LANwalkieTalkie / Let's-Connect)
+# Fast Production Roadmap (Library-First, Android 9-15)
 
-This document defines a phased implementation plan to evolve the app from current LAN P2P behavior into a production-grade system suitable for high-density deployments (restaurants, malls, campuses, events).
+This plan is optimized for fast delivery by integrating mature libraries instead of building distributed networking primitives from scratch.
 
-## Goals
+## Core Strategy
 
-- Support reliable group push-to-talk in medium and large venues.
-- Prevent floor conflicts and split-brain behavior during node failures.
-- Centralize runtime settings via leader/master authority.
-- Improve audio quality and latency under network stress.
-- Add observability, security hardening, and predictable operations.
+- Prefer proven libraries and protocols.
+- Keep current app runnable after every phase.
+- Use feature flags so unfinished work never blocks release.
+- De-scope custom leader-election/relay internals unless a library cannot cover it.
 
-## Non-Goals (for now)
+## Compatibility Target
 
-- Cloud backend dependency for core LAN operation.
-- Internet-wide communication between different physical sites.
-- Video/media streaming beyond push-to-talk voice and control messages.
+- Android API 28 to API 35 (Android 9 to Android 15).
+- Every introduced library must be validated on API 28 and API 35 test devices/emulators.
 
-## Current Baseline (Summary)
+## Selected Building Blocks
 
-- Peer-to-peer LAN with each node acting as server + client.
-- Simple floor packets (`TAKEN`/`RELEASED`) over text payload.
-- Audio payload prefixed by one byte and flooded to connected peers.
-- In-memory settings and repositories, no durable control state.
+- Control plane + settings sync + presence:
+  - MQTT protocol.
+  - Client: Eclipse Paho Android (`org.eclipse.paho`).
+  - Broker: local LAN broker (Mosquitto/EMQX recommended). Optional embedded broker only for demo.
+- Group voice transport:
+  - WebRTC stack through a production SDK (recommended: LiveKit Android SDK, self-hosted server on LAN/edge).
+  - Reason: built-in Opus, jitter buffer, NACK, congestion control, scalable group routing via SFU.
+- Serialization:
+  - Protobuf (`protobuf-kotlin-lite`) for app-level control payloads.
+- Local persistence:
+  - Jetpack DataStore (settings/cache) + Room (optional message/event history).
+- Observability:
+  - Timber (existing) + structured log schema + optional Sentry for crash reporting.
 
-This baseline works for small groups but is not enough for high-density production environments.
+## Architecture (Fast Version)
 
-## Target Architecture
+- Keep Android app modular structure as-is.
+- Replace custom socket control signaling with MQTT topics.
+- Move group audio to WebRTC SDK (no custom PCM fanout logic for large rooms).
+- Keep PTT and floor control in app domain, but transport events over MQTT/WebRTC data channel.
 
-- Control Plane: leader-based coordination (membership, floor token, settings).
-- Data Plane: star/relay forwarding to avoid full-mesh fanout.
-- Roles: `leader`, `relay`, `participant` (role can change at runtime).
-- Protocol: explicit binary envelope with message type, version, sequence, source, and CRC.
-- Settings: versioned, leader-owned configuration with ACK and rollback safety.
+## Feature Flags (Must Exist Before Major Changes)
 
-## Phase Plan
+- `ff_mqtt_control`
+- `ff_webrtc_audio`
+- `ff_central_settings`
+- `ff_floor_v2`
+- `ff_observability_v2`
 
-## Phase 0 - Discovery, SLOs, and Test Harness
+Default all to `false` initially.
 
-### Purpose
-Define measurable quality targets and create repeatable tests before protocol and topology changes.
+## Phased Implementation (Always Runnable)
 
-### Work Items
+## Phase 0 - Baseline and Safety Net (1 sprint)
 
-- Define SLOs:
-  - PTT start latency target (button press to remote playback start).
-  - Floor grant latency target.
-  - Packet loss tolerance.
-  - Re-election convergence time target.
-- Add synthetic load test harness for:
-  - 10, 25, 50, 100 logical participants.
-  - burst talkers and churn (join/leave/reconnect).
-- Add deterministic network simulation profiles:
-  - latency/jitter/loss/reordering.
-- Create baseline report from current implementation.
+### Work
 
-### Deliverables
-
-- `/docs/slo.md`
-- `/docs/test-harness.md`
-- baseline KPI report in `/docs/reports/phase0-baseline.md`
+- Add feature flag plumbing.
+- Define acceptance KPIs:
+  - PTT start latency
+  - floor conflict count
+  - reconnect time
+  - crash-free sessions
+- Add smoke test checklist and script.
 
 ### Exit Criteria
 
-- SLOs agreed and documented.
-- Baseline numbers captured and reproducible.
+- `main` builds and runs exactly as today.
+- Baseline KPI report created.
+
+### Run Gate
+
+- `./gradlew assembleDebug`
+- Manual 2-device smoke: discover, connect, PTT, chat, reconnect.
 
 ---
 
-## Phase 1 - Protocol v2 Foundation
+## Phase 1 - MQTT Control Plane (No Audio Change Yet) (1-2 sprints)
 
-### Purpose
-Replace ad-hoc message parsing with explicit framed protocol that can safely evolve.
+### Work
 
-### Work Items
-
-- Introduce envelope schema:
-  - `version`, `msgType`, `sessionId`, `sourceNodeId`, `seq`, `timestamp`, `flags`, `payloadLen`, `crc`.
-- Define message types:
-  - `HEARTBEAT`, `HELLO`, `ROLE_ANNOUNCE`, `FLOOR_REQUEST`, `FLOOR_GRANT`, `FLOOR_RELEASE`, `SETTINGS_SNAPSHOT`, `SETTINGS_ACK`, `VOICE_FRAME`, `TEXT_MESSAGE`, `NACK`.
-- Create codec layer in `serivce-network`:
-  - serializer/deserializer.
-  - strict validation and compatibility handling.
-- Add dual-stack compatibility:
-  - protocol v1 and v2 during migration window.
-
-### Deliverables
-
-- protocol spec document `/docs/protocol-v2.md`
-- codec implementation + unit tests
-- compatibility matrix in `/docs/protocol-compatibility.md`
+- Integrate Paho client.
+- Introduce MQTT topic model:
+  - `cluster/{id}/presence`
+  - `cluster/{id}/floor`
+  - `cluster/{id}/settings`
+  - `cluster/{id}/chat`
+- Use retained messages for latest settings/floor snapshot.
+- Keep existing socket stack as fallback behind flag.
 
 ### Exit Criteria
 
-- All control and voice messages can traverse protocol v2 in local tests.
-- Invalid packets are rejected safely without crash loops.
+- With `ff_mqtt_control=true`, presence/chat/floor events flow over MQTT.
+- With `false`, old flow still works.
+
+### Run Gate
+
+- Build passes.
+- 3-device LAN test with broker restart recovery.
 
 ---
 
-## Phase 2 - Membership and Leader Election
+## Phase 2 - Centralized Settings via MQTT (1 sprint)
 
-### Purpose
-Establish deterministic cluster leadership and avoid split-brain floor control.
+### Work
 
-### Work Items
-
-- Implement membership table with heartbeat TTL and monotonic term.
-- Implement election policy:
-  - deterministic priority function (node class/capabilities + stable nodeId).
-  - tie-break by nodeId lexicographic order.
-- Implement transitions:
-  - follower -> candidate -> leader.
-  - leader resignation and failover.
-- Introduce split-brain guard:
-  - higher-term leader always wins.
-  - stale leader self-demotes.
-- Add election metrics:
-  - election attempts, failures, convergence time.
-
-### Deliverables
-
-- `/docs/election-design.md`
-- membership and election module + tests (unit + fault injection)
-- election timeline logs in debug diagnostics
+- Add settings schema + version field.
+- One node acts as coordinator (pragmatic approach):
+  - either configured static coordinator,
+  - or broker-host node as coordinator.
+- Settings published as retained config snapshot.
+- Clients ACK applied version.
 
 ### Exit Criteria
 
-- Single leader under stable network.
-- Re-election converges within target after leader death.
-- No persistent dual-leader state in fault tests.
+- New node joins and gets current settings automatically.
+- Settings changes are consistent across nodes.
+
+### Run Gate
+
+- Toggle talk duration/tone/theme from coordinator and verify propagation.
 
 ---
 
-## Phase 3 - Centralized Floor Control (Leader-Owned)
+## Phase 3 - Floor Control v2 (Library Transport, Simple Policy) (1 sprint)
 
-### Purpose
-Move floor authority to leader to guarantee consistent arbitration.
+### Work
 
-### Work Items
-
-- Implement floor request/grant/release as leader-authoritative workflow.
-- Add queue policy options:
-  - FIFO default, optional priority lanes.
-- Enforce lease-based grant:
-  - grant has expiry timestamp and lease id.
-- Add renew and preemption behavior:
-  - auto-expire stale speaker.
-  - optional emergency preemption role.
-- Update UI state model:
-  - pending request, granted lease, denied reason, queue position.
-
-### Deliverables
-
-- `/docs/floor-control-v2.md`
-- floor state machine tests
-- end-to-end contention tests (N talkers racing)
+- Implement single authoritative floor state in coordinator service.
+- Keep policy simple for speed:
+  - FIFO queue
+  - lease timeout
+  - explicit release
+- Publish floor state updates on MQTT.
 
 ### Exit Criteria
 
-- At most one active floor lease at any time in cluster tests.
-- Queue behavior deterministic and observable.
+- No dual-speaker conflict in contention tests.
+- Queue order deterministic.
+
+### Run Gate
+
+- 5-device “simultaneous PTT press” test, repeated runs stable.
 
 ---
 
-## Phase 4 - Relay Topology and Scalable Audio Distribution
+## Phase 4 - Group Audio via WebRTC SDK (2-3 sprints)
 
-### Purpose
-Eliminate full-mesh traffic growth and improve performance for large groups.
+### Work
 
-### Work Items
-
-- Introduce role-specific routing:
-  - participant sends upstream to leader or nearest relay.
-  - relays fan out downstream to assigned members.
-- Add relay selection strategy:
-  - RSSI/latency/packet-loss aware selection.
-  - fallback to leader direct path.
-- Add topology manager:
-  - dynamic rebalancing when relay overloaded or disappears.
-- Introduce duplicate suppression and seq-based ordering on receive.
-
-### Deliverables
-
-- `/docs/relay-topology.md`
-- relay routing module + integration tests
-- capacity report with participant scaling curves
+- Integrate WebRTC SDK module (recommended LiveKit Android SDK).
+- Move audio path from custom socket PCM to SDK media tracks.
+- PTT behavior becomes mute/unmute + floor grant enforcement.
+- Keep old voice path behind `ff_webrtc_audio=false` fallback.
 
 ### Exit Criteria
 
-- Demonstrated traffic reduction versus full mesh.
-- Stable audio delivery across target group size in stress tests.
+- Audio works with 10+ participants in same LAN.
+- Latency and quality better than baseline.
+
+### Run Gate
+
+- 5/10/20 participant soak tests.
+- Verify API 28 and API 35 devices.
 
 ---
 
-## Phase 5 - Audio Pipeline Hardening
+## Phase 5 - Reliability and Ops Hardening (1-2 sprints)
 
-### Purpose
-Upgrade voice transport quality under real-world WiFi conditions.
+### Work
 
-### Work Items
-
-- Add codec strategy abstraction (prepare Opus integration path).
-- Introduce jitter buffer with adaptive playout delay.
-- Add packet loss concealment strategy.
-- Add VAD/DTX options for bandwidth savings.
-- Tune frame size, buffering, and backpressure.
-
-### Deliverables
-
-- `/docs/audio-pipeline.md`
-- objective audio/latency benchmark report
-- runtime audio tuning flags
+- Add structured diagnostics screen:
+  - broker connected/disconnected
+  - participant count
+  - RTT/jitter/loss (from SDK stats)
+  - current floor owner + queue length
+- Add reconnect/backoff policies.
+- Add watchdog alerts for stale floor lock.
 
 ### Exit Criteria
 
-- Meets defined latency + intelligibility targets in lossy profiles.
-- No playback underrun storms under target load.
+- Common incidents diagnosable from app logs/screen.
+- Reconnect behavior stable under WiFi toggles.
+
+### Run Gate
+
+- Network chaos smoke (AP switch, broker restart, packet loss profile).
 
 ---
 
-## Phase 6 - Settings Centralization and Config Governance
+## Phase 6 - Security + Production Rollout (1-2 sprints)
 
-### Purpose
-Make leader the source of truth for runtime configuration.
+### Work
 
-### Work Items
-
-- Define settings schema and versioning:
-  - cluster-wide settings, role policy, floor policy, audio policy.
-- Leader publishes `SETTINGS_SNAPSHOT(version)`.
-- Participants ACK applied version.
-- Implement safe update flow:
-  - staged rollout and rollback on high failure ratio.
-- Persist applied settings locally for restart continuity.
-
-### Deliverables
-
-- `/docs/settings-governance.md`
-- settings sync module + migration plan from local-only settings
-- config audit log
+- MQTT auth (username/password or certs).
+- Topic ACLs for floor/settings topics.
+- Join policy (venue token / allowlist).
+- Progressive rollout plan: pilot venue -> staged expansion.
 
 ### Exit Criteria
 
-- New node receives and applies current cluster config on join.
-- Config updates are consistent and observable across cluster.
+- Unauthorized client cannot control floor/settings.
+- Pilot passes KPI thresholds for agreed burn-in period.
 
----
+### Run Gate
 
-## Phase 7 - Security and Access Control
+- Security regression checklist + pilot runbook signoff.
 
-### Purpose
-Prevent unauthorized participation and malicious control packets.
+## What We Are Explicitly Not Building (for speed)
 
-### Work Items
+- Custom consensus algorithm implementation.
+- Custom relay routing protocol for audio.
+- Custom jitter buffer/PLC stack.
+- Custom binary protocol unless required by a library boundary.
 
-- Device identity model with rotating session credentials.
-- Signed control packets (or authenticated transport channel).
-- Join policy:
-  - allowlist / invite token / operator approval mode.
-- Replay protection via nonce + sequence window.
-- Rate limits and abuse protections.
+These are replaced by MQTT + WebRTC/SFU capabilities.
 
-### Deliverables
+## Execution Rules Per PR
 
-- `/docs/security-model.md`
-- threat model and mitigations checklist
-- security regression tests
-
-### Exit Criteria
-
-- Unauthorized device cannot obtain floor/control authority.
-- Replay and spoof attempts are rejected in test scenarios.
-
----
-
-## Phase 8 - Observability and Operations
-
-### Purpose
-Enable real production operation with diagnostics and incident handling.
-
-### Work Items
-
-- Structured event logging with correlation IDs.
-- In-app diagnostics screen:
-  - leader/role, cluster size, RTT, packet loss, queue depth, jitter stats.
-- Exportable diagnostic bundle for support.
-- Health score and warning indicators.
-- Add runbooks for common incidents:
-  - split cluster, degraded relay, high packet loss.
-
-### Deliverables
-
-- `/docs/operations-runbook.md`
-- diagnostics UI and logging implementation
-- on-call checklist
-
-### Exit Criteria
-
-- Field issue can be diagnosed from logs/diagnostics without reproducing blindly.
-- Health indicators correlate with actual user-experienced degradation.
-
----
-
-## Phase 9 - Gradual Rollout and Production Readiness
-
-### Purpose
-Ship safely with controlled risk.
-
-### Work Items
-
-- Introduce feature flags per subsystem:
-  - protocol v2, election, relay, centralized settings, new audio pipeline.
-- Rollout gates:
-  - internal lab -> pilot venue -> multi-venue -> default.
-- Capture rollout scorecard:
-  - crashes, ANR, SLO breaches, election failures, floor conflicts.
-- Finalize versioned migration and downgrade handling.
-
-### Deliverables
-
-- `/docs/rollout-plan.md`
-- feature flag matrix
-- Go/No-Go checklist
-
-### Exit Criteria
-
-- Pilot venues pass SLOs for agreed burn-in period.
-- No critical unresolved issues in go-live checklist.
-
-## Cross-Phase Engineering Standards
-
-- Tests required per phase:
-  - unit tests for state machines and codec.
-  - integration tests for transport/election/floor.
-  - soak tests for long-running stability.
-- Backward compatibility:
-  - no hard protocol cut without migration window.
-- Performance budget:
-  - every phase must report impact on CPU, memory, battery, and network.
-- Documentation:
-  - update architecture docs as part of definition-of-done.
-
-## Suggested Execution Cadence
-
-- Phase 0-1: foundation sprint block.
-- Phase 2-4: core distributed behavior block.
-- Phase 5-6: quality + governance block.
-- Phase 7-9: hardening + rollout block.
-
-Each phase should end with:
-- demo scenario,
-- measurable KPI report,
-- explicit go/no-go decision for next phase.
+- Keep PR scope to one vertical slice.
+- Add/keep fallback path behind feature flag.
+- `./gradlew assembleDebug` must pass.
+- Update smoke checklist evidence in PR description.
+- No deletion of legacy path until replacement is proven in pilot.
 
 ## Immediate Next Step
 
-Start with Phase 0 and produce the baseline KPI report from current code before changing architecture. This avoids optimizing blindly and gives objective proof of improvement across phases.
+Start Phase 0 now:
+
+1. Add feature flags and runtime toggle source.
+2. Write baseline KPI checklist under `/docs`.
+3. Prepare local MQTT broker setup doc for dev/test.
