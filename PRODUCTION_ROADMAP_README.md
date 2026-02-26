@@ -99,7 +99,7 @@ Default all to `false` initially.
   - `cluster/{id}/floor`
   - `cluster/{id}/settings`
   - `cluster/{id}/chat`
-  - Status: [~] In progress (`presence` and `chat` implemented; `floor` and `settings` pending)
+  - Status: [~] In progress (`presence`, `chat`, and `floor` implemented; `settings` pending)
 - Use retained messages for latest settings/floor snapshot.
   - Status: [ ] Pending
 - Keep existing socket stack as fallback behind flag.
@@ -108,7 +108,7 @@ Default all to `false` initially.
 ### Exit Criteria
 
 - With `ff_mqtt_control=true`, presence/chat/floor events flow over MQTT.
-  - Status: [~] In progress (presence/chat done, floor pending)
+  - Status: [x] Done (presence/chat/floor implemented)
 - With `false`, old flow still works.
   - Status: [x] Done
 
@@ -246,6 +246,6 @@ These are replaced by MQTT + WebRTC/SFU capabilities.
 
 Current next step:
 
-1. Finish Phase 1 by implementing MQTT `floor` topic flow behind `ff_mqtt_control`.
-2. Keep legacy floor behavior as fallback path.
+1. Finish Phase 1 by implementing MQTT `settings` topic flow behind `ff_mqtt_control`.
+2. Keep legacy local settings behavior as fallback path.
 3. Run `assembleDebug` and smoke test after that slice.

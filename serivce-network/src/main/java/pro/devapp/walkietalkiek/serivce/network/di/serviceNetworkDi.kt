@@ -9,6 +9,7 @@ import pro.devapp.walkietalkiek.serivce.network.ChatPublisher
 import pro.devapp.walkietalkiek.serivce.network.ClientController
 import pro.devapp.walkietalkiek.serivce.network.ClientInfoResolver
 import pro.devapp.walkietalkiek.serivce.network.ControlPlaneController
+import pro.devapp.walkietalkiek.serivce.network.FloorPublisher
 import pro.devapp.walkietalkiek.serivce.network.MessageController
 import pro.devapp.walkietalkiek.serivce.network.MqttControlPlaneController
 import pro.devapp.walkietalkiek.serivce.network.SocketClient
@@ -29,7 +30,8 @@ fun Module.registerServiceNetworkDi() {
     singleOf(::MqttControlPlaneController).binds(
         arrayOf(
             ControlPlaneController::class,
-            ChatPublisher::class
+            ChatPublisher::class,
+            FloorPublisher::class
         )
     )
     singleOf(::ChanelControllerImpl).binds(

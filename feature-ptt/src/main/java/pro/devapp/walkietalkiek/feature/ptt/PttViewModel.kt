@@ -10,6 +10,7 @@ import pro.devapp.walkietalkiek.feature.ptt.model.PttAction
 import pro.devapp.walkietalkiek.feature.ptt.model.PttEvent
 import pro.devapp.walkietalkiek.feature.ptt.model.PttScreenState
 import pro.devapp.walkietalkiek.serivce.network.FloorControlProtocol
+import pro.devapp.walkietalkiek.serivce.network.FloorPublisher
 import pro.devapp.walkietalkiek.serivce.network.MessageController
 import pro.devapp.walkietalkiek.serivce.network.data.ConnectedDevicesRepository
 import pro.devapp.walkietalkiek.serivce.network.data.PttFloorRepository
@@ -19,6 +20,7 @@ internal class PttViewModel(
     actionProcessor: PttActionProcessor,
     private val connectedDevicesRepository: ConnectedDevicesRepository,
     private val messageController: MessageController,
+    private val floorPublisher: FloorPublisher,
     private val pttFloorRepository: PttFloorRepository,
     private val voicePlayer: VoicePlayer,
     private val appSettingsRepository: AppSettingsRepository
@@ -42,7 +44,10 @@ internal class PttViewModel(
                 if (newConnectedHosts.isNotEmpty() && state.value.isRecording) {
                     // Event-driven re-announce: a peer connected while I hold PTT,
                     // so send floor taken once more to synchronize lock state.
-                    messageController.sendMessage(FloorControlProtocol.acquirePacket())
+                    val published = floorPublisher.publishAcquire()
+                    if (!published) {
+                        messageController.sendMessage(FloorControlProtocol.acquirePacket())
+                    }
                 }
                 lastConnectedHosts = connectedHosts
                 onPttAction(PttAction.ConnectedDevicesUpdated(it))

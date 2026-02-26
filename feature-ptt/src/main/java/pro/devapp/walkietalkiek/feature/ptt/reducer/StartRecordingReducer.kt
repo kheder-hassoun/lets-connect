@@ -5,12 +5,14 @@ import pro.devapp.walkietalkiek.feature.ptt.model.PttAction
 import pro.devapp.walkietalkiek.feature.ptt.model.PttEvent
 import pro.devapp.walkietalkiek.feature.ptt.model.PttScreenState
 import pro.devapp.walkietalkiek.serivce.network.FloorControlProtocol
+import pro.devapp.walkietalkiek.serivce.network.FloorPublisher
 import pro.devapp.walkietalkiek.serivce.network.MessageController
 import pro.devapp.walkietalkiek.service.voice.VoiceRecorder
 
 internal class StartRecordingReducer(
     private val voiceRecorder: VoiceRecorder,
-    private val messageController: MessageController
+    private val messageController: MessageController,
+    private val floorPublisher: FloorPublisher
 )
     : Reducer<PttAction.StartRecording, PttScreenState, PttAction, PttEvent> {
 
@@ -34,7 +36,10 @@ internal class StartRecordingReducer(
                 event = null
             )
         }
-        messageController.sendMessage(FloorControlProtocol.acquirePacket())
+        val published = floorPublisher.publishAcquire()
+        if (!published) {
+            messageController.sendMessage(FloorControlProtocol.acquirePacket())
+        }
         voiceRecorder.startRecord()
         return Reducer.Result(
             state = state.copy(

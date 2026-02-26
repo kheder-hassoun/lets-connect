@@ -36,4 +36,6 @@ All default to `false`.
 - Topic flow implemented:
   - `cluster/{clusterId}/presence` (subscribe + heartbeat publish)
   - `cluster/{clusterId}/chat` (publish + subscribe)
+- `cluster/{clusterId}/floor` is now implemented (publish acquire/release + subscribe updates).
 - Chat send path is MQTT-first when `mqttControl=true`, with socket fallback when MQTT is unavailable.
+- Floor acquire/release path is MQTT-first when `mqttControl=true`, with socket fallback when MQTT is unavailable.

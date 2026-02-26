@@ -66,6 +66,7 @@ Current implementation note:
 Implemented now:
 - `presence`
 - `chat`
+- `floor`
 
 ## QA Sanity Test
 

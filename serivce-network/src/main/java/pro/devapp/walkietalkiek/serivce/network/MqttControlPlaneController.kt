@@ -13,6 +13,7 @@ import pro.devapp.walkietalkiek.core.flags.FeatureFlagsRepository
 import pro.devapp.walkietalkiek.core.mvi.CoroutineContextProvider
 import pro.devapp.walkietalkiek.core.network.MqttConfigRepository
 import pro.devapp.walkietalkiek.serivce.network.data.DeviceInfoRepository
+import pro.devapp.walkietalkiek.serivce.network.data.PttFloorRepository
 import pro.devapp.walkietalkiek.serivce.network.data.TextMessagesRepository
 import timber.log.Timber
 import kotlinx.coroutines.Job
@@ -25,9 +26,10 @@ internal class MqttControlPlaneController(
     private val featureFlagsRepository: FeatureFlagsRepository,
     private val mqttConfigRepository: MqttConfigRepository,
     private val deviceInfoRepository: DeviceInfoRepository,
+    private val pttFloorRepository: PttFloorRepository,
     private val textMessagesRepository: TextMessagesRepository,
     coroutineContextProvider: CoroutineContextProvider
-) : ControlPlaneController, ChatPublisher {
+) : ControlPlaneController, ChatPublisher, FloorPublisher {
 
     private val lock = Any()
     private val scope = coroutineContextProvider.createScope(coroutineContextProvider.io)
@@ -125,12 +127,22 @@ internal class MqttControlPlaneController(
         }
     }
 
+    override fun publishAcquire(): Boolean {
+        return publishFloorCommand(FLOOR_ACQUIRE)
+    }
+
+    override fun publishRelease(): Boolean {
+        return publishFloorCommand(FLOOR_RELEASE)
+    }
+
     private fun subscribePresenceAndStartHeartbeat(mqttClient: MqttAsyncClient) {
         val presenceTopic = presenceTopic()
         val chatTopic = chatTopic()
+        val floorTopic = floorTopic()
         runCatching {
             mqttClient.subscribe(presenceTopic, 0)
             mqttClient.subscribe(chatTopic, 0)
+            mqttClient.subscribe(floorTopic, 0)
             publishPresence(mqttClient, STATUS_ONLINE)
             presenceJob?.cancel()
             presenceJob = scope.launch {
@@ -165,6 +177,7 @@ internal class MqttControlPlaneController(
         when (topic) {
             presenceTopic() -> handlePresenceMessage(message)
             chatTopic() -> handleChatMessage(message)
+            floorTopic() -> handleFloorMessage(message)
             else -> Unit
         }
     }
@@ -189,6 +202,16 @@ internal class MqttControlPlaneController(
         )
     }
 
+    private fun handleFloorMessage(message: MqttMessage) {
+        val (nodeId, command) = decodeFloorPayload(message.payload) ?: return
+        val owner = MQTT_HOST_PREFIX + nodeId
+        when (command) {
+            FLOOR_ACQUIRE -> pttFloorRepository.acquire(owner)
+            FLOOR_RELEASE -> pttFloorRepository.release(owner)
+            else -> Unit
+        }
+    }
+
     private fun presenceTopic(): String {
         val clusterId = mqttConfigRepository.config.value.clusterId
         return "cluster/$clusterId/presence"
@@ -197,6 +220,11 @@ internal class MqttControlPlaneController(
     private fun chatTopic(): String {
         val clusterId = mqttConfigRepository.config.value.clusterId
         return "cluster/$clusterId/chat"
+    }
+
+    private fun floorTopic(): String {
+        val clusterId = mqttConfigRepository.config.value.clusterId
+        return "cluster/$clusterId/floor"
     }
 
     private fun encodeChatPayload(nodeId: String, message: String): ByteArray {
@@ -221,9 +249,38 @@ internal class MqttControlPlaneController(
         if (message.isEmpty()) return null
         return nodeId to message
     }
+
+    private fun publishFloorCommand(command: String): Boolean {
+        if (!featureFlagsRepository.flags.value.mqttControl) return false
+        val mqttClient = synchronized(lock) { client } ?: return false
+        if (!mqttClient.isConnected) return false
+        val nodeId = selfNodeId ?: return false
+        val payload = "$nodeId|$command|${System.currentTimeMillis()}".toByteArray()
+        return runCatching {
+            mqttClient.publish(floorTopic(), payload, 0, false)
+            true
+        }.getOrElse { error ->
+            Timber.Forest.w(error, "MQTT floor publish failed")
+            false
+        }
+    }
+
+    private fun decodeFloorPayload(payload: ByteArray?): Pair<String, String>? {
+        if (payload == null || payload.isEmpty()) return null
+        val value = payload.decodeToString()
+        val tokens = value.split('|')
+        if (tokens.size < 2) return null
+        val nodeId = tokens[0]
+        val command = tokens[1]
+        if (nodeId.isBlank()) return null
+        if (command != FLOOR_ACQUIRE && command != FLOOR_RELEASE) return null
+        return nodeId to command
+    }
 }
 
 private const val PRESENCE_HEARTBEAT_MS = 10_000L
 private const val STATUS_ONLINE = "online"
 private const val STATUS_OFFLINE = "offline"
 private const val MQTT_HOST_PREFIX = "mqtt:"
+private const val FLOOR_ACQUIRE = "ACQUIRE"
+private const val FLOOR_RELEASE = "RELEASE"
