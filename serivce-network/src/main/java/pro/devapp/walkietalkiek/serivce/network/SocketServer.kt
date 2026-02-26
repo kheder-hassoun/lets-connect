@@ -5,6 +5,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import pro.devapp.walkietalkiek.core.mvi.CoroutineContextProvider
+import pro.devapp.walkietalkiek.serivce.network.data.ClusterMembershipRepository
 import pro.devapp.walkietalkiek.serivce.network.data.ConnectedDevicesRepository
 import pro.devapp.walkietalkiek.serivce.network.data.PttFloorRepository
 import pro.devapp.walkietalkiek.serivce.network.data.TextMessagesRepository
@@ -21,6 +22,7 @@ import kotlin.random.Random
 class SocketServer(
     private val connectedDevicesRepository: ConnectedDevicesRepository,
     private val clientSocket: SocketClient,
+    private val clusterMembershipRepository: ClusterMembershipRepository,
     private val textMessagesRepository: TextMessagesRepository,
     private val pttFloorRepository: PttFloorRepository,
     private val coroutineContextProvider: CoroutineContextProvider
@@ -55,6 +57,8 @@ class SocketServer(
      * Data for sending
      */
     private val outputQueueMap = ConcurrentHashMap<String, LinkedBlockingDeque<ByteArray>>()
+    private val nodeHostMap = ConcurrentHashMap<String, String>()
+    private val pendingFloorQueue = ArrayDeque<String>()
 
     private var socket: ServerSocket? = null
 
@@ -156,6 +160,15 @@ class SocketServer(
         val hostAddress = client.inetAddress?.hostAddress ?: return
         client.close()
         outputQueueMap.remove(hostAddress)
+        val removedNodeIds = nodeHostMap.entries
+            .filter { it.value == hostAddress }
+            .map { it.key }
+        if (removedNodeIds.isNotEmpty()) {
+            removedNodeIds.forEach { nodeId ->
+                nodeHostMap.remove(nodeId)
+                pendingFloorQueue.remove(nodeId)
+            }
+        }
         clientSocket.removeClient(hostAddress)
         connectedDevicesRepository.setHostDisconnected(hostAddress)
     }
@@ -169,31 +182,150 @@ class SocketServer(
         } else {
             val message = String(data).trim()
             Timber.Forest.i("message: $message from $hostAddress")
-            val controlCommand = FloorControlProtocol.parse(message)
-            if (controlCommand != null) {
+            val clusterControl = ServerlessControlProtocol.parse(message)
+            if (clusterControl != null) {
+                when (clusterControl) {
+                    is ControlEnvelope.Heartbeat -> {
+                        clusterMembershipRepository.onHeartbeat(
+                            nodeId = clusterControl.nodeId,
+                            term = clusterControl.term,
+                            timestampMs = clusterControl.timestampMs,
+                            nowMs = System.currentTimeMillis()
+                        )
+                    }
+                    is ControlEnvelope.FloorRequest -> {
+                        clusterMembershipRepository.onHeartbeat(
+                            nodeId = clusterControl.nodeId,
+                            term = clusterControl.term,
+                            timestampMs = clusterControl.timestampMs,
+                            nowMs = System.currentTimeMillis()
+                        )
+                        nodeHostMap[clusterControl.nodeId] = hostAddress
+                        handleFloorRequestAsLeader(clusterControl, hostAddress)
+                    }
+                    is ControlEnvelope.FloorGrant -> {
+                        pttFloorRepository.acquire("node:${clusterControl.targetNodeId}")
+                    }
+                    is ControlEnvelope.FloorRelease -> {
+                        pendingFloorQueue.remove(clusterControl.nodeId)
+                        val released = pttFloorRepository.releaseIfOwner("node:${clusterControl.nodeId}")
+                        val status = clusterMembershipRepository.status.value
+                        if (released && status.role == pro.devapp.walkietalkiek.serivce.network.data.ClusterRole.LEADER) {
+                            grantNextQueuedIfAny()
+                        }
+                    }
+                    is ControlEnvelope.FloorBusy -> {
+                        pttFloorRepository.acquire("node:${clusterControl.ownerNodeId}")
+                    }
+                }
+            } else {
+                val controlCommand = FloorControlProtocol.parse(message)
+                if (controlCommand != null) {
                 when (controlCommand) {
                     FloorControlCommand.Acquire -> pttFloorRepository.acquire(hostAddress)
                     FloorControlCommand.Release -> pttFloorRepository.release(hostAddress)
                 }
-            } else if (message == "ping"){
-                clientSocket.sendMessageToHost(
-                    hostAddress = hostAddress,
-                    data = "pong".toByteArray()
-                )
-            } else if (message != "pong" && message.isNotEmpty()) {
-                textMessagesRepository.addMessage(
-                    message = message,
-                    hostAddress = hostAddress
-                )
+                } else if (message == "ping"){
+                    clientSocket.sendMessageToHost(
+                        hostAddress = hostAddress,
+                        data = "pong".toByteArray()
+                    )
+                } else if (message != "pong" && message.isNotEmpty()) {
+                    textMessagesRepository.addMessage(
+                        message = message,
+                        hostAddress = hostAddress
+                    )
+                }
             }
         }
         connectedDevicesRepository.storeDataReceivedTime(hostAddress)
+    }
+
+    private fun handleFloorRequestAsLeader(request: ControlEnvelope.FloorRequest, requesterHostAddress: String) {
+        val status = clusterMembershipRepository.status.value
+        if (status.role != pro.devapp.walkietalkiek.serivce.network.data.ClusterRole.LEADER) return
+        val currentOwner = pttFloorRepository.currentFloorOwnerHost.value
+        val requestedOwner = "node:${request.nodeId}"
+        val shouldGrant = currentOwner == null || currentOwner == requestedOwner
+        if (shouldGrant) {
+            pendingFloorQueue.remove(request.nodeId)
+            pttFloorRepository.acquire(requestedOwner)
+            val grant = ServerlessControlProtocol.floorGrantPacket(
+                leaderNodeId = status.selfNodeId,
+                targetNodeId = request.nodeId,
+                term = status.term,
+                seq = clusterMembershipRepository.nextSequence(),
+                timestampMs = System.currentTimeMillis()
+            )
+            sendControlEnvelope(grant, requesterHostAddress)
+        } else {
+            if (!pendingFloorQueue.contains(request.nodeId)) {
+                pendingFloorQueue.addLast(request.nodeId)
+            }
+            val ownerNodeId = currentOwner?.removePrefix("node:")?.ifBlank { status.selfNodeId } ?: status.selfNodeId
+            val busy = ServerlessControlProtocol.floorBusyPacket(
+                leaderNodeId = status.selfNodeId,
+                ownerNodeId = ownerNodeId,
+                term = status.term,
+                seq = clusterMembershipRepository.nextSequence(),
+                timestampMs = System.currentTimeMillis()
+            )
+            sendControlEnvelope(busy, requesterHostAddress)
+        }
+    }
+
+    private fun grantNextQueuedIfAny() {
+        val status = clusterMembershipRepository.status.value
+        if (status.role != pro.devapp.walkietalkiek.serivce.network.data.ClusterRole.LEADER) return
+        while (pendingFloorQueue.isNotEmpty()) {
+            val nextNodeId = pendingFloorQueue.removeFirst()
+            val nextHostAddress = nodeHostMap[nextNodeId]
+            if (nextHostAddress.isNullOrBlank()) {
+                continue
+            }
+            val ownerToken = "node:$nextNodeId"
+            pttFloorRepository.acquire(ownerToken)
+            val grant = ServerlessControlProtocol.floorGrantPacket(
+                leaderNodeId = status.selfNodeId,
+                targetNodeId = nextNodeId,
+                term = status.term,
+                seq = clusterMembershipRepository.nextSequence(),
+                timestampMs = System.currentTimeMillis()
+            )
+            sendControlEnvelope(grant, nextHostAddress)
+            return
+        }
+    }
+
+    private fun sendControlEnvelope(data: ByteArray, preferredHostAddress: String?) {
+        sendMessage(data)
+        clientSocket.sendMessage(data)
+        if (!preferredHostAddress.isNullOrBlank()) {
+            sendMessageToHost(preferredHostAddress, data)
+            clientSocket.sendMessageToHost(preferredHostAddress, data)
+            acceptConnectionScope.launch {
+                delay(120L)
+                sendMessageToHost(preferredHostAddress, data)
+                clientSocket.sendMessageToHost(preferredHostAddress, data)
+            }
+        }
+    }
+
+    private fun sendMessageToHost(hostAddress: String, data: ByteArray) {
+        outputQueueMap[hostAddress]?.offerLast(data.copyOf())
+    }
+
+    fun onLocalLeaderFloorReleased() {
+        grantNextQueuedIfAny()
     }
 
     fun stop() {
         socket?.apply {
             close()
         }
+        outputQueueMap.clear()
+        pendingFloorQueue.clear()
+        nodeHostMap.clear()
         readDataScope.cancel()
         writeDataScope.cancel()
         acceptConnectionScope.cancel()

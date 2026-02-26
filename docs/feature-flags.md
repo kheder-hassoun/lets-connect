@@ -4,13 +4,15 @@ Runtime flags were added to support safe, incremental rollout.
 
 ## Current Flags
 
-- `mqttControl` (`ff_mqtt_control` in roadmap terms)
+- `serverlessControl` (`ff_serverless_control`)
 - `webrtcAudio` (`ff_webrtc_audio`)
 - `centralSettings` (`ff_central_settings`)
 - `floorV2` (`ff_floor_v2`)
 - `observabilityV2` (`ff_observability_v2`)
 
-All default to `false`.
+Defaults:
+- `serverlessControl`: `true`
+- all other flags: `false`
 
 ## Source of Truth
 
@@ -31,11 +33,8 @@ All default to `false`.
 
 ## Current Status
 
-- `mqttControl` now starts/stops MQTT control-plane logic in `WalkieService`.
-- MQTT now uses runtime config from `MqttConfigRepository` (`brokerHost`, `brokerPort`, `clusterId`).
-- Topic flow implemented:
-  - `cluster/{clusterId}/presence` (subscribe + heartbeat publish)
-  - `cluster/{clusterId}/chat` (publish + subscribe)
-- `cluster/{clusterId}/floor` is now implemented (publish acquire/release + subscribe updates).
-- Chat send path is MQTT-first when `mqttControl=true`, with socket fallback when MQTT is unavailable.
-- Floor acquire/release path is MQTT-first when `mqttControl=true`, with socket fallback when MQTT is unavailable.
+- Runtime path is serverless LAN (`NSD + sockets`).
+- No broker/server configuration is required for normal operation.
+- PTT status panel shows control plane as `Serverless`.
+- Membership heartbeat is active over serverless control envelope.
+- PTT status panel shows cluster role, leader node id, and active member count.

@@ -2,7 +2,6 @@ package pro.devapp.walkietalkiek.feature.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,7 +25,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -42,10 +40,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.text.input.KeyboardType
 import org.koin.compose.koinInject
 import pro.devapp.walkietalkiek.core.flags.FeatureFlagsRepository
-import pro.devapp.walkietalkiek.core.network.MqttConfigRepository
 import pro.devapp.walkietalkiek.core.settings.AppSettingsRepository
 import pro.devapp.walkietalkiek.core.settings.ThemeColor
 import kotlin.math.roundToInt
@@ -54,10 +50,8 @@ import kotlin.math.roundToInt
 fun SettingsContent() {
     val settingsRepository = koinInject<AppSettingsRepository>()
     val featureFlagsRepository = koinInject<FeatureFlagsRepository>()
-    val mqttConfigRepository = koinInject<MqttConfigRepository>()
     val settings by settingsRepository.settings.collectAsState()
     val flags by featureFlagsRepository.flags.collectAsState()
-    val mqttConfig by mqttConfigRepository.config.collectAsState()
     var isThemeMenuExpanded by remember { mutableStateOf(false) }
 
     Column(
@@ -95,51 +89,6 @@ fun SettingsContent() {
                     },
                     valueRange = 5f..120f,
                     steps = 22
-                )
-            }
-        }
-
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Text(
-                    text = "MQTT Control Config",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = "Used when MQTT Control Plane feature flag is enabled.",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-                OutlinedTextField(
-                    value = mqttConfig.brokerHost,
-                    onValueChange = mqttConfigRepository::updateBrokerHost,
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text("Broker Host") }
-                )
-                OutlinedTextField(
-                    value = mqttConfig.brokerPort.toString(),
-                    onValueChange = mqttConfigRepository::updateBrokerPort,
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text("Broker Port") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-                OutlinedTextField(
-                    value = mqttConfig.clusterId,
-                    onValueChange = mqttConfigRepository::updateClusterId,
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text("Cluster ID") }
                 )
             }
         }
@@ -300,10 +249,10 @@ fun SettingsContent() {
                 )
 
                 FlagToggleRow(
-                    title = "MQTT Control Plane",
-                    description = "Switch signaling path from sockets to MQTT.",
-                    checked = flags.mqttControl,
-                    onCheckedChange = featureFlagsRepository::updateMqttControl
+                    title = "Serverless Control",
+                    description = "Enable in-cluster leader/membership control path.",
+                    checked = flags.serverlessControl,
+                    onCheckedChange = featureFlagsRepository::updateServerlessControl
                 )
                 FlagToggleRow(
                     title = "WebRTC Audio",

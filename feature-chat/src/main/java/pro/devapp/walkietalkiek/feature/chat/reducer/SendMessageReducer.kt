@@ -5,13 +5,11 @@ import pro.devapp.walkietalkiek.feature.chat.model.ChatAction
 import pro.devapp.walkietalkiek.feature.chat.model.ChatEvent
 import pro.devapp.walkietalkiek.feature.chat.model.ChatMessageModel
 import pro.devapp.walkietalkiek.feature.chat.model.ChatScreenState
-import pro.devapp.walkietalkiek.serivce.network.ChatPublisher
 import pro.devapp.walkietalkiek.serivce.network.MessageController
 import java.util.UUID
 
 internal class SendMessageReducer(
-    private val messageController: MessageController,
-    private val chatPublisher: ChatPublisher
+    private val messageController: MessageController
 ): Reducer<ChatAction.SendMessage, ChatScreenState, ChatAction, ChatEvent> {
 
     override val actionClass = ChatAction.SendMessage::class
@@ -22,10 +20,7 @@ internal class SendMessageReducer(
     ): Reducer.Result<ChatScreenState, ChatAction, ChatEvent?> {
         val currentState = getState()
 
-        val publishedOnMqtt = chatPublisher.publishChatMessage(action.content)
-        if (!publishedOnMqtt) {
-            messageController.sendMessage(action.content.toByteArray())
-        }
+        messageController.sendMessage(action.content.toByteArray())
 
         val newMessage = ChatMessageModel(
             id = UUID.randomUUID().toString(),

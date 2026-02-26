@@ -4,14 +4,15 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import pro.devapp.walkietalkiek.core.flags.FeatureFlagsRepository
 import pro.devapp.walkietalkiek.core.mvi.MviViewModel
 import pro.devapp.walkietalkiek.core.settings.AppSettingsRepository
 import pro.devapp.walkietalkiek.feature.ptt.model.PttAction
 import pro.devapp.walkietalkiek.feature.ptt.model.PttEvent
 import pro.devapp.walkietalkiek.feature.ptt.model.PttScreenState
 import pro.devapp.walkietalkiek.serivce.network.FloorControlProtocol
-import pro.devapp.walkietalkiek.serivce.network.FloorPublisher
 import pro.devapp.walkietalkiek.serivce.network.MessageController
+import pro.devapp.walkietalkiek.serivce.network.data.ClusterMembershipRepository
 import pro.devapp.walkietalkiek.serivce.network.data.ConnectedDevicesRepository
 import pro.devapp.walkietalkiek.serivce.network.data.PttFloorRepository
 import pro.devapp.walkietalkiek.service.voice.VoicePlayer
@@ -19,8 +20,9 @@ import pro.devapp.walkietalkiek.service.voice.VoicePlayer
 internal class PttViewModel(
     actionProcessor: PttActionProcessor,
     private val connectedDevicesRepository: ConnectedDevicesRepository,
+    private val clusterMembershipRepository: ClusterMembershipRepository,
+    private val featureFlagsRepository: FeatureFlagsRepository,
     private val messageController: MessageController,
-    private val floorPublisher: FloorPublisher,
     private val pttFloorRepository: PttFloorRepository,
     private val voicePlayer: VoicePlayer,
     private val appSettingsRepository: AppSettingsRepository
@@ -28,6 +30,8 @@ internal class PttViewModel(
     actionProcessor = actionProcessor
 ) {
     private var talkTimerJob: Job? = null
+    private var floorRequestTimeoutJob: Job? = null
+    private var floorRequestRetryJob: Job? = null
     private var collectorsStarted = false
 
     fun startCollectingConnectedDevices() {
@@ -44,8 +48,7 @@ internal class PttViewModel(
                 if (newConnectedHosts.isNotEmpty() && state.value.isRecording) {
                     // Event-driven re-announce: a peer connected while I hold PTT,
                     // so send floor taken once more to synchronize lock state.
-                    val published = floorPublisher.publishAcquire()
-                    if (!published) {
+                    if (!featureFlagsRepository.flags.value.serverlessControl) {
                         messageController.sendMessage(FloorControlProtocol.acquirePacket())
                     }
                 }
@@ -73,6 +76,51 @@ internal class PttViewModel(
                 onPttAction(PttAction.FloorOwnerChanged(it))
             }
         }
+        viewModelScope.launch {
+            clusterMembershipRepository.status.collect { status ->
+                val leaderLabel = status.leaderNodeId.ifBlank { "--" }
+                val role = when (status.role) {
+                    pro.devapp.walkietalkiek.serivce.network.data.ClusterRole.LEADER -> "Leader"
+                    pro.devapp.walkietalkiek.serivce.network.data.ClusterRole.PEER -> "Peer"
+                }
+                onPttAction(
+                    PttAction.ClusterStatusChanged(
+                        selfNodeId = status.selfNodeId,
+                        roleLabel = role,
+                        leaderNodeLabel = leaderLabel,
+                        membersCount = status.activeMembersCount
+                    )
+                )
+            }
+        }
+        viewModelScope.launch {
+            state.collect { current ->
+                if (current.isFloorRequestPending && !current.isRecording) {
+                    if (floorRequestTimeoutJob?.isActive != true) {
+                        floorRequestTimeoutJob = viewModelScope.launch {
+                            delay(FLOOR_REQUEST_TIMEOUT_MS)
+                            if (state.value.isFloorRequestPending && !state.value.isRecording) {
+                                onPttAction(PttAction.StopRecording)
+                            }
+                        }
+                    }
+                    if (floorRequestRetryJob?.isActive != true) {
+                        floorRequestRetryJob = viewModelScope.launch {
+                            delay(FLOOR_REQUEST_RETRY_INITIAL_DELAY_MS)
+                            while (state.value.isFloorRequestPending && !state.value.isRecording) {
+                                onPttAction(PttAction.StartRecording)
+                                delay(FLOOR_REQUEST_RETRY_MS)
+                            }
+                        }
+                    }
+                } else {
+                    floorRequestTimeoutJob?.cancel()
+                    floorRequestTimeoutJob = null
+                    floorRequestRetryJob?.cancel()
+                    floorRequestRetryJob = null
+                }
+            }
+        }
     }
 
     fun onPttAction(action: PttAction) {
@@ -81,7 +129,14 @@ internal class PttViewModel(
                 val currentState = state.value
                 val isBlockedByRemote = currentState.floorOwnerHostAddress != null &&
                     !currentState.isFloorHeldByMe
-                if (!currentState.isRecording && !isBlockedByRemote) {
+                val isServerlessLeasePath = featureFlagsRepository.flags.value.serverlessControl
+                if (!isServerlessLeasePath && !currentState.isRecording && !isBlockedByRemote) {
+                    startTalkTimer()
+                }
+            }
+            PttAction.StartRecordingGranted -> {
+                val currentState = state.value
+                if (!currentState.isRecording) {
                     startTalkTimer()
                 }
             }
@@ -89,6 +144,10 @@ internal class PttViewModel(
                 if (state.value.isRecording) {
                     stopTalkTimer()
                 }
+                floorRequestTimeoutJob?.cancel()
+                floorRequestTimeoutJob = null
+                floorRequestRetryJob?.cancel()
+                floorRequestRetryJob = null
             }
             else -> Unit
         }
@@ -118,3 +177,6 @@ internal class PttViewModel(
 }
 
 private const val WAVE_UI_UPDATE_THROTTLE_MS = 70L
+private const val FLOOR_REQUEST_TIMEOUT_MS = 7000L
+private const val FLOOR_REQUEST_RETRY_INITIAL_DELAY_MS = 500L
+private const val FLOOR_REQUEST_RETRY_MS = 900L

@@ -11,7 +11,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import pro.devapp.walkietalkiek.core.mvi.CoroutineContextProvider
+import pro.devapp.walkietalkiek.core.flags.FeatureFlagsRepository
 import pro.devapp.walkietalkiek.serivce.network.data.ConnectedDevicesRepository
+import pro.devapp.walkietalkiek.serivce.network.data.ClusterMembershipRepository
 import pro.devapp.walkietalkiek.serivce.network.data.DeviceInfoRepository
 import pro.devapp.walkietalkiek.serivce.network.data.PttFloorRepository
 import timber.log.Timber
@@ -34,12 +36,14 @@ internal class ChanelControllerImpl(
     context: Context,
     private val deviceInfoRepository: DeviceInfoRepository,
     private val connectedDevicesRepository: ConnectedDevicesRepository,
+    private val clusterMembershipRepository: ClusterMembershipRepository,
     private val pttFloorRepository: PttFloorRepository,
+    private val featureFlagsRepository: FeatureFlagsRepository,
     private val client: SocketClient,
     private val server: SocketServer,
     private val coroutineContextProvider: CoroutineContextProvider,
     private val clientInfoResolver: ClientInfoResolver
-): MessageController, ClientController {
+): MessageController, ClientController, FloorLeaseController {
     private val nsdManager = context.getSystemService(Context.NSD_SERVICE) as NsdManager
     private val discoveryListener = DiscoveryListener(this)
     private val registrationListener = RegistrationListener(this)
@@ -47,10 +51,14 @@ internal class ChanelControllerImpl(
     private var currentServiceName: String? = null
 
     private var pingScope: CoroutineScope? = null
+    private var localNodeId: String = ""
 
     override fun startDiscovery() {
         connectedDevicesRepository.clearAll()
+        clusterMembershipRepository.clear()
         pttFloorRepository.clear()
+        localNodeId = deviceInfoRepository.getCurrentDeviceInfo().deviceId
+        clusterMembershipRepository.initializeSelf(localNodeId, System.currentTimeMillis())
         pingScope = coroutineContextProvider.createScope(
             coroutineContextProvider.io
         )
@@ -66,6 +74,7 @@ internal class ChanelControllerImpl(
         client.stop()
         server.stop()
         connectedDevicesRepository.clearAll()
+        clusterMembershipRepository.clear()
         pttFloorRepository.clear()
         pingScope?.cancel()
     }
@@ -77,6 +86,68 @@ internal class ChanelControllerImpl(
     override fun sendMessage(data: ByteArray) {
         client.sendMessage(data)
         server.sendMessage(data)
+    }
+
+    override fun requestFloor(): FloorLeaseRequestResult {
+        val status = clusterMembershipRepository.status.value
+        if (!featureFlagsRepository.flags.value.serverlessControl) {
+            sendMessage(FloorControlProtocol.acquirePacket())
+            return FloorLeaseRequestResult.Granted
+        }
+        val now = System.currentTimeMillis()
+        val term = status.term
+        val seq = clusterMembershipRepository.nextSequence()
+        val selfToken = localFloorToken()
+        if (status.role == pro.devapp.walkietalkiek.serivce.network.data.ClusterRole.LEADER) {
+            val owner = pttFloorRepository.currentFloorOwnerHost.value
+            val canGrantToSelf = owner == null || owner == selfToken
+            if (canGrantToSelf) {
+                pttFloorRepository.acquire(selfToken)
+                val grant = ServerlessControlProtocol.floorGrantPacket(
+                    leaderNodeId = localNodeId,
+                    targetNodeId = localNodeId,
+                    term = term,
+                    seq = seq,
+                    timestampMs = now
+                )
+                sendMessage(grant)
+                return FloorLeaseRequestResult.Granted
+            }
+            return FloorLeaseRequestResult.Pending
+        }
+        val request = ServerlessControlProtocol.floorRequestPacket(
+            nodeId = localNodeId,
+            term = term,
+            seq = seq,
+            timestampMs = now
+        )
+        sendMessage(request)
+        return FloorLeaseRequestResult.Pending
+    }
+
+    override fun releaseFloor() {
+        val status = clusterMembershipRepository.status.value
+        if (!featureFlagsRepository.flags.value.serverlessControl) {
+            sendMessage(FloorControlProtocol.releasePacket())
+            return
+        }
+        val now = System.currentTimeMillis()
+        val term = status.term
+        val seq = clusterMembershipRepository.nextSequence()
+        val release = ServerlessControlProtocol.floorReleasePacket(
+            nodeId = localNodeId,
+            term = term,
+            seq = seq,
+            timestampMs = now
+        )
+        if (status.role == pro.devapp.walkietalkiek.serivce.network.data.ClusterRole.LEADER) {
+            val released = pttFloorRepository.releaseIfOwner(localFloorToken())
+            if (released) {
+                server.onLocalLeaderFloorReleased()
+                client.onLocalLeaderFloorReleased()
+            }
+        }
+        sendMessage(release)
     }
 
     private fun registerNsdService(port: Int) {
@@ -104,6 +175,7 @@ internal class ChanelControllerImpl(
             pingScope?.launch {
                 while (isActive) {
                     connectedDevicesRepository.markStaleConnectionsDisconnected(STALE_CONNECTION_TIMEOUT_MS)
+                    clusterMembershipRepository.sweepStale(STALE_CONNECTION_TIMEOUT_MS, System.currentTimeMillis())
                     ping()
                     delay(5000L)
                 }
@@ -112,9 +184,28 @@ internal class ChanelControllerImpl(
     }
 
     private fun ping() {
+        if (localNodeId.isNotBlank()) {
+            val now = System.currentTimeMillis()
+            clusterMembershipRepository.onHeartbeat(
+                nodeId = localNodeId,
+                term = 0L,
+                timestampMs = now,
+                nowMs = now
+            )
+            val heartbeat = ServerlessControlProtocol.heartbeatPacket(
+                nodeId = localNodeId,
+                term = 0L,
+                seq = clusterMembershipRepository.nextSequence(),
+                timestampMs = now
+            )
+            server.sendMessage(heartbeat)
+            client.sendMessage(heartbeat)
+        }
         server.sendMessage("ping".toByteArray())
         client.sendMessage("ping".toByteArray())
     }
+
+    private fun localFloorToken(): String = "node:$localNodeId"
 
     override fun onServiceFound(serviceInfo: NsdServiceInfo) {
         // check for self add to list

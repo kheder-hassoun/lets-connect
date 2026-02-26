@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 data class FeatureFlags(
-    val mqttControl: Boolean = false,
+    val serverlessControl: Boolean = true,
     val webrtcAudio: Boolean = false,
     val centralSettings: Boolean = false,
     val floorV2: Boolean = false,
@@ -16,8 +16,8 @@ class FeatureFlagsRepository {
     private val _flags = MutableStateFlow(FeatureFlags())
     val flags: StateFlow<FeatureFlags> = _flags.asStateFlow()
 
-    fun updateMqttControl(enabled: Boolean) {
-        _flags.value = _flags.value.copy(mqttControl = enabled)
+    fun updateServerlessControl(enabled: Boolean) {
+        _flags.value = _flags.value.copy(serverlessControl = enabled)
     }
 
     fun updateWebrtcAudio(enabled: Boolean) {

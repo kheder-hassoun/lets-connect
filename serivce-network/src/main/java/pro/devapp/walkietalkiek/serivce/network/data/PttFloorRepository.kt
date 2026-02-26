@@ -35,12 +35,18 @@ class PttFloorRepository(
     }
 
     fun release(hostAddress: String) {
+        releaseIfOwner(hostAddress)
+    }
+
+    fun releaseIfOwner(hostAddress: String): Boolean {
         synchronized(lock) {
             if (_currentFloorOwnerHost.value == hostAddress) {
                 _currentFloorOwnerHost.value = null
                 floorSessionVersion += 1
+                return true
             }
         }
+        return false
     }
 
     fun clear() {

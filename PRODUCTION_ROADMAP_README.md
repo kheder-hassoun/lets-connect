@@ -1,251 +1,232 @@
-# Fast Production Roadmap (Library-First, Android 9-15)
+# Fast Production Roadmap (Serverless LAN-First, Android 9-15)
 
-This plan is optimized for fast delivery by integrating mature libraries instead of building distributed networking primitives from scratch.
+This roadmap is now aligned to the product requirement: **serverless operation on local WiFi/hotspot with auto-discovery**.
+
+## Product Direction (Locked)
+
+- No required external broker/server for normal operation.
+- Must work when one phone enables hotspot and other phones join it.
+- Auto-discovery must bring peers online with minimal manual setup.
+- Keep app runnable after every implementation slice.
 
 ## Core Strategy
 
-- Prefer proven libraries and protocols.
-- Keep current app runnable after every phase.
-- Use feature flags so unfinished work never blocks release.
-- De-scope custom leader-election/relay internals unless a library cannot cover it.
+- Reuse proven libraries where they fit serverless LAN constraints.
+- Keep fallback paths while migrating behavior.
+- Ship in small vertical slices with build+smoke gate after each slice.
+- Prioritize reliability over adding infrastructure complexity.
 
 ## Compatibility Target
 
 - Android API 28 to API 35 (Android 9 to Android 15).
-- Every introduced library must be validated on API 28 and API 35 test devices/emulators.
+- Validate every phase on API 28 and API 35 devices/emulators.
 
-## Selected Building Blocks
+## Architecture Target (Serverless)
 
-- Control plane + settings sync + presence:
-  - MQTT protocol.
-  - Client: Eclipse Paho Android (`org.eclipse.paho`).
-  - Broker: local LAN broker (Mosquitto/EMQX recommended). Optional embedded broker only for demo.
-- Group voice transport:
-  - WebRTC stack through a production SDK (recommended: LiveKit Android SDK, self-hosted server on LAN/edge).
-  - Reason: built-in Opus, jitter buffer, NACK, congestion control, scalable group routing via SFU.
-- Serialization:
-  - Protobuf (`protobuf-kotlin-lite`) for app-level control payloads.
-- Local persistence:
-  - Jetpack DataStore (settings/cache) + Room (optional message/event history).
-- Observability:
-  - Timber (existing) + structured log schema + optional Sentry for crash reporting.
+- Discovery plane: NSD (mDNS/DNS-SD) + robustness improvements.
+- Control plane: peer-to-peer app protocol over socket transport (no broker).
+- Data plane: voice and chat over LAN sockets (optimized framing and buffering).
+- Floor control: distributed but deterministic arbitration (single active speaker).
+- Settings sync: one elected coordinator node in-cluster, no external server.
 
-## Architecture (Fast Version)
+## Feature Flags
 
-- Keep Android app modular structure as-is.
-- Replace custom socket control signaling with MQTT topics.
-- Move group audio to WebRTC SDK (no custom PCM fanout logic for large rooms).
-- Keep PTT and floor control in app domain, but transport events over MQTT/WebRTC data channel.
-
-## Feature Flags (Must Exist Before Major Changes)
-
-- `ff_mqtt_control`
-- `ff_webrtc_audio`
-- `ff_central_settings`
+- `ff_serverless_control` (new target path)
 - `ff_floor_v2`
+- `ff_central_settings`
+- `ff_audio_pipeline_v2`
 - `ff_observability_v2`
 
-Default all to `false` initially.
+Notes:
+- Existing MQTT flags/logic are now **experimental/deprecated** and not part of the production path.
 
 ## Progress Status (Live)
 
 - [x] Phase 0 started
-- [x] Phase 1 started
-- [ ] Phase 2 not started
+- [~] Phase 1 in progress
+- [~] Phase 2 in progress
 - [ ] Phase 3 not started
 - [ ] Phase 4 not started
 - [ ] Phase 5 not started
 - [ ] Phase 6 not started
 
-## Phased Implementation (Always Runnable)
+## Phase Plan (Always Runnable)
 
-## Phase 0 - Baseline and Safety Net (1 sprint)
+## Phase 0 - Baseline and Safety Net
 
 ### Work
 
-- Add feature flag plumbing.
-  - Status: [x] Done (runtime flags + Settings toggles added)
-- Define acceptance KPIs:
-  - PTT start latency
-  - floor conflict count
-  - reconnect time
-  - crash-free sessions
-  - Status: [x] Done (documented in `docs/slo.md`)
-- Add smoke test checklist and script.
-  - Status: [x] Done (documented in `docs/smoke-test-checklist.md`)
+- Feature flag plumbing.
+  - Status: [x] Done
+- SLO/KPI definitions.
+  - Status: [x] Done (`docs/slo.md`)
+- Smoke checklist.
+  - Status: [x] Done (`docs/smoke-test-checklist.md`)
+- Baseline report template.
+  - Status: [x] Done (`docs/reports/phase0-baseline.md`)
 
 ### Exit Criteria
 
-- `main` builds and runs exactly as today.
-  - Status: [x] Done
-- Baseline KPI report created.
-  - Status: [ ] Pending (template exists at `docs/reports/phase0-baseline.md`)
-
-### Run Gate
-
-- `./gradlew assembleDebug`
-- Manual 2-device smoke: discover, connect, PTT, chat, reconnect.
+- `main` builds and runs.
+- Baseline report filled with real measurements.
 
 ---
 
-## Phase 1 - MQTT Control Plane (No Audio Change Yet) (1-2 sprints)
+## Phase 1 - Serverless Discovery and Control Stabilization
+
+### Goal
+
+Get robust peer discovery/control without external broker.
 
 ### Work
 
-- Integrate Paho client.
-  - Status: [x] Done
-- Introduce MQTT topic model:
-  - `cluster/{id}/presence`
-  - `cluster/{id}/floor`
-  - `cluster/{id}/settings`
-  - `cluster/{id}/chat`
-  - Status: [~] In progress (`presence`, `chat`, and `floor` implemented; `settings` pending)
-- Use retained messages for latest settings/floor snapshot.
-  - Status: [ ] Pending
-- Keep existing socket stack as fallback behind flag.
-  - Status: [x] Done (chat path uses MQTT-first with socket fallback)
+- Harden NSD discovery lifecycle:
+  - duplicate suppression
+  - stale-peer cleanup
+  - reconnect strategy
+- Introduce explicit control message envelope for serverless transport:
+  - message type, source id, sequence, timestamp
+- Keep socket fallback path during migration.
+- De-prioritize broker-dependent MQTT path from production flow.
+
+### Current Status
+
+- [x] Control-plane status visibility added in UI.
+- [x] Floor/chat workstreams started under feature-flag migration.
+- [~] Serverless envelope adopted for membership heartbeat and cluster status.
+- [x] MQTT experimental path isolated from default production path.
 
 ### Exit Criteria
 
-- With `ff_mqtt_control=true`, presence/chat/floor events flow over MQTT.
-  - Status: [x] Done (presence/chat/floor implemented)
-- With `false`, old flow still works.
-  - Status: [x] Done
-
-### Run Gate
-
-- Build passes.
-- 3-device LAN test with broker restart recovery.
+- 2-5 devices auto-discover reliably on hotspot/WiFi.
+- No manual broker/server config required.
+- PTT/chat/floor operate end-to-end serverless.
 
 ---
 
-## Phase 2 - Centralized Settings via MQTT (1 sprint)
+## Phase 2 - Deterministic Floor Arbitration (Serverless)
+
+### Goal
+
+Ensure only one active speaker at a time under contention.
 
 ### Work
 
-- Add settings schema + version field.
-- One node acts as coordinator (pragmatic approach):
-  - either configured static coordinator,
-  - or broker-host node as coordinator.
-- Settings published as retained config snapshot.
-- Clients ACK applied version.
-
-### Exit Criteria
-
-- New node joins and gets current settings automatically.
-- Settings changes are consistent across nodes.
-
-### Run Gate
-
-- Toggle talk duration/tone/theme from coordinator and verify propagation.
-
----
-
-## Phase 3 - Floor Control v2 (Library Transport, Simple Policy) (1 sprint)
-
-### Work
-
-- Implement single authoritative floor state in coordinator service.
-- Keep policy simple for speed:
-  - FIFO queue
+- Deterministic floor arbitration policy:
+  - lease owner
   - lease timeout
-  - explicit release
-- Publish floor state updates on MQTT.
+  - release/renew
+- Conflict resolution when simultaneous press occurs.
+- Recovery on disconnect while holding floor.
+
+### Current Status
+
+- [x] Leader-authoritative `FLOOR_REQUEST/GRANT/RELEASE` control messages added.
+- [x] PTT now waits for grant before transmit in serverless mode.
+- [~] Queueing implemented (busy response + FIFO grant), renew policy pending.
+- [~] Request-timeout fallback implemented; disconnect recovery lease cleanup still needs hardening.
 
 ### Exit Criteria
 
-- No dual-speaker conflict in contention tests.
-- Queue order deterministic.
-
-### Run Gate
-
-- 5-device “simultaneous PTT press” test, repeated runs stable.
+- No reproducible dual-speaker conflict in contention tests.
+- Floor recovers cleanly after owner disconnect.
 
 ---
 
-## Phase 4 - Group Audio via WebRTC SDK (2-3 sprints)
+## Phase 3 - Centralized Settings (In-Cluster Coordinator)
+
+### Goal
+
+Cluster-wide settings sync without external backend.
 
 ### Work
 
-- Integrate WebRTC SDK module (recommended LiveKit Android SDK).
-- Move audio path from custom socket PCM to SDK media tracks.
-- PTT behavior becomes mute/unmute + floor grant enforcement.
-- Keep old voice path behind `ff_webrtc_audio=false` fallback.
+- Coordinator election policy within LAN cluster.
+- Versioned settings snapshot distribution.
+- Join-time sync for new peers.
+- Safe fallback to last good local config.
 
 ### Exit Criteria
 
-- Audio works with 10+ participants in same LAN.
-- Latency and quality better than baseline.
-
-### Run Gate
-
-- 5/10/20 participant soak tests.
-- Verify API 28 and API 35 devices.
+- New peer receives active settings automatically.
+- Settings consistency verified across peers.
 
 ---
 
-## Phase 5 - Reliability and Ops Hardening (1-2 sprints)
+## Phase 4 - Audio Pipeline Quality and Scale (Serverless)
+
+### Goal
+
+Improve voice quality and scalability without central media server.
 
 ### Work
 
-- Add structured diagnostics screen:
-  - broker connected/disconnected
-  - participant count
-  - RTT/jitter/loss (from SDK stats)
-  - current floor owner + queue length
-- Add reconnect/backoff policies.
-- Add watchdog alerts for stale floor lock.
+- Better framing and jitter handling.
+- Packet ordering/drop handling.
+- Bandwidth/CPU tuning for hotspot scenarios.
+- Optional codec optimization path.
 
 ### Exit Criteria
 
-- Common incidents diagnosable from app logs/screen.
-- Reconnect behavior stable under WiFi toggles.
-
-### Run Gate
-
-- Network chaos smoke (AP switch, broker restart, packet loss profile).
+- Better latency/continuity vs baseline.
+- Stable group call behavior at target room size.
 
 ---
 
-## Phase 6 - Security + Production Rollout (1-2 sprints)
+## Phase 5 - Reliability and Diagnostics
+
+### Goal
+
+Operational visibility and predictable recovery.
 
 ### Work
 
-- MQTT auth (username/password or certs).
-- Topic ACLs for floor/settings topics.
-- Join policy (venue token / allowlist).
-- Progressive rollout plan: pilot venue -> staged expansion.
+- Diagnostics panel:
+  - discovery state
+  - peer count
+  - floor owner
+  - transport health
+- Incident-friendly logging and export bundle.
+- Reconnect/backoff hardening.
 
 ### Exit Criteria
 
-- Unauthorized client cannot control floor/settings.
-- Pilot passes KPI thresholds for agreed burn-in period.
+- Field failures are diagnosable from logs/status UI.
+- Recovery after WiFi churn is stable.
 
-### Run Gate
+---
 
-- Security regression checklist + pilot runbook signoff.
+## Phase 6 - Security and Rollout
 
-## What We Are Explicitly Not Building (for speed)
+### Goal
 
-- Custom consensus algorithm implementation.
-- Custom relay routing protocol for audio.
-- Custom jitter buffer/PLC stack.
-- Custom binary protocol unless required by a library boundary.
+Secure serverless LAN operation and staged release.
 
-These are replaced by MQTT + WebRTC/SFU capabilities.
+### Work
+
+- Device trust model and join policy.
+- Replay/spoof mitigation for control messages.
+- Pilot rollout and KPI gates.
+
+### Exit Criteria
+
+- Unauthorized peer cannot take floor/control.
+- Pilot passes SLO thresholds.
+
+## What Is Out of Scope (for this plan)
+
+- Mandatory broker/server dependencies for basic operation.
+- Cloud-first architecture for same-LAN use cases.
 
 ## Execution Rules Per PR
 
-- Keep PR scope to one vertical slice.
-- Add/keep fallback path behind feature flag.
+- One vertical slice per PR.
+- Keep app runnable at all times.
 - `./gradlew assembleDebug` must pass.
-- Update smoke checklist evidence in PR description.
-- No deletion of legacy path until replacement is proven in pilot.
+- Run 2-device hotspot smoke test for every control-plane/floor change.
 
 ## Immediate Next Step
 
-Current next step:
-
-1. Finish Phase 1 by implementing MQTT `settings` topic flow behind `ff_mqtt_control`.
-2. Keep legacy local settings behavior as fallback path.
-3. Run `assembleDebug` and smoke test after that slice.
+1. Harden lease timeout/cleanup and recovery on leader disconnect.
+2. Add explicit request queue (FIFO) for fair floor arbitration.
+3. Add deterministic failover behavior when leader disappears.

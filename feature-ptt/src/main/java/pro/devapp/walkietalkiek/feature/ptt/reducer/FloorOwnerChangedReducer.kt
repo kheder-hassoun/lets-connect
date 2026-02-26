@@ -16,12 +16,51 @@ internal class FloorOwnerChangedReducer :
     ): Reducer.Result<PttScreenState, PttAction, PttEvent?> {
         val state = getState()
         val owner = action.ownerHostAddress
-        val nextState = when {
-            state.isFloorHeldByMe && owner != null -> state
-            state.isFloorHeldByMe && owner == null -> state.copy(floorOwnerHostAddress = null)
-            else -> state.copy(
+        val selfNodeToken = state.selfNodeId.takeIf { it.isNotBlank() }?.let { "node:$it" }
+        val selfIpToken = state.myIP.takeIf { it.isNotBlank() && it != "-" && it != "--" }?.let { "node:$it" }
+        val grantedToMe = owner != null && (
+            owner == selfNodeToken ||
+                owner == selfIpToken
+            )
+        if (state.isFloorRequestPending && grantedToMe) {
+            return Reducer.Result(
+                state = state.copy(
+                    floorOwnerHostAddress = owner,
+                    isFloorHeldByMe = true
+                ),
+                action = PttAction.StartRecordingGranted,
+                event = null
+            )
+        }
+        if (state.isFloorHeldByMe && owner == null) {
+            return Reducer.Result(
+                state = state.copy(
+                    isFloorHeldByMe = false,
+                    isFloorRequestPending = false,
+                    floorOwnerHostAddress = null
+                ),
+                action = if (state.isRecording) PttAction.StopRecording else null,
+                event = null
+            )
+        }
+        if (state.isFloorHeldByMe && owner != null && owner != state.floorOwnerHostAddress) {
+            return Reducer.Result(
+                state = state.copy(
+                    isFloorHeldByMe = false,
+                    isFloorRequestPending = false,
+                    floorOwnerHostAddress = owner
+                ),
+                action = if (state.isRecording) PttAction.StopRecording else null,
+                event = null
+            )
+        }
+        val nextState = if (state.isFloorHeldByMe) {
+            state.copy(floorOwnerHostAddress = owner ?: state.floorOwnerHostAddress)
+        } else {
+            state.copy(
                 floorOwnerHostAddress = owner,
-                isFloorHeldByMe = false
+                isFloorHeldByMe = false,
+                isFloorRequestPending = if (owner == null) state.isFloorRequestPending else false
             )
         }
         return Reducer.Result(

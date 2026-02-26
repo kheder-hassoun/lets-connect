@@ -5,15 +5,13 @@ import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.binds
 import pro.devapp.walkietalkiek.serivce.network.ChanelControllerImpl
-import pro.devapp.walkietalkiek.serivce.network.ChatPublisher
 import pro.devapp.walkietalkiek.serivce.network.ClientController
 import pro.devapp.walkietalkiek.serivce.network.ClientInfoResolver
-import pro.devapp.walkietalkiek.serivce.network.ControlPlaneController
-import pro.devapp.walkietalkiek.serivce.network.FloorPublisher
+import pro.devapp.walkietalkiek.serivce.network.FloorLeaseController
 import pro.devapp.walkietalkiek.serivce.network.MessageController
-import pro.devapp.walkietalkiek.serivce.network.MqttControlPlaneController
 import pro.devapp.walkietalkiek.serivce.network.SocketClient
 import pro.devapp.walkietalkiek.serivce.network.SocketServer
+import pro.devapp.walkietalkiek.serivce.network.data.ClusterMembershipRepository
 import pro.devapp.walkietalkiek.serivce.network.data.ConnectedDevicesRepository
 import pro.devapp.walkietalkiek.serivce.network.data.DeviceInfoRepository
 import pro.devapp.walkietalkiek.serivce.network.data.PttFloorRepository
@@ -23,21 +21,16 @@ fun Module.registerServiceNetworkDi() {
     factoryOf(::ClientInfoResolver)
     factoryOf(::DeviceInfoRepository)
     singleOf(::ConnectedDevicesRepository)
+    singleOf(::ClusterMembershipRepository)
     singleOf(::PttFloorRepository)
 
     singleOf(::SocketClient)
     singleOf(::SocketServer)
-    singleOf(::MqttControlPlaneController).binds(
-        arrayOf(
-            ControlPlaneController::class,
-            ChatPublisher::class,
-            FloorPublisher::class
-        )
-    )
     singleOf(::ChanelControllerImpl).binds(
         arrayOf(
             MessageController::class,
-            ClientController::class
+            ClientController::class,
+            FloorLeaseController::class
         )
     )
     singleOf(::TextMessagesRepository)

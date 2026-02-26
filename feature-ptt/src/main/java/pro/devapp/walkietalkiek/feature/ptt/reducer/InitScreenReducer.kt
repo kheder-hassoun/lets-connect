@@ -20,9 +20,11 @@ internal class InitScreenReducer(
         getState: () -> PttScreenState
     ): Reducer.Result<PttScreenState, PttAction, PttEvent?> {
         val myIP = deviceInfoRepository.getCurrentIp()
+        val selfNodeId = deviceInfoRepository.getCurrentDeviceInfo().deviceId
         return Reducer.Result(
             state = getState().copy(
                 myIP = myIP ?: "--",
+                selfNodeId = selfNodeId,
                 isConnected = myIP != null && getState().connectedDevices.isNotEmpty()
             ),
             event = null

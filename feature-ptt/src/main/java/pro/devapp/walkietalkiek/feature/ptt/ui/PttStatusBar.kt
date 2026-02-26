@@ -40,18 +40,21 @@ internal fun PttStatusBar(
         !state.isRecording
     val modeColor = when {
         state.isRecording -> Color(0xFFFFA726)
+        state.isFloorRequestPending -> Color(0xFFFFB347)
         isFloorBusyByRemote -> Color(0xFFFF6B6B)
         canTalk -> Color(0xFF56E39F)
         else -> Color(0xFFFF6B6B)
     }
     val modeLabel = when {
         state.isRecording -> "Talking"
+        state.isFloorRequestPending -> "Requesting"
         isFloorBusyByRemote -> "Busy"
         canTalk -> "Enabled"
         else -> "Disabled"
     }
     val localColor = if (canTalk) Color(0xFF56E39F) else Color(0xFFFF6B6B)
     val localLabel = if (canTalk) "Online" else "Offline"
+    val roleColor = if (state.clusterRoleLabel == "Leader") Color(0xFFE53935) else Color(0xFF1E88E5)
     val timerLabel = if (state.isRecording) {
         "Time Left ${state.remainingTalkSeconds}s"
     } else if (isFloorBusyByRemote) {
@@ -62,6 +65,18 @@ internal fun PttStatusBar(
     val timerColor = when {
         state.isRecording -> Color(0xFFFFB347)
         isFloorBusyByRemote -> Color(0xFFFF6B6B)
+        else -> Color(0xFF6FD3FF)
+    }
+    val floorStatus = when {
+        state.isRecording || state.isFloorHeldByMe -> "Mine"
+        state.isFloorRequestPending -> "Requesting"
+        isFloorBusyByRemote -> "Busy"
+        else -> "Free"
+    }
+    val floorColor = when (floorStatus) {
+        "Mine" -> Color(0xFF56E39F)
+        "Requesting" -> Color(0xFFFFB347)
+        "Busy" -> Color(0xFFFF6B6B)
         else -> Color(0xFF6FD3FF)
     }
     val peersColor = if (connectedPeers > 0) Color(0xFFFF5CA8) else Color(0xFFB39BB2)
@@ -125,6 +140,22 @@ internal fun PttStatusBar(
             ) {
                 InfoPill(
                     modifier = Modifier.weight(1f),
+                    label = "Role: ${state.clusterRoleLabel}",
+                    labelColor = roleColor,
+                    containerColor = roleColor.copy(alpha = 0.14f)
+                )
+                InfoPill(
+                    modifier = Modifier.weight(1f),
+                    label = "Members: ${state.clusterMembersCount}"
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                InfoPill(
+                    modifier = Modifier.weight(1f),
                     label = "Peers: $connectedPeers/$totalPeers",
                     labelColor = peersColor,
                     containerColor = peersColor.copy(alpha = 0.14f)
@@ -136,6 +167,13 @@ internal fun PttStatusBar(
                     containerColor = timerColor.copy(alpha = 0.14f)
                 )
             }
+
+            InfoPill(
+                modifier = Modifier.fillMaxWidth(),
+                label = "Floor: $floorStatus | Owner: ${state.floorOwnerHostAddress ?: "--"}",
+                labelColor = floorColor,
+                containerColor = floorColor.copy(alpha = 0.14f)
+            )
 
             InfoPill(
                 modifier = Modifier.fillMaxWidth(),

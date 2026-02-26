@@ -9,7 +9,6 @@ import pro.devapp.walkietalkiek.core.flags.FeatureFlagsRepository
 import pro.devapp.walkietalkiek.MainViewMode
 import pro.devapp.walkietalkiek.PermissionState
 import pro.devapp.walkietalkiek.core.mvi.CoroutineContextProvider
-import pro.devapp.walkietalkiek.core.network.MqttConfigRepository
 import pro.devapp.walkietalkiek.core.settings.AppSettingsRepository
 import pro.devapp.walkietalkiek.factory.MainScreenInitStateFactory
 import pro.devapp.walkietalkiek.factory.MainTabsFactory
@@ -40,7 +39,6 @@ private fun Module.coreDi() {
     factoryOf(::NotificationController)
     singleOf(::AppSettingsRepository)
     singleOf(::FeatureFlagsRepository)
-    singleOf(::MqttConfigRepository)
 }
 
 private fun Module.factoriesDi() {
