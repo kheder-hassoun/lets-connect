@@ -47,6 +47,16 @@ This plan is optimized for fast delivery by integrating mature libraries instead
 
 Default all to `false` initially.
 
+## Progress Status (Live)
+
+- [x] Phase 0 started
+- [x] Phase 1 started
+- [ ] Phase 2 not started
+- [ ] Phase 3 not started
+- [ ] Phase 4 not started
+- [ ] Phase 5 not started
+- [ ] Phase 6 not started
+
 ## Phased Implementation (Always Runnable)
 
 ## Phase 0 - Baseline and Safety Net (1 sprint)
@@ -54,17 +64,22 @@ Default all to `false` initially.
 ### Work
 
 - Add feature flag plumbing.
+  - Status: [x] Done (runtime flags + Settings toggles added)
 - Define acceptance KPIs:
   - PTT start latency
   - floor conflict count
   - reconnect time
   - crash-free sessions
+  - Status: [x] Done (documented in `docs/slo.md`)
 - Add smoke test checklist and script.
+  - Status: [x] Done (documented in `docs/smoke-test-checklist.md`)
 
 ### Exit Criteria
 
 - `main` builds and runs exactly as today.
+  - Status: [x] Done
 - Baseline KPI report created.
+  - Status: [ ] Pending (template exists at `docs/reports/phase0-baseline.md`)
 
 ### Run Gate
 
@@ -78,18 +93,24 @@ Default all to `false` initially.
 ### Work
 
 - Integrate Paho client.
+  - Status: [x] Done
 - Introduce MQTT topic model:
   - `cluster/{id}/presence`
   - `cluster/{id}/floor`
   - `cluster/{id}/settings`
   - `cluster/{id}/chat`
+  - Status: [~] In progress (`presence` and `chat` implemented; `floor` and `settings` pending)
 - Use retained messages for latest settings/floor snapshot.
+  - Status: [ ] Pending
 - Keep existing socket stack as fallback behind flag.
+  - Status: [x] Done (chat path uses MQTT-first with socket fallback)
 
 ### Exit Criteria
 
 - With `ff_mqtt_control=true`, presence/chat/floor events flow over MQTT.
+  - Status: [~] In progress (presence/chat done, floor pending)
 - With `false`, old flow still works.
+  - Status: [x] Done
 
 ### Run Gate
 
@@ -223,8 +244,8 @@ These are replaced by MQTT + WebRTC/SFU capabilities.
 
 ## Immediate Next Step
 
-Start Phase 0 now:
+Current next step:
 
-1. Add feature flags and runtime toggle source.
-2. Write baseline KPI checklist under `/docs`.
-3. Prepare local MQTT broker setup doc for dev/test.
+1. Finish Phase 1 by implementing MQTT `floor` topic flow behind `ff_mqtt_control`.
+2. Keep legacy floor behavior as fallback path.
+3. Run `assembleDebug` and smoke test after that slice.

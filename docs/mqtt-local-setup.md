@@ -63,6 +63,10 @@ Current implementation note:
 - `cluster/{clusterId}/settings`
 - `cluster/{clusterId}/chat`
 
+Implemented now:
+- `presence`
+- `chat`
+
 ## QA Sanity Test
 
 - Start broker on laptop/server in same LAN.

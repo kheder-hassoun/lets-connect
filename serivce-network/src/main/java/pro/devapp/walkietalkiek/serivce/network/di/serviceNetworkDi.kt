@@ -5,6 +5,7 @@ import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.binds
 import pro.devapp.walkietalkiek.serivce.network.ChanelControllerImpl
+import pro.devapp.walkietalkiek.serivce.network.ChatPublisher
 import pro.devapp.walkietalkiek.serivce.network.ClientController
 import pro.devapp.walkietalkiek.serivce.network.ClientInfoResolver
 import pro.devapp.walkietalkiek.serivce.network.ControlPlaneController
@@ -26,7 +27,10 @@ fun Module.registerServiceNetworkDi() {
     singleOf(::SocketClient)
     singleOf(::SocketServer)
     singleOf(::MqttControlPlaneController).binds(
-        arrayOf(ControlPlaneController::class)
+        arrayOf(
+            ControlPlaneController::class,
+            ChatPublisher::class
+        )
     )
     singleOf(::ChanelControllerImpl).binds(
         arrayOf(

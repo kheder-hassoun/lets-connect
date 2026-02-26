@@ -1,5 +1,6 @@
 package pro.devapp.walkietalkiek.serivce.network
 
+import android.util.Base64
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended
@@ -12,6 +13,7 @@ import pro.devapp.walkietalkiek.core.flags.FeatureFlagsRepository
 import pro.devapp.walkietalkiek.core.mvi.CoroutineContextProvider
 import pro.devapp.walkietalkiek.core.network.MqttConfigRepository
 import pro.devapp.walkietalkiek.serivce.network.data.DeviceInfoRepository
+import pro.devapp.walkietalkiek.serivce.network.data.TextMessagesRepository
 import timber.log.Timber
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -23,8 +25,9 @@ internal class MqttControlPlaneController(
     private val featureFlagsRepository: FeatureFlagsRepository,
     private val mqttConfigRepository: MqttConfigRepository,
     private val deviceInfoRepository: DeviceInfoRepository,
+    private val textMessagesRepository: TextMessagesRepository,
     coroutineContextProvider: CoroutineContextProvider
-) : ControlPlaneController {
+) : ControlPlaneController, ChatPublisher {
 
     private val lock = Any()
     private val scope = coroutineContextProvider.createScope(coroutineContextProvider.io)
@@ -107,10 +110,27 @@ internal class MqttControlPlaneController(
         }
     }
 
+    override fun publishChatMessage(message: String): Boolean {
+        if (!featureFlagsRepository.flags.value.mqttControl) return false
+        val mqttClient = synchronized(lock) { client } ?: return false
+        if (!mqttClient.isConnected) return false
+        val nodeId = selfNodeId ?: return false
+        val payload = encodeChatPayload(nodeId, message)
+        return runCatching {
+            mqttClient.publish(chatTopic(), payload, 0, false)
+            true
+        }.getOrElse { error ->
+            Timber.Forest.w(error, "MQTT chat publish failed")
+            false
+        }
+    }
+
     private fun subscribePresenceAndStartHeartbeat(mqttClient: MqttAsyncClient) {
         val presenceTopic = presenceTopic()
+        val chatTopic = chatTopic()
         runCatching {
             mqttClient.subscribe(presenceTopic, 0)
+            mqttClient.subscribe(chatTopic, 0)
             publishPresence(mqttClient, STATUS_ONLINE)
             presenceJob?.cancel()
             presenceJob = scope.launch {
@@ -142,9 +162,14 @@ internal class MqttControlPlaneController(
     }
 
     private fun handleIncomingMessage(topic: String, message: MqttMessage) {
-        if (topic != presenceTopic()) {
-            return
+        when (topic) {
+            presenceTopic() -> handlePresenceMessage(message)
+            chatTopic() -> handleChatMessage(message)
+            else -> Unit
         }
+    }
+
+    private fun handlePresenceMessage(message: MqttMessage) {
         val value = message.payload?.decodeToString().orEmpty()
         val tokens = value.split('|')
         if (tokens.size < 3) return
@@ -155,12 +180,50 @@ internal class MqttControlPlaneController(
         Timber.Forest.i("MQTT presence: node=$nodeId status=$status ts=$ts")
     }
 
+    private fun handleChatMessage(message: MqttMessage) {
+        val (nodeId, content) = decodeChatPayload(message.payload) ?: return
+        if (nodeId == selfNodeId) return
+        textMessagesRepository.addMessage(
+            message = content,
+            hostAddress = MQTT_HOST_PREFIX + nodeId
+        )
+    }
+
     private fun presenceTopic(): String {
         val clusterId = mqttConfigRepository.config.value.clusterId
         return "cluster/$clusterId/presence"
+    }
+
+    private fun chatTopic(): String {
+        val clusterId = mqttConfigRepository.config.value.clusterId
+        return "cluster/$clusterId/chat"
+    }
+
+    private fun encodeChatPayload(nodeId: String, message: String): ByteArray {
+        val messageEncoded = Base64.encodeToString(
+            message.toByteArray(),
+            Base64.NO_WRAP or Base64.NO_PADDING
+        )
+        return "$nodeId|$messageEncoded".toByteArray()
+    }
+
+    private fun decodeChatPayload(payload: ByteArray?): Pair<String, String>? {
+        if (payload == null || payload.isEmpty()) return null
+        val value = payload.decodeToString()
+        val tokens = value.split('|', limit = 2)
+        if (tokens.size < 2) return null
+        val nodeId = tokens[0]
+        if (nodeId.isBlank()) return null
+        val messageBytes = runCatching {
+            Base64.decode(tokens[1], Base64.NO_WRAP or Base64.NO_PADDING)
+        }.getOrNull() ?: return null
+        val message = messageBytes.decodeToString().trim()
+        if (message.isEmpty()) return null
+        return nodeId to message
     }
 }
 
 private const val PRESENCE_HEARTBEAT_MS = 10_000L
 private const val STATUS_ONLINE = "online"
 private const val STATUS_OFFLINE = "offline"
+private const val MQTT_HOST_PREFIX = "mqtt:"

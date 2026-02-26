@@ -33,4 +33,7 @@ All default to `false`.
 
 - `mqttControl` now starts/stops MQTT control-plane logic in `WalkieService`.
 - MQTT now uses runtime config from `MqttConfigRepository` (`brokerHost`, `brokerPort`, `clusterId`).
-- Initial topic flow is implemented for `cluster/{clusterId}/presence` (subscribe + heartbeat publish).
+- Topic flow implemented:
+  - `cluster/{clusterId}/presence` (subscribe + heartbeat publish)
+  - `cluster/{clusterId}/chat` (publish + subscribe)
+- Chat send path is MQTT-first when `mqttControl=true`, with socket fallback when MQTT is unavailable.
