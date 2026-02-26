@@ -3,6 +3,8 @@ package pro.devapp.walkietalkiek.serivce.network
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import pro.devapp.walkietalkiek.core.mvi.CoroutineContextProvider
 import pro.devapp.walkietalkiek.serivce.network.data.ClusterMembershipRepository
@@ -22,6 +24,7 @@ import kotlin.random.Random
 class SocketServer(
     private val connectedDevicesRepository: ConnectedDevicesRepository,
     private val clientSocket: SocketClient,
+    private val floorArbitrationState: FloorArbitrationState,
     private val clusterMembershipRepository: ClusterMembershipRepository,
     private val textMessagesRepository: TextMessagesRepository,
     private val pttFloorRepository: PttFloorRepository,
@@ -39,6 +42,7 @@ class SocketServer(
     private val writeDataScope = coroutineContextProvider.createScope(
         coroutineContextProvider.io
     )
+    private var floorOwnerMonitorJob: Job? = null
 
     private val SERVER_PORT by lazy {
         getPort().also { port ->
@@ -57,14 +61,13 @@ class SocketServer(
      * Data for sending
      */
     private val outputQueueMap = ConcurrentHashMap<String, LinkedBlockingDeque<ByteArray>>()
-    private val nodeHostMap = ConcurrentHashMap<String, String>()
-    private val pendingFloorQueue = ArrayDeque<String>()
 
     private var socket: ServerSocket? = null
 
     var dataListener: ((bytes: ByteArray) -> Unit)? = null
 
     fun initServer(): Int {
+        startFloorOwnerMonitorIfNeeded()
         if (socket != null && socket?.isClosed == false) {
             return SERVER_PORT
         }
@@ -93,6 +96,25 @@ class SocketServer(
             }
         }
         return SERVER_PORT
+    }
+
+    private fun startFloorOwnerMonitorIfNeeded() {
+        if (floorOwnerMonitorJob?.isActive == true) return
+        floorOwnerMonitorJob = acceptConnectionScope.launch {
+            var previousOwner: String? = pttFloorRepository.currentFloorOwnerHost.value
+            pttFloorRepository.currentFloorOwnerHost.collect { currentOwner ->
+                val ownerReleased = previousOwner != null && currentOwner == null
+                previousOwner = currentOwner
+                if (!ownerReleased) {
+                    return@collect
+                }
+                val status = clusterMembershipRepository.status.value
+                if (status.role == pro.devapp.walkietalkiek.serivce.network.data.ClusterRole.LEADER) {
+                    Timber.Forest.i("Floor owner released/expired. Attempting queued grant.")
+                    grantNextQueuedIfAny()
+                }
+            }
+        }
     }
 
     private fun handleConnection(client: Socket) {
@@ -160,13 +182,16 @@ class SocketServer(
         val hostAddress = client.inetAddress?.hostAddress ?: return
         client.close()
         outputQueueMap.remove(hostAddress)
-        val removedNodeIds = nodeHostMap.entries
-            .filter { it.value == hostAddress }
-            .map { it.key }
+        val removedNodeIds = floorArbitrationState.removeHost(hostAddress)
         if (removedNodeIds.isNotEmpty()) {
             removedNodeIds.forEach { nodeId ->
-                nodeHostMap.remove(nodeId)
-                pendingFloorQueue.remove(nodeId)
+                pttFloorRepository.releaseIfOwner("node:$nodeId")
+            }
+            val status = clusterMembershipRepository.status.value
+            if (status.role == pro.devapp.walkietalkiek.serivce.network.data.ClusterRole.LEADER &&
+                pttFloorRepository.currentFloorOwnerHost.value == null
+            ) {
+                grantNextQueuedIfAny()
             }
         }
         clientSocket.removeClient(hostAddress)
@@ -200,21 +225,26 @@ class SocketServer(
                             timestampMs = clusterControl.timestampMs,
                             nowMs = System.currentTimeMillis()
                         )
-                        nodeHostMap[clusterControl.nodeId] = hostAddress
+                        floorArbitrationState.rememberNodeHost(clusterControl.nodeId, hostAddress)
                         handleFloorRequestAsLeader(clusterControl, hostAddress)
                     }
                     is ControlEnvelope.FloorGrant -> {
+                        Timber.Forest.i("FLOOR_GRANT received target=${clusterControl.targetNodeId}")
                         pttFloorRepository.acquire("node:${clusterControl.targetNodeId}")
                     }
                     is ControlEnvelope.FloorRelease -> {
-                        pendingFloorQueue.remove(clusterControl.nodeId)
+                        Timber.Forest.i("FLOOR_RELEASE received node=${clusterControl.nodeId}")
+                        floorArbitrationState.removeNodeFromQueue(clusterControl.nodeId)
                         val released = pttFloorRepository.releaseIfOwner("node:${clusterControl.nodeId}")
                         val status = clusterMembershipRepository.status.value
-                        if (released && status.role == pro.devapp.walkietalkiek.serivce.network.data.ClusterRole.LEADER) {
+                        if (status.role == pro.devapp.walkietalkiek.serivce.network.data.ClusterRole.LEADER &&
+                            (released || pttFloorRepository.currentFloorOwnerHost.value == null)
+                        ) {
                             grantNextQueuedIfAny()
                         }
                     }
                     is ControlEnvelope.FloorBusy -> {
+                        Timber.Forest.i("FLOOR_BUSY received owner=${clusterControl.ownerNodeId}")
                         pttFloorRepository.acquire("node:${clusterControl.ownerNodeId}")
                     }
                 }
@@ -248,7 +278,8 @@ class SocketServer(
         val requestedOwner = "node:${request.nodeId}"
         val shouldGrant = currentOwner == null || currentOwner == requestedOwner
         if (shouldGrant) {
-            pendingFloorQueue.remove(request.nodeId)
+            Timber.Forest.i("Granting floor to ${request.nodeId} host=$requesterHostAddress")
+            floorArbitrationState.removeNodeFromQueue(request.nodeId)
             pttFloorRepository.acquire(requestedOwner)
             val grant = ServerlessControlProtocol.floorGrantPacket(
                 leaderNodeId = status.selfNodeId,
@@ -259,9 +290,8 @@ class SocketServer(
             )
             sendControlEnvelope(grant, requesterHostAddress)
         } else {
-            if (!pendingFloorQueue.contains(request.nodeId)) {
-                pendingFloorQueue.addLast(request.nodeId)
-            }
+            floorArbitrationState.enqueue(request.nodeId)
+            Timber.Forest.i("Queueing floor request from ${request.nodeId}; owner=$currentOwner")
             val ownerNodeId = currentOwner?.removePrefix("node:")?.ifBlank { status.selfNodeId } ?: status.selfNodeId
             val busy = ServerlessControlProtocol.floorBusyPacket(
                 leaderNodeId = status.selfNodeId,
@@ -270,29 +300,26 @@ class SocketServer(
                 seq = clusterMembershipRepository.nextSequence(),
                 timestampMs = System.currentTimeMillis()
             )
-            sendControlEnvelope(busy, requesterHostAddress)
+            sendControlEnvelopeToHostOnly(busy, requesterHostAddress)
         }
     }
 
     private fun grantNextQueuedIfAny() {
         val status = clusterMembershipRepository.status.value
         if (status.role != pro.devapp.walkietalkiek.serivce.network.data.ClusterRole.LEADER) return
-        while (pendingFloorQueue.isNotEmpty()) {
-            val nextNodeId = pendingFloorQueue.removeFirst()
-            val nextHostAddress = nodeHostMap[nextNodeId]
-            if (nextHostAddress.isNullOrBlank()) {
-                continue
-            }
-            val ownerToken = "node:$nextNodeId"
+        while (true) {
+            val nextTarget = floorArbitrationState.pollNextTarget() ?: return
+            Timber.Forest.i("Granting queued floor to ${nextTarget.nodeId} host=${nextTarget.hostAddress}")
+            val ownerToken = "node:${nextTarget.nodeId}"
             pttFloorRepository.acquire(ownerToken)
             val grant = ServerlessControlProtocol.floorGrantPacket(
                 leaderNodeId = status.selfNodeId,
-                targetNodeId = nextNodeId,
+                targetNodeId = nextTarget.nodeId,
                 term = status.term,
                 seq = clusterMembershipRepository.nextSequence(),
                 timestampMs = System.currentTimeMillis()
             )
-            sendControlEnvelope(grant, nextHostAddress)
+            sendControlEnvelope(grant, nextTarget.hostAddress)
             return
         }
     }
@@ -311,6 +338,16 @@ class SocketServer(
         }
     }
 
+    private fun sendControlEnvelopeToHostOnly(data: ByteArray, preferredHostAddress: String) {
+        sendMessageToHost(preferredHostAddress, data)
+        clientSocket.sendMessageToHost(preferredHostAddress, data)
+        acceptConnectionScope.launch {
+            delay(120L)
+            sendMessageToHost(preferredHostAddress, data)
+            clientSocket.sendMessageToHost(preferredHostAddress, data)
+        }
+    }
+
     private fun sendMessageToHost(hostAddress: String, data: ByteArray) {
         outputQueueMap[hostAddress]?.offerLast(data.copyOf())
     }
@@ -323,9 +360,10 @@ class SocketServer(
         socket?.apply {
             close()
         }
+        floorOwnerMonitorJob?.cancel()
+        floorOwnerMonitorJob = null
         outputQueueMap.clear()
-        pendingFloorQueue.clear()
-        nodeHostMap.clear()
+        floorArbitrationState.clear()
         readDataScope.cancel()
         writeDataScope.cancel()
         acceptConnectionScope.cancel()

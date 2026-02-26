@@ -64,6 +64,7 @@ class PttFloorRepository(
                 val stillOwnedBySender = _currentFloorOwnerHost.value == hostAddress
                 if (isSameSession && stillOwnedBySender) {
                     _currentFloorOwnerHost.value = null
+                    floorSessionVersion += 1
                 }
             }
         }

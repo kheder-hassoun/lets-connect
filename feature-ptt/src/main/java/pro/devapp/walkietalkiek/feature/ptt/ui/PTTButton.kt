@@ -134,14 +134,13 @@ fun PTTButton(
         Box(
             modifier = Modifier
                 .size(touchSize)
-                .pointerInput(isEnabled) {
+                .pointerInput(Unit) {
                     detectTapGestures(
                         onPress = {
                             if (!isEnabled) return@detectTapGestures
-                            try {
-                                onPress()
-                                awaitRelease()
-                            } finally {
+                            onPress()
+                            val released = tryAwaitRelease()
+                            if (released) {
                                 onRelease()
                             }
                         }

@@ -37,6 +37,7 @@ internal class ChanelControllerImpl(
     private val deviceInfoRepository: DeviceInfoRepository,
     private val connectedDevicesRepository: ConnectedDevicesRepository,
     private val clusterMembershipRepository: ClusterMembershipRepository,
+    private val floorArbitrationState: FloorArbitrationState,
     private val pttFloorRepository: PttFloorRepository,
     private val featureFlagsRepository: FeatureFlagsRepository,
     private val client: SocketClient,
@@ -56,6 +57,7 @@ internal class ChanelControllerImpl(
     override fun startDiscovery() {
         connectedDevicesRepository.clearAll()
         clusterMembershipRepository.clear()
+        floorArbitrationState.clear()
         pttFloorRepository.clear()
         localNodeId = deviceInfoRepository.getCurrentDeviceInfo().deviceId
         clusterMembershipRepository.initializeSelf(localNodeId, System.currentTimeMillis())
@@ -75,6 +77,7 @@ internal class ChanelControllerImpl(
         server.stop()
         connectedDevicesRepository.clearAll()
         clusterMembershipRepository.clear()
+        floorArbitrationState.clear()
         pttFloorRepository.clear()
         pingScope?.cancel()
     }
@@ -94,18 +97,27 @@ internal class ChanelControllerImpl(
             sendMessage(FloorControlProtocol.acquirePacket())
             return FloorLeaseRequestResult.Granted
         }
+        val localNodeIdResolved = resolveLocalNodeId(status.selfNodeId)
+        if (localNodeIdResolved.isBlank()) {
+            Timber.Forest.w("requestFloor: local node id is blank; returning pending")
+            return FloorLeaseRequestResult.Pending
+        }
         val now = System.currentTimeMillis()
         val term = status.term
         val seq = clusterMembershipRepository.nextSequence()
-        val selfToken = localFloorToken()
+        val selfToken = "node:$localNodeIdResolved"
+        val owner = pttFloorRepository.currentFloorOwnerHost.value
+        if (owner.equals(selfToken, ignoreCase = true)) {
+            Timber.Forest.i("requestFloor: already floor owner ($selfToken). Granting locally.")
+            return FloorLeaseRequestResult.Granted
+        }
         if (status.role == pro.devapp.walkietalkiek.serivce.network.data.ClusterRole.LEADER) {
-            val owner = pttFloorRepository.currentFloorOwnerHost.value
             val canGrantToSelf = owner == null || owner == selfToken
             if (canGrantToSelf) {
                 pttFloorRepository.acquire(selfToken)
                 val grant = ServerlessControlProtocol.floorGrantPacket(
-                    leaderNodeId = localNodeId,
-                    targetNodeId = localNodeId,
+                    leaderNodeId = localNodeIdResolved,
+                    targetNodeId = localNodeIdResolved,
                     term = term,
                     seq = seq,
                     timestampMs = now
@@ -116,7 +128,7 @@ internal class ChanelControllerImpl(
             return FloorLeaseRequestResult.Pending
         }
         val request = ServerlessControlProtocol.floorRequestPacket(
-            nodeId = localNodeId,
+            nodeId = localNodeIdResolved,
             term = term,
             seq = seq,
             timestampMs = now
@@ -135,7 +147,7 @@ internal class ChanelControllerImpl(
         val term = status.term
         val seq = clusterMembershipRepository.nextSequence()
         val release = ServerlessControlProtocol.floorReleasePacket(
-            nodeId = localNodeId,
+            nodeId = resolveLocalNodeId(status.selfNodeId),
             term = term,
             seq = seq,
             timestampMs = now
@@ -205,7 +217,17 @@ internal class ChanelControllerImpl(
         client.sendMessage("ping".toByteArray())
     }
 
-    private fun localFloorToken(): String = "node:$localNodeId"
+    private fun localFloorToken(): String = "node:${resolveLocalNodeId()}"
+
+    private fun resolveLocalNodeId(statusSelfNodeId: String = ""): String {
+        val resolved = localNodeId.ifBlank { statusSelfNodeId }.ifBlank {
+            deviceInfoRepository.getCurrentDeviceInfo().deviceId
+        }
+        if (localNodeId.isBlank() && resolved.isNotBlank()) {
+            localNodeId = resolved
+        }
+        return resolved
+    }
 
     override fun onServiceFound(serviceInfo: NsdServiceInfo) {
         // check for self add to list

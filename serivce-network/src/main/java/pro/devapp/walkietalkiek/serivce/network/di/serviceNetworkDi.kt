@@ -7,6 +7,7 @@ import org.koin.dsl.binds
 import pro.devapp.walkietalkiek.serivce.network.ChanelControllerImpl
 import pro.devapp.walkietalkiek.serivce.network.ClientController
 import pro.devapp.walkietalkiek.serivce.network.ClientInfoResolver
+import pro.devapp.walkietalkiek.serivce.network.FloorArbitrationState
 import pro.devapp.walkietalkiek.serivce.network.FloorLeaseController
 import pro.devapp.walkietalkiek.serivce.network.MessageController
 import pro.devapp.walkietalkiek.serivce.network.SocketClient
@@ -23,6 +24,7 @@ fun Module.registerServiceNetworkDi() {
     singleOf(::ConnectedDevicesRepository)
     singleOf(::ClusterMembershipRepository)
     singleOf(::PttFloorRepository)
+    singleOf(::FloorArbitrationState)
 
     singleOf(::SocketClient)
     singleOf(::SocketServer)

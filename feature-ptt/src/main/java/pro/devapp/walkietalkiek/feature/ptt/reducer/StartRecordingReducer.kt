@@ -32,13 +32,6 @@ internal class StartRecordingReducer(
                 event = null
             )
         }
-        val isFloorBusyByRemote = state.floorOwnerHostAddress != null && !state.isFloorHeldByMe
-        if (isFloorBusyByRemote) {
-            return Reducer.Result(
-                state = state,
-                event = null
-            )
-        }
         if (featureFlagsRepository.flags.value.serverlessControl) {
             return when (floorLeaseController.requestFloor()) {
                 FloorLeaseRequestResult.Granted -> {
@@ -62,6 +55,13 @@ internal class StartRecordingReducer(
                     event = null
                 )
             }
+        }
+        val isFloorBusyByRemote = state.floorOwnerHostAddress != null && !state.isFloorHeldByMe
+        if (isFloorBusyByRemote) {
+            return Reducer.Result(
+                state = state,
+                event = null
+            )
         }
         messageController.sendMessage(FloorControlProtocol.acquirePacket())
         voiceRecorder.startRecord()

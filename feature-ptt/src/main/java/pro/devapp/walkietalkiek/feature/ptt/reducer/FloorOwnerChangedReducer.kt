@@ -16,19 +16,33 @@ internal class FloorOwnerChangedReducer :
     ): Reducer.Result<PttScreenState, PttAction, PttEvent?> {
         val state = getState()
         val owner = action.ownerHostAddress
-        val selfNodeToken = state.selfNodeId.takeIf { it.isNotBlank() }?.let { "node:$it" }
+        val selfNodeId = state.selfNodeId.trim()
+        val selfNodeToken = selfNodeId.takeIf { it.isNotBlank() }?.let { "node:$it" }
         val selfIpToken = state.myIP.takeIf { it.isNotBlank() && it != "-" && it != "--" }?.let { "node:$it" }
+        val ownerNodeId = owner?.removePrefix("node:")?.trim().orEmpty()
         val grantedToMe = owner != null && (
-            owner == selfNodeToken ||
-                owner == selfIpToken
+            owner.equals(selfNodeToken, ignoreCase = true) ||
+                owner.equals(selfIpToken, ignoreCase = true) ||
+                (selfNodeId.isNotBlank() && ownerNodeId.equals(selfNodeId, ignoreCase = true))
             )
         if (state.isFloorRequestPending && grantedToMe) {
             return Reducer.Result(
                 state = state.copy(
                     floorOwnerHostAddress = owner,
-                    isFloorHeldByMe = true
+                    isFloorHeldByMe = true,
+                    isFloorRequestPending = false
                 ),
                 action = PttAction.StartRecordingGranted,
+                event = null
+            )
+        }
+        if (state.isFloorRequestPending && owner != null && !grantedToMe) {
+            return Reducer.Result(
+                state = state.copy(
+                    floorOwnerHostAddress = owner,
+                    isFloorHeldByMe = false,
+                    isFloorRequestPending = true
+                ),
                 event = null
             )
         }
