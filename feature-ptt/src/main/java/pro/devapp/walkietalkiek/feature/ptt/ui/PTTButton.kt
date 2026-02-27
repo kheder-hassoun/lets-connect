@@ -39,6 +39,7 @@ fun PTTButton(
     isOnline: Boolean = true,
     isEnabled: Boolean = true,
     isLockedByRemote: Boolean = false,
+    isRemoteSpeaking: Boolean = false,
     isRecording: Boolean = false,
     remainingSeconds: Int = 0,
     remainingMillis: Long = 0L,
@@ -77,7 +78,11 @@ fun PTTButton(
     val accent = MaterialTheme.colorScheme.primary
     val accentSoft = MaterialTheme.colorScheme.secondary
     val accentDeep = MaterialTheme.colorScheme.tertiary
-    val liquidBaseColor = if (isOnline) accent.copy(alpha = 0.2f) else Color(0x22000000)
+    val liquidBaseColor = when {
+        isRemoteSpeaking -> Color(0xFF2B2B2B)
+        isOnline -> accent.copy(alpha = 0.2f)
+        else -> Color(0x22000000)
+    }
     val liquidGradient = Brush.verticalGradient(
         colors = listOf(
             accentSoft,
@@ -86,14 +91,30 @@ fun PTTButton(
         )
     )
     val neonSweep = Brush.sweepGradient(
+        colors = if (isRemoteSpeaking) {
+            listOf(
+                Color(0xFF5A5A5A),
+                Color(0xFF6C6C6C),
+                Color(0xFF4A4A4A),
+                Color(0xFF5A5A5A)
+            )
+        } else {
+            listOf(
+                Color(0xFF90CAF9),
+                Color(0xFF64B5F6),
+                Color(0xFF7986CB),
+                Color(0xFF9575CD),
+                Color(0xFF7E57C2),
+                Color(0xFF5C6BC0),
+                Color(0xFF90CAF9)
+            )
+        }
+    )
+    val remoteWaveGradient = Brush.verticalGradient(
         colors = listOf(
-            Color(0xFF90CAF9),
-            Color(0xFF64B5F6),
-            Color(0xFF7986CB),
-            Color(0xFF9575CD),
-            Color(0xFF7E57C2),
-            Color(0xFF5C6BC0),
-            Color(0xFF90CAF9)
+            Color(0xFF7A7A7A),
+            Color(0xFF5A5A5A),
+            Color(0xFF3A3A3A)
         )
     )
     val touchSize = buttonSize * 0.74f
@@ -109,7 +130,13 @@ fun PTTButton(
 
             drawCircle(color = Color(0xFF181818), radius = innerRadius, center = center)
 
-            val liquidLevel = center.y + innerRadius - (innerRadius * 2f * fraction)
+            val remoteWaveLevel = 0.48f + (kotlin.math.sin(waveShift * 0.6f) * 0.14f)
+            val levelFraction = when {
+                isRecording -> fraction
+                isRemoteSpeaking -> remoteWaveLevel.coerceIn(0.22f, 0.78f)
+                else -> 1f
+            }
+            val liquidLevel = center.y + innerRadius - (innerRadius * 2f * levelFraction)
             val waveAmplitude = 6.dp.toPx()
             val liquidPath = Path().apply {
                 moveTo(center.x - innerRadius, center.y + innerRadius)
@@ -137,8 +164,12 @@ fun PTTButton(
             }
             clipPath(clipCircle) {
                 drawRect(color = liquidBaseColor)
-                if (isRecording) {
-                    drawPath(path = liquidPath, brush = liquidGradient, alpha = 0.95f)
+                if (isRecording || isRemoteSpeaking) {
+                    drawPath(
+                        path = liquidPath,
+                        brush = if (isRemoteSpeaking) remoteWaveGradient else liquidGradient,
+                        alpha = if (isRemoteSpeaking) 0.82f else 0.95f
+                    )
                 }
             }
             drawCircle(
@@ -184,13 +215,16 @@ fun PTTButton(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.ptt_call),
+                painter = painterResource(
+                    id = if (isRemoteSpeaking) R.drawable.speaker else R.drawable.ptt_call
+                ),
                 contentDescription = "Push to talk",
                 modifier = Modifier
                     .padding(iconPadding)
                     .fillMaxSize(),
                 tint = when {
                     isRecording -> MaterialTheme.colorScheme.onPrimary
+                    isRemoteSpeaking -> Color(0xFFBDBDBD)
                     !isEnabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
                     else -> MaterialTheme.colorScheme.onSurface
                 }

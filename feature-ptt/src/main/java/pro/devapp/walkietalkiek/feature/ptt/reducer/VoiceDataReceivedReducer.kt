@@ -13,9 +13,12 @@ internal class VoiceDataReceivedReducer : Reducer<PttAction.VoiceDataReceived, P
         action: PttAction.VoiceDataReceived,
         getState: () -> PttScreenState
     ): Reducer.Result<PttScreenState, PttAction, PttEvent?> {
+        val state = getState()
+        val shouldMarkRemoteSpeaking = !state.isRecording && !state.isFloorHeldByMe
         return Reducer.Result(
-            state = getState().copy(
+            state = state.copy(
                 voiceData = action.voiceData,
+                isRemoteSpeaking = state.isRemoteSpeaking || shouldMarkRemoteSpeaking
             ),
             event = null
         )

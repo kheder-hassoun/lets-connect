@@ -6,8 +6,16 @@ import android.media.AudioManager
 import android.media.AudioTrack
 import android.os.Build
 import pro.devapp.walkietalkiek.serivce.network.SocketClient
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import pro.devapp.walkietalkiek.serivce.network.SocketServer
 import timber.log.Timber
 
@@ -21,7 +29,11 @@ class VoicePlayer(
     private var audioTrack: AudioTrack? = null
     private var bufferSize = 0
     private var lastVoicePacketAt = 0L
-    private val remoteSessionGapMs = 1200L
+    private val remoteSessionGapMs = 650L
+    private val remoteBurstCheckIntervalMs = 150L
+    private var remoteBurstActive = false
+    private var remoteBurstMonitorJob: Job? = null
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _voiceDataFlow = MutableSharedFlow<ByteArray>(
         replay = 1,
@@ -81,6 +93,22 @@ class VoicePlayer(
         }
         socketServer.dataListener = onVoicePacket
         socketClient.dataListener = onVoicePacket
+        if (remoteBurstMonitorJob?.isActive != true) {
+            remoteBurstMonitorJob = scope.launch {
+                while (isActive) {
+                    val now = System.currentTimeMillis()
+                    if (remoteBurstActive && now - lastVoicePacketAt > remoteSessionGapMs) {
+                        remoteBurstActive = false
+                        runCatching {
+                            pttTonePlayer.playRelease()
+                        }.onFailure { error ->
+                            Timber.Forest.w(error, "PTT release tone play failed on remote burst end")
+                        }
+                    }
+                    delay(remoteBurstCheckIntervalMs)
+                }
+            }
+        }
     }
 
     private fun play(bytes: ByteArray) {
@@ -105,6 +133,7 @@ class VoicePlayer(
             }
         }
         lastVoicePacketAt = now
+        remoteBurstActive = true
 
         runCatching {
             val track = audioTrack ?: return@runCatching
@@ -129,12 +158,16 @@ class VoicePlayer(
         synchronized(playbackLock) {
             socketServer.dataListener = null
             socketClient.dataListener = null
+            remoteBurstMonitorJob?.cancel()
+            remoteBurstMonitorJob = null
+            remoteBurstActive = false
             audioTrack?.apply {
                 runCatching { stop() }
                 runCatching { release() }
             }
             audioTrack = null
             pttTonePlayer.release()
+            scope.cancel()
         }
     }
 

@@ -7,9 +7,11 @@ import pro.devapp.walkietalkiek.feature.ptt.PttActionProcessor
 import pro.devapp.walkietalkiek.feature.ptt.PttViewModel
 import pro.devapp.walkietalkiek.feature.ptt.factory.PttInitStateFactory
 import pro.devapp.walkietalkiek.feature.ptt.reducer.ClusterStatusChangedReducer
+import pro.devapp.walkietalkiek.feature.ptt.reducer.ClearVoiceVisualizationReducer
 import pro.devapp.walkietalkiek.feature.ptt.reducer.ConnectedDevicesUpdatedReducer
 import pro.devapp.walkietalkiek.feature.ptt.reducer.FloorOwnerChangedReducer
 import pro.devapp.walkietalkiek.feature.ptt.reducer.InitScreenReducer
+import pro.devapp.walkietalkiek.feature.ptt.reducer.RemoteSpeakingChangedReducer
 import pro.devapp.walkietalkiek.feature.ptt.reducer.StartRecordingReducer
 import pro.devapp.walkietalkiek.feature.ptt.reducer.StartRecordingGrantedReducer
 import pro.devapp.walkietalkiek.feature.ptt.reducer.StopRecordingReducer
@@ -36,6 +38,8 @@ private fun Module.reducersDi() {
     factoryOf(::StartRecordingGrantedReducer)
     factoryOf(::StopRecordingReducer)
     factoryOf(::VoiceDataReceivedReducer)
+    factoryOf(::RemoteSpeakingChangedReducer)
+    factoryOf(::ClearVoiceVisualizationReducer)
     factoryOf(::TalkTimerTickReducer)
     factoryOf(::TalkDurationChangedReducer)
     factory {
@@ -49,6 +53,8 @@ private fun Module.reducersDi() {
                 get(StartRecordingGrantedReducer::class),
                 get(StopRecordingReducer::class),
                 get(VoiceDataReceivedReducer::class),
+                get(RemoteSpeakingChangedReducer::class),
+                get(ClearVoiceVisualizationReducer::class),
                 get(TalkTimerTickReducer::class),
                 get(TalkDurationChangedReducer::class)
             ),

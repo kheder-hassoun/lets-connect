@@ -44,9 +44,11 @@ internal class StopRecordingReducer(
         return Reducer.Result(
             state = state.copy(
                 isRecording = false,
+                isRemoteSpeaking = false,
                 isFloorRequestPending = false,
                 isFloorHeldByMe = false,
                 floorOwnerHostAddress = null,
+                voiceData = null,
                 remainingTalkSeconds = state.talkDurationSeconds,
                 remainingTalkMillis = state.talkDurationSeconds * 1000L
             ),

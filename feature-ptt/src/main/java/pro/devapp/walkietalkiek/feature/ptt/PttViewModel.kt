@@ -1,5 +1,6 @@
 package pro.devapp.walkietalkiek.feature.ptt
 
+import android.os.SystemClock
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -32,6 +33,8 @@ internal class PttViewModel(
     private var talkTimerJob: Job? = null
     private var floorRequestTimeoutJob: Job? = null
     private var floorRequestRetryJob: Job? = null
+    private var remoteSpeakingWatchdogJob: Job? = null
+    private var lastRemoteVoicePacketAtMs: Long = 0L
     private var collectorsStarted = false
 
     fun startCollectingConnectedDevices() {
@@ -64,6 +67,10 @@ internal class PttViewModel(
                     onPttAction(PttAction.VoiceDataReceived(it))
                     lastWaveUpdateAt = now
                 }
+                if (!state.value.isRecording && !state.value.isFloorHeldByMe) {
+                    lastRemoteVoicePacketAtMs = SystemClock.elapsedRealtime()
+                    onPttAction(PttAction.RemoteSpeakingChanged(isSpeaking = true))
+                }
             }
         }
         viewModelScope.launch {
@@ -74,6 +81,9 @@ internal class PttViewModel(
         viewModelScope.launch {
             pttFloorRepository.currentFloorOwnerHost.collect {
                 onPttAction(PttAction.FloorOwnerChanged(it))
+                if (it == null && !state.value.isRecording) {
+                    onPttAction(PttAction.ClearVoiceVisualization)
+                }
             }
         }
         viewModelScope.launch {
@@ -127,6 +137,29 @@ internal class PttViewModel(
                     floorRequestRetryJob?.cancel()
                     floorRequestRetryJob = null
                 }
+
+                if (current.isRemoteSpeaking && !current.isRecording) {
+                    if (lastRemoteVoicePacketAtMs == 0L) {
+                        lastRemoteVoicePacketAtMs = SystemClock.elapsedRealtime()
+                    }
+                    if (remoteSpeakingWatchdogJob?.isActive != true) {
+                        remoteSpeakingWatchdogJob = viewModelScope.launch {
+                            while (true) {
+                                delay(REMOTE_SPEAKING_WATCHDOG_INTERVAL_MS)
+                                val elapsed = SystemClock.elapsedRealtime() - lastRemoteVoicePacketAtMs
+                                if (elapsed >= REMOTE_SPEAKING_TIMEOUT_MS) {
+                                    onPttAction(PttAction.RemoteSpeakingChanged(false))
+                                    onPttAction(PttAction.ClearVoiceVisualization)
+                                    break
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    lastRemoteVoicePacketAtMs = 0L
+                    remoteSpeakingWatchdogJob?.cancel()
+                    remoteSpeakingWatchdogJob = null
+                }
             }
         }
     }
@@ -137,10 +170,13 @@ internal class PttViewModel(
                 if (state.value.isRecording) {
                     stopTalkTimer()
                 }
+                lastRemoteVoicePacketAtMs = 0L
                 floorRequestTimeoutJob?.cancel()
                 floorRequestTimeoutJob = null
                 floorRequestRetryJob?.cancel()
                 floorRequestRetryJob = null
+                remoteSpeakingWatchdogJob?.cancel()
+                remoteSpeakingWatchdogJob = null
             }
             else -> Unit
         }
@@ -173,3 +209,5 @@ private const val WAVE_UI_UPDATE_THROTTLE_MS = 140L
 private const val FLOOR_REQUEST_TIMEOUT_MS = 7000L
 private const val FLOOR_REQUEST_RETRY_INITIAL_DELAY_MS = 500L
 private const val FLOOR_REQUEST_RETRY_MS = 900L
+private const val REMOTE_SPEAKING_TIMEOUT_MS = 850L
+private const val REMOTE_SPEAKING_WATCHDOG_INTERVAL_MS = 130L

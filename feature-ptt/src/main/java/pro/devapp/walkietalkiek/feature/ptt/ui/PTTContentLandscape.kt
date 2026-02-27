@@ -26,9 +26,10 @@ internal fun PTTContentLandscape(
     val hasValidIp = state.myIP != "-" && state.myIP != "--" && state.myIP.isNotBlank()
     val hasConnectedPeers = state.connectedDevices.any { it.isConnected }
     val canTalk = hasValidIp || hasConnectedPeers
-    val isFloorBusyByRemote = state.floorOwnerHostAddress != null &&
+    val isFloorOwnedByRemote = state.floorOwnerHostAddress != null &&
         !state.isFloorHeldByMe &&
         !state.isRecording
+    val isFloorBusyByRemote = isFloorOwnedByRemote || (state.isRemoteSpeaking && !state.isRecording)
     val canPressPtt = (canTalk && !isFloorBusyByRemote) || state.isRecording
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
@@ -80,6 +81,8 @@ internal fun PTTContentLandscape(
                     buttonSize = buttonSize,
                     isOnline = canTalk,
                     isEnabled = canPressPtt,
+                    isLockedByRemote = isFloorBusyByRemote,
+                    isRemoteSpeaking = state.isRemoteSpeaking,
                     isRecording = state.isRecording,
                     remainingMillis = state.remainingTalkMillis,
                     totalSeconds = state.talkDurationSeconds,

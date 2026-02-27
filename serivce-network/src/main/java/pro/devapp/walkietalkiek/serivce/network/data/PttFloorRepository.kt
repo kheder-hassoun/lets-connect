@@ -49,6 +49,21 @@ class PttFloorRepository(
         return false
     }
 
+    fun releaseByNodeId(nodeId: String): Boolean {
+        val normalizedNodeId = nodeId.trim()
+        if (normalizedNodeId.isBlank()) return false
+        synchronized(lock) {
+            val currentOwner = _currentFloorOwnerHost.value ?: return false
+            val ownerNodeId = currentOwner.removePrefix("node:").trim()
+            if (ownerNodeId.equals(normalizedNodeId, ignoreCase = true)) {
+                _currentFloorOwnerHost.value = null
+                floorSessionVersion += 1
+                return true
+            }
+        }
+        return false
+    }
+
     fun clear() {
         synchronized(lock) {
             _currentFloorOwnerHost.value = null

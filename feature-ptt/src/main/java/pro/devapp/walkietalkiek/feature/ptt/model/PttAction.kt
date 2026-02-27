@@ -20,6 +20,8 @@ internal sealed interface PttAction {
     ) : PttAction
     data class TalkTimerTick(val remainingMillis: Long) : PttAction
     data class TalkDurationChanged(val seconds: Int) : PttAction
+    data class RemoteSpeakingChanged(val isSpeaking: Boolean) : PttAction
+    data object ClearVoiceVisualization : PttAction
     data class VoiceDataReceived(
         val voiceData: ByteArray
     ): PttAction {

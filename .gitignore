@@ -14,7 +14,6 @@ local.properties
 Thumbs.db
 
 # Android build artifacts
-*.apk
 *.ap_
 *.aab
 *.aar

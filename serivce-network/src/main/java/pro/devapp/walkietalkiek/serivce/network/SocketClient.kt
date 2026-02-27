@@ -219,7 +219,8 @@ class SocketClient (
                                 is ControlEnvelope.FloorRelease -> {
                                     Timber.Forest.i("FLOOR_RELEASE received node=${clusterControl.nodeId}")
                                     floorArbitrationState.removeNodeFromQueue(clusterControl.nodeId)
-                                    val released = pttFloorRepository.releaseIfOwner("node:${clusterControl.nodeId}")
+                                    val released = pttFloorRepository.releaseIfOwner("node:${clusterControl.nodeId}") ||
+                                        pttFloorRepository.releaseByNodeId(clusterControl.nodeId)
                                     val status = clusterMembershipRepository.status.value
                                     if (status.role == pro.devapp.walkietalkiek.serivce.network.data.ClusterRole.LEADER &&
                                         (released || pttFloorRepository.currentFloorOwnerHost.value == null)

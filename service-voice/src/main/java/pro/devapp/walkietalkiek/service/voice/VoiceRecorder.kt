@@ -81,6 +81,8 @@ class VoiceRecorder(
         }.onFailure { error ->
             Timber.Forest.w(error, "AudioRecord stop failed")
         }
+        runCatching { pttTonePlayer.playRelease() }
+            .onFailure { error -> Timber.Forest.w(error, "Release tone play failed on stopRecord") }
     }
 
     private fun startReading() {

@@ -24,8 +24,10 @@ internal class StartRecordingGrantedReducer(
         return Reducer.Result(
             state = state.copy(
                 isRecording = true,
+                isRemoteSpeaking = false,
                 isFloorHeldByMe = true,
                 isFloorRequestPending = false,
+                voiceData = null,
                 remainingTalkSeconds = state.talkDurationSeconds,
                 remainingTalkMillis = state.talkDurationSeconds * 1000L
             ),

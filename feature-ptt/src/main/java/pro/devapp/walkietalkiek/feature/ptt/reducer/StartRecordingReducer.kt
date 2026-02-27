@@ -39,9 +39,11 @@ internal class StartRecordingReducer(
                     Reducer.Result(
                         state = state.copy(
                             isRecording = true,
+                            isRemoteSpeaking = false,
                             isFloorRequestPending = false,
                             isFloorHeldByMe = true,
                             floorOwnerHostAddress = state.selfNodeId.ifBlank { state.myIP }.let { "node:$it" },
+                            voiceData = null,
                             remainingTalkSeconds = state.talkDurationSeconds,
                             remainingTalkMillis = state.talkDurationSeconds * 1000L
                         ),
@@ -68,9 +70,11 @@ internal class StartRecordingReducer(
         return Reducer.Result(
             state = state.copy(
                 isRecording = true,
+                isRemoteSpeaking = false,
                 isFloorRequestPending = false,
                 isFloorHeldByMe = true,
                 floorOwnerHostAddress = state.myIP,
+                voiceData = null,
                 remainingTalkSeconds = state.talkDurationSeconds,
                 remainingTalkMillis = state.talkDurationSeconds * 1000L
             ),

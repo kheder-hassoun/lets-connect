@@ -52,9 +52,10 @@ internal fun PttStatusBar(
     val scale = (screenWidth.coerceAtMost(screenHeight) / 400.dp).coerceIn(0.8f, 1.2f)
 
     val connectedPeers = state.connectedDevices.count { it.isConnected }
-    val isFloorBusyByRemote = state.floorOwnerHostAddress != null &&
+    val isFloorOwnedByRemote = state.floorOwnerHostAddress != null &&
         !state.isFloorHeldByMe &&
         !state.isRecording
+    val isFloorBusyByRemote = isFloorOwnedByRemote || (state.isRemoteSpeaking && !state.isRecording)
 
     val modeColor = when {
         state.isRecording -> Color(0xFFFFA726)

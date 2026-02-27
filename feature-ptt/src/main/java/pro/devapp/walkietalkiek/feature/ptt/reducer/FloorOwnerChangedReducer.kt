@@ -30,7 +30,8 @@ internal class FloorOwnerChangedReducer :
                 state = state.copy(
                     floorOwnerHostAddress = owner,
                     isFloorHeldByMe = true,
-                    isFloorRequestPending = false
+                    isFloorRequestPending = false,
+                    isRemoteSpeaking = false
                 ),
                 action = PttAction.StartRecordingGranted,
                 event = null
@@ -51,7 +52,9 @@ internal class FloorOwnerChangedReducer :
                 state = state.copy(
                     isFloorHeldByMe = false,
                     isFloorRequestPending = false,
-                    floorOwnerHostAddress = null
+                    floorOwnerHostAddress = null,
+                    isRemoteSpeaking = false,
+                    voiceData = null
                 ),
                 action = if (state.isRecording) PttAction.StopRecording else null,
                 event = null
@@ -62,7 +65,8 @@ internal class FloorOwnerChangedReducer :
                 state = state.copy(
                     isFloorHeldByMe = false,
                     isFloorRequestPending = false,
-                    floorOwnerHostAddress = owner
+                    floorOwnerHostAddress = owner,
+                    isRemoteSpeaking = owner != null && !state.isRecording
                 ),
                 action = if (state.isRecording) PttAction.StopRecording else null,
                 event = null
@@ -74,7 +78,9 @@ internal class FloorOwnerChangedReducer :
             state.copy(
                 floorOwnerHostAddress = owner,
                 isFloorHeldByMe = false,
-                isFloorRequestPending = if (owner == null) state.isFloorRequestPending else false
+                isFloorRequestPending = if (owner == null) state.isFloorRequestPending else false,
+                isRemoteSpeaking = if (owner == null) false else !state.isRecording,
+                voiceData = if (owner == null) null else state.voiceData
             )
         }
         return Reducer.Result(
