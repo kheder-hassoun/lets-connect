@@ -17,6 +17,7 @@ class VoicePlayer(
     private val pttTonePlayer: PttTonePlayer
 ) {
     private val channelConfig = AudioFormat.CHANNEL_OUT_MONO
+    private val playbackLock = Any()
     private var audioTrack: AudioTrack? = null
     private var bufferSize = 0
     private var lastVoicePacketAt = 0L
@@ -30,21 +31,25 @@ class VoicePlayer(
         get() = _voiceDataFlow
 
     fun create() {
-        pttTonePlayer.init()
-        val sampleRate = getSupportedSampleRate()
-        sampleRate?.let {
+        runCatching {
+            pttTonePlayer.init()
+            val sampleRate = getSupportedSampleRate()
+            if (sampleRate == null) {
+                Timber.Forest.w("No supported sample rate for VoicePlayer.")
+                return@runCatching
+            }
             val minBufferSize = AudioTrack.getMinBufferSize(
-                it,
+                sampleRate,
                 AudioFormat.CHANNEL_OUT_MONO,
                 AudioFormat.ENCODING_PCM_16BIT
             )
-            val frameBytes = ((it * BYTES_PER_SAMPLE * FRAME_DURATION_MS) / 1000)
+            val frameBytes = ((sampleRate * BYTES_PER_SAMPLE * FRAME_DURATION_MS) / 1000)
                 .coerceAtLeast(MIN_FRAME_BYTES)
             bufferSize = frameBytes * AUDIO_TRACK_FRAMES_IN_BUFFER
             if (bufferSize < minBufferSize) bufferSize = minBufferSize
             val playbackFormat = AudioFormat.Builder()
                 .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                .setSampleRate(it)
+                .setSampleRate(sampleRate)
                 .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
                 .build()
             val playbackAttributes = AudioAttributes.Builder()
@@ -64,15 +69,32 @@ class VoicePlayer(
             audioTrack?.apply {
                 play()
             }
+        }.onFailure { error ->
+            Timber.Forest.w(error, "VoicePlayer create failed")
+            runCatching { audioTrack?.release() }
+            audioTrack = null
         }
         val onVoicePacket: (ByteArray) -> Unit = { bytes ->
-            play(bytes)
+            synchronized(playbackLock) {
+                play(bytes)
+            }
         }
         socketServer.dataListener = onVoicePacket
         socketClient.dataListener = onVoicePacket
     }
 
     private fun play(bytes: ByteArray) {
+        if (bytes.isEmpty()) {
+            return
+        }
+        val pcmBytes = if (bytes.size and 1 == 1) {
+            bytes.copyOf(bytes.size - 1)
+        } else {
+            bytes
+        }
+        if (pcmBytes.isEmpty()) {
+            return
+        }
         val now = System.currentTimeMillis()
         if (now - lastVoicePacketAt > remoteSessionGapMs) {
             // Play an attention tone once at the start of each remote speaking burst.
@@ -93,21 +115,27 @@ class VoicePlayer(
             if (track.playState != AudioTrack.PLAYSTATE_PLAYING) {
                 track.play()
             }
-            track.write(bytes, 0, bytes.size, AudioTrack.WRITE_NON_BLOCKING)
+            val written = track.write(pcmBytes, 0, pcmBytes.size, AudioTrack.WRITE_NON_BLOCKING)
+            if (written < 0) {
+                Timber.Forest.w("AudioTrack write failed code=$written, frame=${pcmBytes.size}")
+            }
         }.onFailure { error ->
             Timber.Forest.w(error, "Voice playback failed; dropping frame")
         }
-        _voiceDataFlow.tryEmit(bytes)
+        _voiceDataFlow.tryEmit(pcmBytes)
     }
 
     fun shutdown() {
-        socketServer.dataListener = null
-        socketClient.dataListener = null
-        audioTrack?.apply {
-            runCatching { stop() }
-            runCatching { release() }
+        synchronized(playbackLock) {
+            socketServer.dataListener = null
+            socketClient.dataListener = null
+            audioTrack?.apply {
+                runCatching { stop() }
+                runCatching { release() }
+            }
+            audioTrack = null
+            pttTonePlayer.release()
         }
-        pttTonePlayer.release()
     }
 
 

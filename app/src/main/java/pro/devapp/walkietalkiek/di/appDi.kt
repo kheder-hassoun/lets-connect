@@ -8,6 +8,7 @@ import org.koin.dsl.module
 import pro.devapp.walkietalkiek.core.flags.FeatureFlagsRepository
 import pro.devapp.walkietalkiek.MainViewMode
 import pro.devapp.walkietalkiek.PermissionState
+import pro.devapp.walkietalkiek.core.diagnostics.DeviceLogStore
 import pro.devapp.walkietalkiek.core.mvi.CoroutineContextProvider
 import pro.devapp.walkietalkiek.core.settings.AppSettingsRepository
 import pro.devapp.walkietalkiek.factory.MainScreenInitStateFactory
@@ -39,6 +40,7 @@ private fun Module.coreDi() {
     factoryOf(::NotificationController)
     singleOf(::AppSettingsRepository)
     singleOf(::FeatureFlagsRepository)
+    singleOf(::DeviceLogStore)
 }
 
 private fun Module.factoriesDi() {

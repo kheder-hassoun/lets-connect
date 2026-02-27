@@ -62,16 +62,25 @@ class VoiceRecorder(
 
     fun startRecord() {
         Timber.Forest.i("startRecord")
-        pttTonePlayer.play()
-        audioRecord?.apply {
-            startRecording()
+        runCatching { pttTonePlayer.play() }
+            .onFailure { error -> Timber.Forest.w(error, "PTT tone play failed on startRecord") }
+        runCatching {
+            audioRecord?.apply {
+                startRecording()
+            }
+        }.onFailure { error ->
+            Timber.Forest.w(error, "AudioRecord start failed")
         }
         startReading()
     }
 
     fun stopRecord() {
         Timber.Forest.i("stopRecord")
-        audioRecord?.apply { stop() }
+        runCatching {
+            audioRecord?.apply { stop() }
+        }.onFailure { error ->
+            Timber.Forest.w(error, "AudioRecord stop failed")
+        }
     }
 
     private fun startReading() {

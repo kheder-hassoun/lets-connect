@@ -176,7 +176,7 @@ internal class PttViewModel(
     }
 }
 
-private const val WAVE_UI_UPDATE_THROTTLE_MS = 70L
+private const val WAVE_UI_UPDATE_THROTTLE_MS = 140L
 private const val FLOOR_REQUEST_TIMEOUT_MS = 7000L
 private const val FLOOR_REQUEST_RETRY_INITIAL_DELAY_MS = 500L
 private const val FLOOR_REQUEST_RETRY_MS = 900L

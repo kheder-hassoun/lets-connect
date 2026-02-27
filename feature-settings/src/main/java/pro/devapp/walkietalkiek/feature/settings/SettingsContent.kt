@@ -1,5 +1,8 @@
 package pro.devapp.walkietalkiek.feature.settings
 
+import android.content.Context
+import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -38,18 +42,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import org.koin.compose.koinInject
+import pro.devapp.walkietalkiek.core.diagnostics.DeviceLogStore
 import pro.devapp.walkietalkiek.core.flags.FeatureFlagsRepository
 import pro.devapp.walkietalkiek.core.settings.AppSettingsRepository
 import pro.devapp.walkietalkiek.core.settings.ThemeColor
+import java.io.File
 import kotlin.math.roundToInt
 
 @Composable
 fun SettingsContent() {
+    val context = LocalContext.current
     val settingsRepository = koinInject<AppSettingsRepository>()
     val featureFlagsRepository = koinInject<FeatureFlagsRepository>()
+    val deviceLogStore = koinInject<DeviceLogStore>()
     val settings by settingsRepository.settings.collectAsState()
     val flags by featureFlagsRepository.flags.collectAsState()
     var isThemeMenuExpanded by remember { mutableStateOf(false) }
@@ -281,8 +291,84 @@ fun SettingsContent() {
             }
         }
 
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = "Diagnostics",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = "Logs folder: ${deviceLogStore.logsDirectoryPath()}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            shareLogFile(
+                                context = context,
+                                file = deviceLogStore.appLogFile(),
+                                chooserTitle = "Share app log"
+                            )
+                        }
+                    ) {
+                        Text("Share App Log")
+                    }
+                    Button(
+                        onClick = {
+                            shareLogFile(
+                                context = context,
+                                file = deviceLogStore.crashLogFile(),
+                                chooserTitle = "Share crash log"
+                            )
+                        }
+                    ) {
+                        Text("Share Crash")
+                    }
+                    Button(
+                        onClick = {
+                            deviceLogStore.clearLogs()
+                            Toast.makeText(context, "Logs cleared", Toast.LENGTH_SHORT).show()
+                        }
+                    ) {
+                        Text("Clear Logs")
+                    }
+                }
+            }
+        }
+
         Box(modifier = Modifier.size(2.dp))
     }
+}
+
+private fun shareLogFile(
+    context: Context,
+    file: File,
+    chooserTitle: String
+) {
+    if (!file.exists() || file.length() == 0L) {
+        return
+    }
+    val authority = "${context.packageName}.fileprovider"
+    val fileUri = FileProvider.getUriForFile(context, authority, file)
+    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_STREAM, fileUri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(Intent.createChooser(shareIntent, chooserTitle))
 }
 
 @Composable

@@ -7,10 +7,16 @@ import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import androidx.core.app.ServiceCompat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 import pro.devapp.walkietalkiek.serivce.network.ClientController
 import pro.devapp.walkietalkiek.service.voice.VoicePlayer
 import pro.devapp.walkietalkiek.service.voice.VoiceRecorder
+import timber.log.Timber
 
 class WalkieService: Service() {
 
@@ -20,6 +26,9 @@ class WalkieService: Service() {
     private val voicePlayer: VoicePlayer by inject()
 
     private var wakeLock: PowerManager.WakeLock? = null
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    @Volatile
+    private var runtimeInitialized = false
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
@@ -27,12 +36,13 @@ class WalkieService: Service() {
 
     override fun onCreate() {
         super.onCreate()
-        chanelController.startDiscovery()
-        setWakeLock()
-        voicePlayer.create()
+        Timber.i("WalkieService onCreate")
+        runCatching { setWakeLock() }
+            .onFailure { error -> Timber.Forest.w(error, "Wake lock init failed") }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Timber.i("WalkieService onStartCommand startId=%d flags=%d", startId, flags)
         notificationController.createNotificationChanel()
         ServiceCompat.startForeground(
             this,
@@ -44,16 +54,19 @@ class WalkieService: Service() {
                 0
             }
         )
+        initializeRuntimeIfNeeded()
         return START_REDELIVER_INTENT
     }
 
     override fun onDestroy() {
+        Timber.i("WalkieService onDestroy")
         super.onDestroy()
-        voiceRecorder.stopRecord()
-        voiceRecorder.destroy()
-        voicePlayer.shutdown()
-        chanelController.stopDiscovery()
-        releaseWakeLock()
+        serviceScope.cancel()
+        runCatching { voiceRecorder.stopRecord() }
+        runCatching { voiceRecorder.destroy() }
+        runCatching { voicePlayer.shutdown() }
+        runCatching { chanelController.stopDiscovery() }
+        runCatching { releaseWakeLock() }
     }
 
     private fun setWakeLock() {
@@ -68,6 +81,30 @@ class WalkieService: Service() {
     }
 
     private fun releaseWakeLock() {
-        wakeLock?.release()
+        wakeLock?.let { lock ->
+            if (lock.isHeld) {
+                lock.release()
+            }
+        }
+    }
+
+    private fun initializeRuntimeIfNeeded() {
+        if (runtimeInitialized) {
+            Timber.i("WalkieService runtime already initialized")
+            return
+        }
+        Timber.i("WalkieService initializeRuntimeIfNeeded start")
+        runtimeInitialized = true
+        serviceScope.launch {
+            runCatching {
+                voicePlayer.create()
+                chanelController.startDiscovery()
+                Timber.i("WalkieService runtime initialized successfully")
+            }.onFailure { error ->
+                Timber.Forest.w(error, "Service runtime init failed")
+                runtimeInitialized = false
+                stopSelf()
+            }
+        }
     }
 }

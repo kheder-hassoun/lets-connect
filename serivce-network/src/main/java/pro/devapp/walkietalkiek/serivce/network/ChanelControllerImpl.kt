@@ -19,7 +19,8 @@ import pro.devapp.walkietalkiek.serivce.network.data.PttFloorRepository
 import timber.log.Timber
 
 private const val SERVICE_TYPE = "_wfwt._tcp" /* WiFi Walkie Talkie */
-private const val STALE_CONNECTION_TIMEOUT_MS = 15_000L
+private const val STALE_CONNECTION_TIMEOUT_MS = 8_000L
+private const val HEARTBEAT_INTERVAL_MS = 1_500L
 
 interface MessageController{
     fun sendMessage(data: ByteArray)
@@ -189,7 +190,7 @@ internal class ChanelControllerImpl(
                     connectedDevicesRepository.markStaleConnectionsDisconnected(STALE_CONNECTION_TIMEOUT_MS)
                     clusterMembershipRepository.sweepStale(STALE_CONNECTION_TIMEOUT_MS, System.currentTimeMillis())
                     ping()
-                    delay(5000L)
+                    delay(HEARTBEAT_INTERVAL_MS)
                 }
             }
         }
