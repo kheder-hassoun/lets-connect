@@ -51,6 +51,8 @@ import pro.devapp.walkietalkiek.core.diagnostics.DeviceLogStore
 import pro.devapp.walkietalkiek.core.flags.FeatureFlagsRepository
 import pro.devapp.walkietalkiek.core.settings.AppSettingsRepository
 import pro.devapp.walkietalkiek.core.settings.ThemeColor
+import pro.devapp.walkietalkiek.serivce.network.data.ClusterMembershipRepository
+import pro.devapp.walkietalkiek.serivce.network.data.ClusterRole
 import java.io.File
 import kotlin.math.roundToInt
 
@@ -59,9 +61,12 @@ fun SettingsContent() {
     val context = LocalContext.current
     val settingsRepository = koinInject<AppSettingsRepository>()
     val featureFlagsRepository = koinInject<FeatureFlagsRepository>()
+    val clusterMembershipRepository = koinInject<ClusterMembershipRepository>()
     val deviceLogStore = koinInject<DeviceLogStore>()
     val settings by settingsRepository.settings.collectAsState()
     val flags by featureFlagsRepository.flags.collectAsState()
+    val clusterStatus by clusterMembershipRepository.status.collectAsState()
+    val isLeader = clusterStatus.role == ClusterRole.LEADER
     var isThemeMenuExpanded by remember { mutableStateOf(false) }
 
     Column(
@@ -71,6 +76,28 @@ fun SettingsContent() {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = if (isLeader) {
+                    Color(0x1A56E39F)
+                } else {
+                    Color(0x1AFFB74D)
+                }
+            )
+        ) {
+            Text(
+                text = if (isLeader) {
+                    "Leader mode: only you can edit network controls."
+                } else {
+                    "Peer mode: only leader can edit network controls."
+                },
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                style = MaterialTheme.typography.labelLarge,
+                color = if (isLeader) Color(0xFF56E39F) else Color(0xFFFFB74D),
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
         Card(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
@@ -98,7 +125,8 @@ fun SettingsContent() {
                         settingsRepository.updateTalkDurationSeconds(value.roundToInt())
                     },
                     valueRange = 5f..120f,
-                    steps = 22
+                    steps = 22,
+                    enabled = isLeader
                 )
             }
         }
@@ -125,11 +153,13 @@ fun SettingsContent() {
                     FilterChip(
                         selected = settings.toneEnabled,
                         onClick = { settingsRepository.updateToneEnabled(true) },
+                        enabled = isLeader,
                         label = { Text("On") }
                     )
                     FilterChip(
                         selected = !settings.toneEnabled,
                         onClick = { settingsRepository.updateToneEnabled(false) },
+                        enabled = isLeader,
                         label = { Text("Off") }
                     )
                 }
@@ -262,31 +292,36 @@ fun SettingsContent() {
                     title = "Serverless Control",
                     description = "Enable in-cluster leader/membership control path.",
                     checked = flags.serverlessControl,
-                    onCheckedChange = featureFlagsRepository::updateServerlessControl
+                    onCheckedChange = featureFlagsRepository::updateServerlessControl,
+                    enabled = isLeader
                 )
                 FlagToggleRow(
                     title = "WebRTC Audio",
                     description = "Use WebRTC media path for group audio.",
                     checked = flags.webrtcAudio,
-                    onCheckedChange = featureFlagsRepository::updateWebrtcAudio
+                    onCheckedChange = featureFlagsRepository::updateWebrtcAudio,
+                    enabled = isLeader
                 )
                 FlagToggleRow(
                     title = "Central Settings",
                     description = "Apply coordinator-driven settings sync.",
                     checked = flags.centralSettings,
-                    onCheckedChange = featureFlagsRepository::updateCentralSettings
+                    onCheckedChange = featureFlagsRepository::updateCentralSettings,
+                    enabled = isLeader
                 )
                 FlagToggleRow(
                     title = "Floor Control V2",
                     description = "Enable queue/lease-based floor arbitration.",
                     checked = flags.floorV2,
-                    onCheckedChange = featureFlagsRepository::updateFloorV2
+                    onCheckedChange = featureFlagsRepository::updateFloorV2,
+                    enabled = isLeader
                 )
                 FlagToggleRow(
                     title = "Observability V2",
                     description = "Enable additional diagnostics and metrics.",
                     checked = flags.observabilityV2,
-                    onCheckedChange = featureFlagsRepository::updateObservabilityV2
+                    onCheckedChange = featureFlagsRepository::updateObservabilityV2,
+                    enabled = isLeader
                 )
             }
         }
@@ -376,7 +411,8 @@ private fun FlagToggleRow(
     title: String,
     description: String,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    enabled: Boolean
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -391,17 +427,19 @@ private fun FlagToggleRow(
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleSmall
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else 0.52f)
             )
             Text(
                 text = description,
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 0.68f else 0.4f)
             )
         }
         Switch(
             checked = checked,
-            onCheckedChange = onCheckedChange
+            onCheckedChange = onCheckedChange,
+            enabled = enabled
         )
     }
 }

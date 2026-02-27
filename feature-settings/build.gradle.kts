@@ -46,6 +46,7 @@ dependencies {
     implementation(libs.koin.android.compose)
 
     implementation(project(":core"))
+    implementation(project(":serivce-network"))
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
 import android.os.Build
+import android.os.SystemClock
 import android.util.Base64
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
@@ -54,6 +55,8 @@ internal class ChanelControllerImpl(
 
     private var pingScope: CoroutineScope? = null
     private var localNodeId: String = ""
+    private var localStartedAtMs: Long = 0L
+    private var localStartedElapsedMs: Long = 0L
 
     override fun startDiscovery() {
         connectedDevicesRepository.clearAll()
@@ -61,7 +64,9 @@ internal class ChanelControllerImpl(
         floorArbitrationState.clear()
         pttFloorRepository.clear()
         localNodeId = deviceInfoRepository.getCurrentDeviceInfo().deviceId
-        clusterMembershipRepository.initializeSelf(localNodeId, System.currentTimeMillis())
+        localStartedAtMs = System.currentTimeMillis()
+        localStartedElapsedMs = SystemClock.elapsedRealtime()
+        clusterMembershipRepository.initializeSelf(localNodeId, localStartedAtMs)
         pingScope = coroutineContextProvider.createScope(
             coroutineContextProvider.io
         )
@@ -203,13 +208,17 @@ internal class ChanelControllerImpl(
                 nodeId = localNodeId,
                 term = 0L,
                 timestampMs = now,
-                nowMs = now
+                nowMs = now,
+                joinedAtMs = localStartedAtMs,
+                uptimeMs = (SystemClock.elapsedRealtime() - localStartedElapsedMs).coerceAtLeast(0L)
             )
             val heartbeat = ServerlessControlProtocol.heartbeatPacket(
                 nodeId = localNodeId,
                 term = 0L,
                 seq = clusterMembershipRepository.nextSequence(),
-                timestampMs = now
+                timestampMs = now,
+                startedAtMs = localStartedAtMs,
+                uptimeMs = (SystemClock.elapsedRealtime() - localStartedElapsedMs).coerceAtLeast(0L)
             )
             server.sendMessage(heartbeat)
             client.sendMessage(heartbeat)

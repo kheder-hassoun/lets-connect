@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
@@ -37,7 +38,9 @@ fun PTTButton(
     buttonSize: Dp = 228.dp,
     isOnline: Boolean = true,
     isEnabled: Boolean = true,
+    isLockedByRemote: Boolean = false,
     isRecording: Boolean = false,
+    remainingSeconds: Int = 0,
     remainingMillis: Long = 0L,
     totalSeconds: Int = 10,
     onPress: () -> Unit = {},
@@ -52,6 +55,15 @@ fun PTTButton(
             repeatMode = RepeatMode.Restart
         ),
         label = "wave-shift"
+    )
+    val borderRotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1300, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "neon-border-rotation"
     )
 
     val safeTotal = totalSeconds.coerceAtLeast(1)
@@ -71,6 +83,17 @@ fun PTTButton(
             accentSoft,
             accent,
             accentDeep
+        )
+    )
+    val neonSweep = Brush.sweepGradient(
+        colors = listOf(
+            Color(0xFF90CAF9),
+            Color(0xFF64B5F6),
+            Color(0xFF7986CB),
+            Color(0xFF9575CD),
+            Color(0xFF7E57C2),
+            Color(0xFF5C6BC0),
+            Color(0xFF90CAF9)
         )
     )
     val touchSize = buttonSize * 0.74f
@@ -124,18 +147,35 @@ fun PTTButton(
                 center = center,
                 style = Stroke(width = 1.6.dp.toPx())
             )
+
+            rotate(degrees = borderRotation, pivot = center) {
+                drawCircle(
+                    brush = neonSweep,
+                    radius = innerRadius,
+                    center = center,
+                    style = Stroke(width = 2.4.dp.toPx())
+                )
+            }
+            drawCircle(
+                brush = neonSweep,
+                radius = innerRadius,
+                center = center,
+                style = Stroke(width = 4.2.dp.toPx()),
+                alpha = 0.14f
+            )
         }
 
         Box(
             modifier = Modifier
                 .size(touchSize)
-                .pointerInput(Unit) {
+                .pointerInput(isEnabled) {
                     detectTapGestures(
                         onPress = {
                             if (!isEnabled) return@detectTapGestures
-                            onPress()
-                            val released = tryAwaitRelease()
-                            if (released) {
+                            try {
+                                onPress()
+                                awaitRelease()
+                            } finally {
                                 onRelease()
                             }
                         }

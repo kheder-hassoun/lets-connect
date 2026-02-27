@@ -21,8 +21,10 @@ enum class ClusterRole {
 class ClusterMembershipRepository {
     private data class MemberState(
         val nodeId: String,
+        val firstSeenMs: Long,
         val lastSeenMs: Long,
-        val term: Long
+        val term: Long,
+        val uptimeMs: Long
     )
 
     private val members = ConcurrentHashMap<String, MemberState>()
@@ -33,7 +35,14 @@ class ClusterMembershipRepository {
     private var localSeq: Long = 0L
 
     fun initializeSelf(nodeId: String, nowMs: Long) {
-        members[nodeId] = MemberState(nodeId = nodeId, lastSeenMs = nowMs, term = _status.value.term)
+        val existing = members[nodeId]
+        members[nodeId] = MemberState(
+            nodeId = nodeId,
+            firstSeenMs = existing?.firstSeenMs ?: nowMs,
+            lastSeenMs = nowMs,
+            term = _status.value.term,
+            uptimeMs = existing?.uptimeMs ?: 0L
+        )
         if (_status.value.selfNodeId != nodeId) {
             _status.value = _status.value.copy(
                 selfNodeId = nodeId
@@ -49,10 +58,60 @@ class ClusterMembershipRepository {
 
     fun onHeartbeat(nodeId: String, term: Long, timestampMs: Long, nowMs: Long) {
         val seenAt = maxOf(nowMs, timestampMs)
+        val existing = members[nodeId]
         members[nodeId] = MemberState(
             nodeId = nodeId,
+            firstSeenMs = existing?.firstSeenMs ?: seenAt,
             lastSeenMs = seenAt,
-            term = term
+            term = term,
+            uptimeMs = existing?.uptimeMs ?: 0L
+        )
+        val nextTerm = maxOf(_status.value.term, term)
+        if (nextTerm != _status.value.term) {
+            _status.value = _status.value.copy(term = nextTerm)
+        }
+        recalculateLeader(nowMs)
+    }
+
+    fun onHeartbeat(
+        nodeId: String,
+        term: Long,
+        timestampMs: Long,
+        nowMs: Long,
+        joinedAtMs: Long
+    ) {
+        val seenAt = maxOf(nowMs, timestampMs)
+        val existing = members[nodeId]
+        members[nodeId] = MemberState(
+            nodeId = nodeId,
+            firstSeenMs = existing?.firstSeenMs ?: joinedAtMs,
+            lastSeenMs = seenAt,
+            term = term,
+            uptimeMs = existing?.uptimeMs ?: 0L
+        )
+        val nextTerm = maxOf(_status.value.term, term)
+        if (nextTerm != _status.value.term) {
+            _status.value = _status.value.copy(term = nextTerm)
+        }
+        recalculateLeader(nowMs)
+    }
+
+    fun onHeartbeat(
+        nodeId: String,
+        term: Long,
+        timestampMs: Long,
+        nowMs: Long,
+        joinedAtMs: Long,
+        uptimeMs: Long
+    ) {
+        val seenAt = maxOf(nowMs, timestampMs)
+        val existing = members[nodeId]
+        members[nodeId] = MemberState(
+            nodeId = nodeId,
+            firstSeenMs = existing?.firstSeenMs ?: joinedAtMs,
+            lastSeenMs = seenAt,
+            term = term,
+            uptimeMs = uptimeMs.coerceAtLeast(existing?.uptimeMs ?: 0L)
         )
         val nextTerm = maxOf(_status.value.term, term)
         if (nextTerm != _status.value.term) {
@@ -77,14 +136,33 @@ class ClusterMembershipRepository {
     private fun recalculateLeader(nowMs: Long) {
         val activeMembers = members.values
             .filter { member -> nowMs - member.lastSeenMs <= ACTIVE_WINDOW_MS }
-            .map { it.nodeId }
-            .distinct()
         val selfNodeId = _status.value.selfNodeId
-        val allNodes = (activeMembers + listOfNotNull(selfNodeId))
-            .filter { it.isNotBlank() }
-            .distinct()
-            .sorted()
-        val leader = allNodes.lastOrNull().orEmpty()
+        val withSelf = if (
+            selfNodeId.isNotBlank() &&
+            activeMembers.none { it.nodeId == selfNodeId }
+        ) {
+            activeMembers + MemberState(
+                nodeId = selfNodeId,
+                firstSeenMs = nowMs,
+                lastSeenMs = nowMs,
+                term = _status.value.term,
+                uptimeMs = 0L
+            )
+        } else {
+            activeMembers
+        }
+        val uniqueMembers = withSelf
+            .filter { it.nodeId.isNotBlank() }
+            .distinctBy { it.nodeId }
+        val leader = uniqueMembers
+            .sortedWith(
+                compareByDescending<MemberState> { it.uptimeMs }
+                    .thenBy { it.firstSeenMs }
+                    .thenBy { it.nodeId }
+            )
+            .firstOrNull()
+            ?.nodeId
+            .orEmpty()
         val role = if (leader.isNotBlank() && leader == selfNodeId) {
             ClusterRole.LEADER
         } else {
@@ -93,7 +171,7 @@ class ClusterMembershipRepository {
         _status.value = _status.value.copy(
             leaderNodeId = leader,
             role = role,
-            activeMembersCount = allNodes.size.coerceAtLeast(1)
+            activeMembersCount = uniqueMembers.size.coerceAtLeast(1)
         )
     }
 }

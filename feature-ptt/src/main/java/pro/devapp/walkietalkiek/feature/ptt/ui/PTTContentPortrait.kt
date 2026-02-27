@@ -33,10 +33,11 @@ internal fun PTTContentPortrait(
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp
-    val contentPadding = (screenWidth * 0.035f).coerceIn(12.dp, 24.dp)
+    val scale = (screenWidth.coerceAtMost(screenHeight) / 400.dp).coerceIn(0.8f, 1.2f)
+    val contentPadding = (screenWidth * 0.035f).coerceIn(10.dp, 24.dp)
     val buttonSize = screenWidth.coerceAtMost(screenHeight * 0.48f).coerceIn(190.dp, 320.dp)
     val buttonAreaHeight = (screenHeight * 0.45f).coerceIn(260.dp, 430.dp)
-    val peersPanelHeight = (screenHeight * 0.2f).coerceIn(112.dp, 188.dp)
+    val peersPanelHeight = (screenHeight * 0.14f).coerceIn(86.dp, 150.dp)
     val waveHeight = (screenHeight * 0.075f).coerceIn(36.dp, 72.dp)
 
     Column(
@@ -54,13 +55,13 @@ internal fun PTTContentPortrait(
         ConnectedPeersList(
             modifier = Modifier
                 .height(peersPanelHeight)
-                .padding(top = 6.dp),
+                .padding(top = (4 * scale).dp),
             devices = state.connectedDevices
         )
 
         Box(
             modifier = Modifier
-                .padding(horizontal = contentPadding, vertical = 10.dp)
+                .padding(horizontal = contentPadding, vertical = (8 * scale).dp)
                 .fillMaxWidth()
                 .weight(1f),
             contentAlignment = Alignment.Center
@@ -75,7 +76,7 @@ internal fun PTTContentPortrait(
                 verticalArrangement = Arrangement.Center
             ) {
                 PTTButton(
-                    modifier = Modifier.padding(8.dp),
+                    modifier = Modifier.padding((6 * scale).dp),
                     buttonSize = buttonSize,
                     isOnline = canTalk,
                     isEnabled = canPressPtt,
@@ -85,7 +86,7 @@ internal fun PTTContentPortrait(
                     onPress = { onAction(PttAction.StartRecording) },
                     onRelease = { onAction(PttAction.StopRecording) }
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height((6 * scale).dp))
                 WaveCanvas(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -95,7 +96,7 @@ internal fun PTTContentPortrait(
             }
         }
         Spacer(
-            modifier = Modifier.height(8.dp)
+            modifier = Modifier.height((6 * scale).dp)
         )
     }
 }

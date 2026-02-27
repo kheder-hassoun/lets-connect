@@ -33,17 +33,18 @@ internal fun PTTContentLandscape(
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp
-    val contentPadding = (screenWidth * 0.02f).coerceIn(10.dp, 24.dp)
+    val scale = (screenWidth.coerceAtMost(screenHeight) / 400.dp).coerceIn(0.8f, 1.2f)
+    val contentPadding = (screenWidth * 0.02f).coerceIn(8.dp, 24.dp)
     val buttonSize = (screenHeight * 0.52f).coerceIn(190.dp, 300.dp)
     val waveHeight = (screenHeight * 0.055f).coerceIn(20.dp, 48.dp)
     val buttonAreaHeight = (screenHeight * 0.44f).coerceIn(220.dp, 320.dp)
-    val peersPanelHeight = (screenHeight * 0.2f).coerceIn(120.dp, 180.dp)
+    val peersPanelHeight = (screenHeight * 0.16f).coerceIn(84.dp, 140.dp)
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(contentPadding),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy((6 * scale).dp)
     ) {
         MyDeviceInfo(
             isOnline = canTalk,
@@ -59,7 +60,7 @@ internal fun PTTContentLandscape(
         )
         Box(
             modifier = Modifier
-                .padding(horizontal = 8.dp, vertical = 6.dp)
+                .padding(horizontal = (6 * scale).dp, vertical = (4 * scale).dp)
                 .fillMaxWidth()
                 .weight(1f),
             contentAlignment = Alignment.Center
@@ -70,12 +71,12 @@ internal fun PTTContentLandscape(
                     .sizeIn(maxHeight = buttonAreaHeight)
                     .height(buttonAreaHeight)
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = (14 * scale).dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                 PTTButton(
-                    modifier = Modifier.padding(8.dp),
+                    modifier = Modifier.padding((6 * scale).dp),
                     buttonSize = buttonSize,
                     isOnline = canTalk,
                     isEnabled = canPressPtt,
@@ -86,7 +87,7 @@ internal fun PTTContentLandscape(
                     onRelease = { onAction(PttAction.StopRecording) }
                 )
                 Spacer(
-                    modifier = Modifier.height(8.dp)
+                    modifier = Modifier.height((6 * scale).dp)
                 )
                 WaveCanvas(
                     modifier = Modifier

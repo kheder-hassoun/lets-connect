@@ -215,7 +215,9 @@ class SocketServer(
                             nodeId = clusterControl.nodeId,
                             term = clusterControl.term,
                             timestampMs = clusterControl.timestampMs,
-                            nowMs = System.currentTimeMillis()
+                            nowMs = System.currentTimeMillis(),
+                            joinedAtMs = clusterControl.startedAtMs,
+                            uptimeMs = clusterControl.uptimeMs
                         )
                     }
                     is ControlEnvelope.FloorRequest -> {

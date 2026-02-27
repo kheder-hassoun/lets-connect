@@ -29,8 +29,8 @@ class MainTabsFactory {
                 screen = MainTab.ABOUT
             ),
             MainTabItem(
-                title = "Fix",
-                icon = R.drawable.power_off,
+                title = "Status",
+                icon = R.drawable.connection_on,
                 screen = MainTab.OFF
             ),
         )

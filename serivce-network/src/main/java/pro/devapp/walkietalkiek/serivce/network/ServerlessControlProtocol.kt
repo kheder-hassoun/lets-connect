@@ -12,9 +12,11 @@ object ServerlessControlProtocol {
         nodeId: String,
         term: Long,
         seq: Long,
-        timestampMs: Long
+        timestampMs: Long,
+        startedAtMs: Long,
+        uptimeMs: Long
     ): ByteArray {
-        return "$PREFIX$HEARTBEAT|$nodeId|$term|$seq|$timestampMs".toByteArray()
+        return "$PREFIX$HEARTBEAT|$nodeId|$term|$seq|$timestampMs|$startedAtMs|$uptimeMs".toByteArray()
     }
 
     fun floorRequestPacket(
@@ -67,7 +69,11 @@ object ServerlessControlProtocol {
         val seq = parts[3].toLongOrNull() ?: return null
         val timestampMs = parts[4].toLongOrNull() ?: return null
         return when (type) {
-            HEARTBEAT -> ControlEnvelope.Heartbeat(nodeId, term, seq, timestampMs)
+            HEARTBEAT -> {
+                val startedAtMs = parts.getOrNull(5)?.toLongOrNull() ?: timestampMs
+                val uptimeMs = parts.getOrNull(6)?.toLongOrNull() ?: 0L
+                ControlEnvelope.Heartbeat(nodeId, term, seq, timestampMs, startedAtMs, uptimeMs)
+            }
             FLOOR_REQUEST -> ControlEnvelope.FloorRequest(nodeId, term, seq, timestampMs)
             FLOOR_GRANT -> {
                 val targetNodeId = parts.getOrNull(5)?.trim().orEmpty()
@@ -107,7 +113,9 @@ sealed interface ControlEnvelope {
         override val nodeId: String,
         override val term: Long,
         override val seq: Long,
-        override val timestampMs: Long
+        override val timestampMs: Long,
+        val startedAtMs: Long,
+        val uptimeMs: Long
     ) : ControlEnvelope
 
     data class FloorRequest(

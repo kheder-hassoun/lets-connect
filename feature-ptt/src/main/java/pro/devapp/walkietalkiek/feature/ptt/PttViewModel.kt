@@ -95,6 +95,14 @@ internal class PttViewModel(
         }
         viewModelScope.launch {
             state.collect { current ->
+                if (current.isRecording) {
+                    if (talkTimerJob?.isActive != true) {
+                        startTalkTimer()
+                    }
+                } else if (talkTimerJob?.isActive == true) {
+                    stopTalkTimer()
+                }
+
                 if (current.isFloorRequestPending && !current.isRecording) {
                     if (floorRequestTimeoutJob?.isActive != true) {
                         floorRequestTimeoutJob = viewModelScope.launch {
@@ -125,21 +133,6 @@ internal class PttViewModel(
 
     fun onPttAction(action: PttAction) {
         when (action) {
-            PttAction.StartRecording -> {
-                val currentState = state.value
-                val isBlockedByRemote = currentState.floorOwnerHostAddress != null &&
-                    !currentState.isFloorHeldByMe
-                val isServerlessLeasePath = featureFlagsRepository.flags.value.serverlessControl
-                if (!isServerlessLeasePath && !currentState.isRecording && !isBlockedByRemote) {
-                    startTalkTimer()
-                }
-            }
-            PttAction.StartRecordingGranted -> {
-                val currentState = state.value
-                if (!currentState.isRecording) {
-                    startTalkTimer()
-                }
-            }
             PttAction.StopRecording -> {
                 if (state.value.isRecording) {
                     stopTalkTimer()
