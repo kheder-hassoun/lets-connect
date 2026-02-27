@@ -3,10 +3,13 @@ package pro.devapp.walkietalkiek.feature.ptt.ui
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,8 +35,8 @@ internal fun PTTContentPortrait(
     val screenHeight = configuration.screenHeightDp.dp
     val contentPadding = (screenWidth * 0.035f).coerceIn(12.dp, 24.dp)
     val buttonSize = screenWidth.coerceAtMost(screenHeight * 0.48f).coerceIn(190.dp, 320.dp)
-    val buttonAreaHeight = (screenHeight * 0.4f).coerceIn(240.dp, 390.dp)
-    val peersPanelHeight = (screenHeight * 0.17f).coerceIn(96.dp, 148.dp)
+    val buttonAreaHeight = (screenHeight * 0.45f).coerceIn(260.dp, 430.dp)
+    val peersPanelHeight = (screenHeight * 0.2f).coerceIn(112.dp, 188.dp)
     val waveHeight = (screenHeight * 0.075f).coerceIn(36.dp, 72.dp)
 
     Column(
@@ -48,43 +51,51 @@ internal fun PTTContentPortrait(
             state = state,
             canTalk = canTalk
         )
-
-        Box(
-            modifier = Modifier
-                .padding(horizontal = contentPadding, vertical = 8.dp)
-                .height(buttonAreaHeight)
-                .fillMaxWidth(),
-            contentAlignment = Alignment.Center
-        ) {
-            PTTButton(
-                modifier = Modifier.padding(8.dp),
-                buttonSize = buttonSize,
-                isOnline = canTalk,
-                isEnabled = canPressPtt,
-                isLockedByRemote = isFloorBusyByRemote,
-                isRecording = state.isRecording,
-                remainingSeconds = state.remainingTalkSeconds,
-                remainingMillis = state.remainingTalkMillis,
-                totalSeconds = state.talkDurationSeconds,
-                onPress = { onAction(PttAction.StartRecording) },
-                onRelease = { onAction(PttAction.StopRecording) }
-            )
-        }
-
-        WaveCanvas(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(waveHeight),
-            data = state.voiceData,
-        )
         ConnectedPeersList(
             modifier = Modifier
                 .height(peersPanelHeight)
-                .padding(top = 4.dp),
+                .padding(top = 6.dp),
             devices = state.connectedDevices
         )
+
+        Box(
+            modifier = Modifier
+                .padding(horizontal = contentPadding, vertical = 10.dp)
+                .fillMaxWidth()
+                .weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .sizeIn(maxHeight = buttonAreaHeight)
+                    .height(buttonAreaHeight)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                PTTButton(
+                    modifier = Modifier.padding(8.dp),
+                    buttonSize = buttonSize,
+                    isOnline = canTalk,
+                    isEnabled = canPressPtt,
+                    isRecording = state.isRecording,
+                    remainingMillis = state.remainingTalkMillis,
+                    totalSeconds = state.talkDurationSeconds,
+                    onPress = { onAction(PttAction.StartRecording) },
+                    onRelease = { onAction(PttAction.StopRecording) }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                WaveCanvas(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(waveHeight),
+                    data = state.voiceData,
+                )
+            }
+        }
         Spacer(
-            modifier = Modifier.height(10.dp)
+            modifier = Modifier.height(8.dp)
         )
     }
 }

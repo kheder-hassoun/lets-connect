@@ -2,29 +2,33 @@ package pro.devapp.walkietalkiek.feature.ptt.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.rememberScrollState
+import kotlinx.coroutines.delay
 import pro.devapp.walkietalkiek.feature.ptt.model.PttScreenState
 
 @Composable
@@ -55,13 +59,7 @@ internal fun PttStatusBar(
     val localColor = if (canTalk) Color(0xFF56E39F) else Color(0xFFFF6B6B)
     val localLabel = if (canTalk) "Online" else "Offline"
     val roleColor = if (state.clusterRoleLabel == "Leader") Color(0xFFE53935) else Color(0xFF1E88E5)
-    val timerLabel = if (state.isRecording) {
-        "Time Left ${state.remainingTalkSeconds}s"
-    } else if (isFloorBusyByRemote) {
-        "Channel Busy"
-    } else {
-        "Max Talk ${state.talkDurationSeconds}s"
-    }
+    val timerLabel = if (state.isRecording) "Time Left ${state.remainingTalkSeconds}s" else "Max Talk ${state.talkDurationSeconds}s"
     val timerColor = when {
         state.isRecording -> Color(0xFFFFB347)
         isFloorBusyByRemote -> Color(0xFFFF6B6B)
@@ -80,18 +78,34 @@ internal fun PttStatusBar(
         else -> Color(0xFF6FD3FF)
     }
     val peersColor = if (connectedPeers > 0) Color(0xFFFF5CA8) else Color(0xFFB39BB2)
-    val sortedPeers = remember(state.connectedDevices) {
-        state.connectedDevices.sortedWith(
-            compareByDescending<pro.devapp.walkietalkiek.serivce.network.data.model.ClientModel> { it.isConnected }
-                .thenBy { it.hostAddress }
-        )
+    val ownerLabel = state.floorOwnerHostAddress ?: "--"
+    val liveLine = if (isFloorBusyByRemote) "Speaker: $ownerLabel" else "IP: ${state.myIP}"
+    val scrollState = rememberScrollState()
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val cardWidth = (screenWidth * 0.64f).coerceIn(230.dp, 360.dp)
+
+    LaunchedEffect(scrollState.maxValue) {
+        if (scrollState.maxValue <= 0) return@LaunchedEffect
+        while (true) {
+            delay(1000L)
+            scrollState.animateScrollTo(
+                value = scrollState.maxValue,
+                animationSpec = tween(durationMillis = 4200, easing = LinearEasing)
+            )
+            delay(600L)
+            scrollState.animateScrollTo(
+                value = 0,
+                animationSpec = tween(durationMillis = 4200, easing = LinearEasing)
+            )
+            delay(600L)
+        }
     }
 
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.84f),
         tonalElevation = 8.dp,
         shadowElevation = 8.dp
@@ -113,204 +127,128 @@ internal fun PttStatusBar(
                     color = MaterialTheme.colorScheme.outline.copy(alpha = 0.26f),
                     shape = RoundedCornerShape(18.dp)
                 )
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(12.dp)
         ) {
+            Text(
+                text = "Status Panel",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(138.dp)
+                    .horizontalScroll(scrollState)
             ) {
-                StatusPill(
-                    modifier = Modifier.weight(1f),
-                    title = "LOCAL",
-                    value = localLabel,
-                    tint = localColor
-                )
-                StatusPill(
-                    modifier = Modifier.weight(1f),
+                StatusCard(
                     title = "PTT",
-                    value = modeLabel,
-                    tint = modeColor
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                InfoPill(
-                    modifier = Modifier.weight(1f),
-                    label = "Role: ${state.clusterRoleLabel}",
-                    labelColor = roleColor,
-                    containerColor = roleColor.copy(alpha = 0.14f)
-                )
-                InfoPill(
-                    modifier = Modifier.weight(1f),
-                    label = "Members: ${state.clusterMembersCount}"
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                InfoPill(
-                    modifier = Modifier.weight(1f),
-                    label = "Peers: $connectedPeers/$totalPeers",
-                    labelColor = peersColor,
-                    containerColor = peersColor.copy(alpha = 0.14f)
-                )
-                InfoPill(
-                    modifier = Modifier.weight(1f),
-                    label = timerLabel,
-                    labelColor = timerColor,
-                    containerColor = timerColor.copy(alpha = 0.14f)
-                )
-            }
-
-            InfoPill(
-                modifier = Modifier.fillMaxWidth(),
-                label = "Floor: $floorStatus | Owner: ${state.floorOwnerHostAddress ?: "--"}",
-                labelColor = floorColor,
-                containerColor = floorColor.copy(alpha = 0.14f)
-            )
-
-            InfoPill(
-                modifier = Modifier.fillMaxWidth(),
-                label = if (isFloorBusyByRemote) {
-                    "Speaker: ${state.floorOwnerHostAddress}"
-                } else {
-                    "IP: ${state.myIP}"
+                    modifier = Modifier.width(cardWidth),
+                    accent = modeColor
+                ) {
+                    StatusMetric(title = "LOCAL", value = localLabel, tint = localColor)
+                    StatusMetric(title = "MODE", value = modeLabel, tint = modeColor)
+                    StatusMetric(title = "FLOOR", value = floorStatus, tint = floorColor)
                 }
-            )
-
-            PeersChipsRow(
-                peers = sortedPeers
-            )
+                Spacer(modifier = Modifier.width(8.dp))
+                StatusCard(
+                    title = "CLUSTER",
+                    modifier = Modifier.width(cardWidth),
+                    accent = roleColor
+                ) {
+                    StatusMetric(title = "ROLE", value = state.clusterRoleLabel, tint = roleColor)
+                    StatusMetric(title = "MEMBERS", value = state.clusterMembersCount.toString(), tint = MaterialTheme.colorScheme.primary)
+                    StatusMetric(title = "LEADER", value = state.leaderNodeLabel, tint = MaterialTheme.colorScheme.onSurface)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                StatusCard(
+                    title = "LIVE",
+                    modifier = Modifier.width(cardWidth),
+                    accent = peersColor
+                ) {
+                    StatusMetric(title = "PEERS", value = "$connectedPeers/$totalPeers", tint = peersColor)
+                    StatusMetric(title = "TIMER", value = timerLabel, tint = timerColor)
+                    StatusMetric(title = "NOW", value = liveLine, tint = MaterialTheme.colorScheme.onSurface)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                StatusCard(
+                    title = "CONTROL",
+                    modifier = Modifier.width(cardWidth),
+                    accent = MaterialTheme.colorScheme.primary
+                ) {
+                    StatusMetric(title = "PLANE", value = state.controlPlaneLabel, tint = MaterialTheme.colorScheme.primary)
+                    StatusMetric(title = "DETAIL", value = state.controlPlaneDetail, tint = MaterialTheme.colorScheme.onSurface)
+                    StatusMetric(title = "NODE", value = state.selfNodeId.ifBlank { "--" }, tint = MaterialTheme.colorScheme.onSurface)
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun StatusPill(
+private fun StatusCard(
     modifier: Modifier = Modifier,
+    title: String,
+    accent: Color,
+    content: @Composable () -> Unit
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = Color.Transparent,
+        tonalElevation = 0.dp
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            accent.copy(alpha = 0.2f),
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.68f)
+                        )
+                    )
+                )
+                .border(
+                    width = 1.dp,
+                    color = accent.copy(alpha = 0.4f),
+                    shape = RoundedCornerShape(16.dp)
+                )
+                .padding(horizontal = 12.dp, vertical = 10.dp)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = accent,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                content()
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatusMetric(
     title: String,
     value: String,
     tint: Color
 ) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        color = tint.copy(alpha = 0.14f),
-        tonalElevation = 0.dp
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelSmall,
-                color = tint.copy(alpha = 0.9f),
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.labelLarge,
-                color = tint,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
-
-@Composable
-private fun InfoPill(
-    modifier: Modifier = Modifier,
-    label: String,
-    labelColor: Color = MaterialTheme.colorScheme.onSurface,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        color = containerColor
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = labelColor,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
-
-@Composable
-private fun PeersChipsRow(
-    peers: List<pro.devapp.walkietalkiek.serivce.network.data.model.ClientModel>
-) {
-    val scrollState = rememberScrollState()
-    val previewPeers = peers.take(6)
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(
-            text = "Peer Status",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        if (previewPeers.isEmpty()) {
-            Text(
-                text = "No peers",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            return
-        }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(scrollState),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            previewPeers.forEach { peer ->
-                val chipColor = if (peer.isConnected) Color(0xFFFF5CA8) else Color(0xFFFFB3D1)
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = chipColor.copy(alpha = 0.16f)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = if (peer.isConnected) "●" else "○",
-                            color = chipColor,
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "${peer.hostAddress}:${peer.port}",
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = chipColor,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
-        }
-    }
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f)
+    )
+    Text(
+        text = value,
+        style = MaterialTheme.typography.titleSmall,
+        color = tint,
+        fontWeight = FontWeight.SemiBold,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.padding(bottom = 5.dp)
+    )
 }
