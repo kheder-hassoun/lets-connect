@@ -108,6 +108,20 @@ class SocketClient (
                             Timber.Forest.i("%s skipConnect host=%s reason=dialPolicyDisabledAfterSchedule", DIAG_PREFIX, hostAddress)
                             return@withLock
                         }
+                        val existingSocket = sockets[hostAddress]
+                        if (existingSocket != null &&
+                            !existingSocket.isClosed &&
+                            existingSocket.isConnected &&
+                            existingSocket.port == socketAddress.port
+                        ) {
+                            Timber.Forest.i(
+                                "%s skipConnect host=%s port=%d reason=alreadyConnected",
+                                DIAG_PREFIX,
+                                hostAddress,
+                                socketAddress.port
+                            )
+                            return@withLock
+                        }
                         sockets[hostAddress]?.apply {
                             close()
                             sockets.remove(hostAddress)
@@ -140,8 +154,23 @@ class SocketClient (
     }
 
     fun removeClient(hostAddress: String?) {
+        removeClient(hostAddress, expectedSocket = null)
+    }
+
+    private fun removeClient(hostAddress: String?, expectedSocket: Socket?) {
         hostAddress ?: return
         Timber.Forest.i("%s removeClient host=%s", DIAG_PREFIX, hostAddress)
+        if (expectedSocket != null) {
+            val currentSocket = sockets[hostAddress]
+            if (currentSocket != null && currentSocket !== expectedSocket) {
+                Timber.Forest.i(
+                    "%s skipRemove host=%s reason=staleSocketCallback",
+                    DIAG_PREFIX,
+                    hostAddress
+                )
+                return
+            }
+        }
         val removedNodeIds = floorArbitrationState.removeHost(hostAddress)
         if (removedNodeIds.isNotEmpty()) {
             removedNodeIds.forEach { nodeId ->
@@ -280,7 +309,7 @@ class SocketClient (
                 }
             } catch (e: Exception) {
                 Timber.Forest.w(e)
-                removeClient(hostAddress)
+                removeClient(hostAddress, expectedSocket = socket)
             } finally {
 
             }
@@ -318,7 +347,7 @@ class SocketClient (
                 Timber.Forest.w(e)
             } finally {
                 readingFuture.cancel()
-                removeClient(hostAddress)
+                removeClient(hostAddress, expectedSocket = socket)
                 Timber.Forest.i("remove $hostAddress")
             }
         }

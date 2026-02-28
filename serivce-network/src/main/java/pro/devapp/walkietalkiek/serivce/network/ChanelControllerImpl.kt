@@ -18,6 +18,7 @@ import pro.devapp.walkietalkiek.serivce.network.data.ClusterMembershipRepository
 import pro.devapp.walkietalkiek.serivce.network.data.DeviceInfoRepository
 import pro.devapp.walkietalkiek.serivce.network.data.PttFloorRepository
 import timber.log.Timber
+import java.util.concurrent.ConcurrentHashMap
 
 private const val SERVICE_TYPE = "_wfwt._tcp" /* WiFi Walkie Talkie */
 private const val STALE_CONNECTION_TIMEOUT_MS = 5_000L
@@ -58,12 +59,14 @@ internal class ChanelControllerImpl(
     private var localStartedAtMs: Long = 0L
     private var localStartedElapsedMs: Long = 0L
     private var lastSnapshotLoggedAtMs: Long = 0L
+    private val resolvedEndpointAtMsByHost = ConcurrentHashMap<String, Long>()
 
     override fun startDiscovery() {
         connectedDevicesRepository.clearAll()
         clusterMembershipRepository.clear()
         floorArbitrationState.clear()
         pttFloorRepository.clear()
+        resolvedEndpointAtMsByHost.clear()
         localNodeId = deviceInfoRepository.getCurrentDeviceInfo().deviceId
         localStartedAtMs = System.currentTimeMillis()
         localStartedElapsedMs = SystemClock.elapsedRealtime()
@@ -310,6 +313,15 @@ internal class ChanelControllerImpl(
                 nsdServiceInfo.serviceName
             )
             if (shouldDial) {
+                if (shouldSkipDuplicateResolve(hostAddress, inetSocketAddress.port)) {
+                    Timber.Forest.i(
+                        "%s skipResolveConnect host=%s port=%d reason=duplicateResolve",
+                        DIAG_PREFIX,
+                        hostAddress,
+                        inetSocketAddress.port
+                    )
+                    return@resolve
+                }
                 client.addClient(inetSocketAddress)
             } else {
                 Timber.Forest.i(
@@ -367,7 +379,20 @@ internal class ChanelControllerImpl(
         val nodeId = extractNodeIdFromServiceName(serviceName)
         return nodeId.isNotBlank() && nodeId == resolveLocalNodeId()
     }
+
+    private fun shouldSkipDuplicateResolve(hostAddress: String, port: Int): Boolean {
+        val now = SystemClock.elapsedRealtime()
+        val key = "$hostAddress:$port"
+        val last = resolvedEndpointAtMsByHost[key]
+        return if (last != null && now - last < RESOLVE_DEDUP_WINDOW_MS) {
+            true
+        } else {
+            resolvedEndpointAtMsByHost[key] = now
+            false
+        }
+    }
 }
 
 private const val DIAG_PREFIX = "[DIAG_CTRL]"
 private const val SNAPSHOT_LOG_INTERVAL_MS = 2_000L
+private const val RESOLVE_DEDUP_WINDOW_MS = 3_000L
