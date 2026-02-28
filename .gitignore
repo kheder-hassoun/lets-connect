@@ -2,6 +2,14 @@
 .idea/
 *.iml
 
+# Markdown
+*.md
+!README.md
+
+**/kh-files/
+/kh-files/
+kh-files/
+
 # Gradle
 .gradle/
 **/build/

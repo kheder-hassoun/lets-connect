@@ -1,8 +1,21 @@
 # Let's-Connect
 
-**Forked from** [https://github.com/devapro/LANwalkieTalkie](https://github.com/devapro/LANwalkieTalkie)
-
 Let's-Connect is an enhanced Android walkie-talkie application that enables voice communication over local WiFi networks. This fork addresses bugs from the original project, significantly enhances the user interface, adds more robust functionality, and implements a comprehensive floor control mechanism for organized group conversations.
+
+## Contents
+
+- [Demo](#demo)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Production Roadmap](#production-roadmap)
+- [Technical Stack](#technical-stack)
+- [Installation](#installation)
+- [Requirements](#requirements)
+- [Usage](#usage)
+- [Version History](#version-history)
+
+## Demo
+[Watch demo video](docs/demo/demo.mp4)
 
 ## Features
 
