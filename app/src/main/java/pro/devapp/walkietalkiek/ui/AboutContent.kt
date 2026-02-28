@@ -5,13 +5,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -31,7 +35,8 @@ import pro.devapp.walkietalkiek.BuildConfig
 fun AboutContent() {
     Column(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
@@ -78,7 +83,7 @@ fun AboutContent() {
                                 fontWeight = FontWeight.ExtraBold
                             )
                             Text(
-                                text = "Version ${BuildConfig.VERSION_NAME}",
+                                text = "Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                             )
@@ -86,57 +91,61 @@ fun AboutContent() {
                     }
 
                     Text(
-                        text = "Fast local voice + chat for your LAN.",
-                        style = MaterialTheme.typography.bodyLarge,
+                        text = "Local walkie-talkie and chat for nearby devices.",
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
         }
 
-        Card(
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "What Makes It Cool",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                FeatureChip("Low-latency LAN voice", MaterialTheme.colorScheme.primary)
-                FeatureChip("Realtime text chat", MaterialTheme.colorScheme.secondary)
-                FeatureChip("No cloud backend required", MaterialTheme.colorScheme.tertiary)
-            }
+        SectionCard(title = "Core Features") {
+            FeatureChip("Push-to-talk audio", MaterialTheme.colorScheme.primary)
+            FeatureChip("Peer discovery on LAN", MaterialTheme.colorScheme.secondary)
+            FeatureChip("Text chat", MaterialTheme.colorScheme.tertiary)
         }
 
-        Card(
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+        SectionCard(title = "How It Works") {
+            Text(
+                text = "Devices discover each other on Wi-Fi, elect one leader, then share floor control and audio in real time.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
             )
-        ) {
-            Column(
-                modifier = Modifier.padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+        }
+
+        SectionCard(title = "Support") {
+            Text(
+                text = "Use Settings > Diagnostics to export app logs when reporting issues.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SectionCard(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            content = {
                 Text(
-                    text = "About",
+                    text = title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
-                Text(
-                    text = "Built for local teams and nearby devices that need reliable push-to-talk and simple messaging over Wi-Fi.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
-                )
+                content()
             }
-        }
+        )
     }
 }
 

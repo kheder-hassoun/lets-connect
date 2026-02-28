@@ -31,6 +31,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -71,11 +72,11 @@ fun MainTopBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    brush = Brush.horizontalGradient(
+                    brush = Brush.verticalGradient(
                         colors = listOf(
-                            accent.copy(alpha = 0.16f),
-                            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.08f),
-                            Color.Transparent
+                            accent.copy(alpha = 0.26f),
+                            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.16f),
+                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)
                         )
                     )
                 )
@@ -85,7 +86,7 @@ fun MainTopBar(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Droid PTT",
+                    text = stringResource(id = R.string.app_name),
                     fontSize = (16 * scale).sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,

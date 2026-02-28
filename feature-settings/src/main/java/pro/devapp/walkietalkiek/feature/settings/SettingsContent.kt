@@ -87,9 +87,9 @@ fun SettingsContent() {
         ) {
             Text(
                 text = if (isLeader) {
-                    "Leader mode: only you can edit network controls."
+                    "Role: Leader (network controls unlocked)"
                 } else {
-                    "Peer mode: only leader can edit network controls."
+                    "Role: Peer (managed by leader)"
                 },
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                 style = MaterialTheme.typography.labelLarge,
@@ -111,11 +111,11 @@ fun SettingsContent() {
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = "Talk Timer",
+                    text = "Talk Limit",
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = "Max speaking time: ${settings.talkDurationSeconds}s",
+                    text = "Duration: ${settings.talkDurationSeconds}s",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                 )
@@ -143,7 +143,7 @@ fun SettingsContent() {
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = "PTT Tone",
+                    text = "PTT Tones",
                     style = MaterialTheme.typography.titleMedium
                 )
                 Row(
@@ -163,11 +163,6 @@ fun SettingsContent() {
                         label = { Text("Off") }
                     )
                 }
-                Text(
-                    text = "Plays tone before transmit/receive when On",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
             }
         }
 
@@ -185,11 +180,6 @@ fun SettingsContent() {
                 Text(
                     text = "Theme Color",
                     style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = "Background is always black. Choose accent color:",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.78f)
                 )
 
                 Box(modifier = Modifier.fillMaxWidth()) {
@@ -279,46 +269,36 @@ fun SettingsContent() {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Feature Flags",
+                    text = "Advanced Flags",
                     style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = "Runtime toggles for phased rollout (debug/ops use).",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
 
                 FlagToggleRow(
                     title = "Serverless Control",
-                    description = "Enable in-cluster leader/membership control path.",
                     checked = flags.serverlessControl,
                     onCheckedChange = featureFlagsRepository::updateServerlessControl,
                     enabled = isLeader
                 )
                 FlagToggleRow(
                     title = "WebRTC Audio",
-                    description = "Use WebRTC media path for group audio.",
                     checked = flags.webrtcAudio,
                     onCheckedChange = featureFlagsRepository::updateWebrtcAudio,
                     enabled = isLeader
                 )
                 FlagToggleRow(
                     title = "Central Settings",
-                    description = "Apply coordinator-driven settings sync.",
                     checked = flags.centralSettings,
                     onCheckedChange = featureFlagsRepository::updateCentralSettings,
                     enabled = isLeader
                 )
                 FlagToggleRow(
                     title = "Floor Control V2",
-                    description = "Enable queue/lease-based floor arbitration.",
                     checked = flags.floorV2,
                     onCheckedChange = featureFlagsRepository::updateFloorV2,
                     enabled = isLeader
                 )
                 FlagToggleRow(
                     title = "Observability V2",
-                    description = "Enable additional diagnostics and metrics.",
                     checked = flags.observabilityV2,
                     onCheckedChange = featureFlagsRepository::updateObservabilityV2,
                     enabled = isLeader
@@ -342,35 +322,40 @@ fun SettingsContent() {
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = "Logs folder: ${deviceLogStore.logsDirectoryPath()}",
+                    text = "Logs: ${deviceLogStore.logsDirectoryPath()}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Button(
-                        onClick = {
-                            shareLogFile(
-                                context = context,
-                                file = deviceLogStore.appLogFile(),
-                                chooserTitle = "Share app log"
-                            )
-                        }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("Share App Log")
-                    }
-                    Button(
-                        onClick = {
-                            shareLogFile(
-                                context = context,
-                                file = deviceLogStore.crashLogFile(),
-                                chooserTitle = "Share crash log"
-                            )
+                        Button(
+                            onClick = {
+                                shareLogFile(
+                                    context = context,
+                                    file = deviceLogStore.appLogFile(),
+                                    chooserTitle = "Share app log"
+                                )
+                            }
+                        ) {
+                            Text("Share App Log")
                         }
-                    ) {
-                        Text("Share Crash")
+                        Button(
+                            onClick = {
+                                shareLogFile(
+                                    context = context,
+                                    file = deviceLogStore.crashLogFile(),
+                                    chooserTitle = "Share crash log"
+                                )
+                            }
+                        ) {
+                            Text("Share Crash")
+                        }
                     }
                     Button(
                         onClick = {
@@ -409,7 +394,6 @@ private fun shareLogFile(
 @Composable
 private fun FlagToggleRow(
     title: String,
-    description: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     enabled: Boolean
@@ -422,18 +406,12 @@ private fun FlagToggleRow(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(end = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(3.dp)
+                .padding(end = 12.dp)
         ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else 0.52f)
-            )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 0.68f else 0.4f)
             )
         }
         Switch(

@@ -39,16 +39,11 @@ internal fun PTTContentPortrait(
     val buttonSize = screenWidth.coerceAtMost(screenHeight * 0.48f).coerceIn(190.dp, 320.dp)
     val buttonAreaHeight = (screenHeight * 0.45f).coerceIn(260.dp, 430.dp)
     val peersPanelHeight = (screenHeight * 0.14f).coerceIn(86.dp, 150.dp)
-    val waveHeight = (screenHeight * 0.075f).coerceIn(36.dp, 72.dp)
 
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
 
-        MyDeviceInfo(
-            isOnline = canTalk,
-            addressIp = state.myIP
-        )
         PttStatusBar(
             state = state,
             canTalk = canTalk
@@ -88,13 +83,6 @@ internal fun PTTContentPortrait(
                     totalSeconds = state.talkDurationSeconds,
                     onPress = { onAction(PttAction.StartRecording) },
                     onRelease = { onAction(PttAction.StopRecording) }
-                )
-                Spacer(modifier = Modifier.height((6 * scale).dp))
-                WaveCanvas(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(waveHeight),
-                    data = state.voiceData,
                 )
             }
         }

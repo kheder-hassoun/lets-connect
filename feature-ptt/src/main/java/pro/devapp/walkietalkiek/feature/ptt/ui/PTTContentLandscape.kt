@@ -3,7 +3,6 @@ package pro.devapp.walkietalkiek.feature.ptt.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,7 +36,6 @@ internal fun PTTContentLandscape(
     val scale = (screenWidth.coerceAtMost(screenHeight) / 400.dp).coerceIn(0.8f, 1.2f)
     val contentPadding = (screenWidth * 0.02f).coerceIn(8.dp, 24.dp)
     val buttonSize = (screenHeight * 0.52f).coerceIn(190.dp, 300.dp)
-    val waveHeight = (screenHeight * 0.055f).coerceIn(20.dp, 48.dp)
     val buttonAreaHeight = (screenHeight * 0.44f).coerceIn(220.dp, 320.dp)
     val peersPanelHeight = (screenHeight * 0.16f).coerceIn(84.dp, 140.dp)
 
@@ -47,10 +45,6 @@ internal fun PTTContentLandscape(
             .padding(contentPadding),
         verticalArrangement = Arrangement.spacedBy((6 * scale).dp)
     ) {
-        MyDeviceInfo(
-            isOnline = canTalk,
-            addressIp = state.myIP
-        )
         PttStatusBar(
             state = state,
             canTalk = canTalk
@@ -88,15 +82,6 @@ internal fun PTTContentLandscape(
                     totalSeconds = state.talkDurationSeconds,
                     onPress = { onAction(PttAction.StartRecording) },
                     onRelease = { onAction(PttAction.StopRecording) }
-                )
-                Spacer(
-                    modifier = Modifier.height((6 * scale).dp)
-                )
-                WaveCanvas(
-                    modifier = Modifier
-                        .fillMaxWidth(0.72f)
-                        .height(waveHeight),
-                    data = state.voiceData,
                 )
             }
         }
