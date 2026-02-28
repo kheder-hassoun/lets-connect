@@ -29,6 +29,83 @@ This roadmap is now aligned to the product requirement: **serverless operation o
 - Floor control: distributed but deterministic arbitration (single active speaker).
 - Settings sync: one elected coordinator node in-cluster, no external server.
 
+## How 3 Devices Work (Easy View)
+
+This is the practical model for `A`, `B`, `C` on one hotspot/WiFi.
+
+### 1) Roles
+
+- Every device is equal at startup (`peer` mode).
+- Leader election picks exactly one leader (based on current membership policy).
+- Leader is the coordinator for floor control and cluster decisions.
+- If leader leaves, remaining peers elect a new leader.
+
+### 2) Channels (What Moves Where)
+
+- Discovery channel (NSD): only for finding peers and their latest socket endpoint.
+- Control channel (serverless control envelopes): heartbeat, election visibility, floor request/grant/release.
+- Data channel:
+  - voice packets while PTT is active
+  - chat messages
+
+### 3) Socket Topology
+
+- Each phone has a server socket (listening).
+- Outbound dialing is deterministic (`localNodeId < remoteNodeId`) to reduce duplicate links.
+- Reconnect must always use the latest resolved endpoint from NSD.
+
+```mermaid
+graph LR
+  A[Device A] --- B[Device B]
+  A --- C[Device C]
+  B --- C[Device C]
+  A -. NSD discovery .- B
+  A -. NSD discovery .- C
+  B -. NSD discovery .- C
+```
+
+### 4) Floor Control (PTT)
+
+- Only one active speaker is allowed at a time.
+- Peer sends `FLOOR_REQUEST` to leader.
+- Leader replies `FLOOR_GRANT` (or busy/queued behavior).
+- On release/timeout/disconnect, leader grants next queued requester.
+
+```mermaid
+sequenceDiagram
+  participant B as Peer B
+  participant L as Leader A
+  participant C as Peer C
+  B->>L: FLOOR_REQUEST
+  L-->>B: FLOOR_GRANT
+  B->>C: voice packets
+  B->>L: FLOOR_RELEASE
+```
+
+### 5) Leader Leave/Rejoin (Expected Behavior)
+
+When leader leaves:
+
+1. Heartbeats from leader stop.
+2. Stale timeout removes old leader from active membership.
+3. Remaining devices converge to one new leader.
+4. PTT/floor continues with new leader.
+
+When old leader rejoins:
+
+1. NSD resolve provides new endpoint (possibly new port).
+2. Peers connect to latest endpoint.
+3. Membership converges again.
+4. Exactly one leader remains after stabilization.
+
+### 6) Quick Mental Checklist for 3-Device Stability
+
+- All devices see `members=3` after convergence.
+- All devices agree on same `leaderNodeId`.
+- Peer count in UI matches reachable connections after stabilization.
+- No endless reconnect loop to an old port.
+- No dual-speaker conflict during contention.
+
 ## Feature Flags
 
 - `ff_serverless_control` (new target path)
