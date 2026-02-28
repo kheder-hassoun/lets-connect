@@ -57,6 +57,7 @@ internal class ChanelControllerImpl(
     private var localNodeId: String = ""
     private var localStartedAtMs: Long = 0L
     private var localStartedElapsedMs: Long = 0L
+    private var lastSnapshotLoggedAtMs: Long = 0L
 
     override fun startDiscovery() {
         connectedDevicesRepository.clearAll()
@@ -66,6 +67,7 @@ internal class ChanelControllerImpl(
         localNodeId = deviceInfoRepository.getCurrentDeviceInfo().deviceId
         localStartedAtMs = System.currentTimeMillis()
         localStartedElapsedMs = SystemClock.elapsedRealtime()
+        lastSnapshotLoggedAtMs = 0L
         clusterMembershipRepository.initializeSelf(localNodeId, localStartedAtMs)
         pingScope = coroutineContextProvider.createScope(
             coroutineContextProvider.io
@@ -88,7 +90,9 @@ internal class ChanelControllerImpl(
         pingScope?.cancel()
     }
 
-    fun onServiceRegister() {
+    fun onServiceRegister(serviceInfo: NsdServiceInfo) {
+        currentServiceName = serviceInfo.serviceName
+        Timber.Forest.i("onServiceRegister: using registered serviceName=%s", currentServiceName)
         nsdManager.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, discoveryListener)
     }
 
@@ -195,6 +199,7 @@ internal class ChanelControllerImpl(
                     connectedDevicesRepository.markStaleConnectionsDisconnected(STALE_CONNECTION_TIMEOUT_MS)
                     clusterMembershipRepository.sweepStale(STALE_CONNECTION_TIMEOUT_MS, System.currentTimeMillis())
                     ping()
+                    logSnapshotIfNeeded()
                     delay(HEARTBEAT_INTERVAL_MS)
                 }
             }
@@ -227,6 +232,24 @@ internal class ChanelControllerImpl(
         client.sendMessage("ping".toByteArray())
     }
 
+    private fun logSnapshotIfNeeded() {
+        val now = System.currentTimeMillis()
+        if (now - lastSnapshotLoggedAtMs < SNAPSHOT_LOG_INTERVAL_MS) {
+            return
+        }
+        lastSnapshotLoggedAtMs = now
+        val status = clusterMembershipRepository.status.value
+        Timber.Forest.i(
+            "%s snapshot self=%s role=%s leader=%s members=%d connected=%s",
+            DIAG_PREFIX,
+            resolveLocalNodeId(status.selfNodeId),
+            status.role,
+            status.leaderNodeId,
+            status.activeMembersCount,
+            connectedDevicesRepository.debugSummary(now)
+        )
+    }
+
     private fun localFloorToken(): String = "node:${resolveLocalNodeId()}"
 
     private fun resolveLocalNodeId(statusSelfNodeId: String = ""): String {
@@ -241,8 +264,14 @@ internal class ChanelControllerImpl(
 
     override fun onServiceFound(serviceInfo: NsdServiceInfo) {
         // check for self add to list
-        Timber.Forest.i("onServiceFound: ${serviceInfo.serviceName} current: $currentServiceName")
-        if (serviceInfo.serviceName == currentServiceName) {
+        Timber.Forest.i(
+            "%s onServiceFound service=%s current=%s localNode=%s",
+            DIAG_PREFIX,
+            serviceInfo.serviceName,
+            currentServiceName,
+            resolveLocalNodeId()
+        )
+        if (isSelfService(serviceInfo.serviceName)) {
             Timber.Forest.i("onServiceFound: SELF")
             return
         }
@@ -252,33 +281,62 @@ internal class ChanelControllerImpl(
         }
 
         clientInfoResolver.resolve(serviceInfo) { inetSocketAddress, nsdServiceInfo ->
-            Timber.Forest.i("Resolve: ${nsdServiceInfo.serviceName}")
+            Timber.Forest.i(
+                "%s resolved service=%s host=%s port=%d",
+                DIAG_PREFIX,
+                nsdServiceInfo.serviceName,
+                inetSocketAddress.address?.hostAddress,
+                inetSocketAddress.port
+            )
             val hostAddress = inetSocketAddress.address?.hostAddress
             if (hostAddress.isNullOrBlank()) {
                 Timber.Forest.w("Resolved host address is null/blank for ${nsdServiceInfo.serviceName}")
                 return@resolve
             }
+            val remoteNodeId = extractNodeIdFromServiceName(nsdServiceInfo.serviceName)
+            if (remoteNodeId.isNotBlank() && remoteNodeId == resolveLocalNodeId()) {
+                Timber.Forest.i("Ignore resolved self service by nodeId: %s", nsdServiceInfo.serviceName)
+                return@resolve
+            }
+            val localIp = runCatching { deviceInfoRepository.getCurrentIp() }.getOrNull()
+            if (!localIp.isNullOrBlank() && localIp == hostAddress) {
+                Timber.Forest.i("Ignore resolved self service by host=%s", hostAddress)
+                return@resolve
+            }
+            val shouldDial = shouldInitiateOutboundConnection(remoteNodeId)
+            client.setOutboundDialPolicy(hostAddress, shouldDial)
             connectedDevicesRepository.addHostInfo(
                 hostAddress,
                 nsdServiceInfo.serviceName
             )
-            client.addClient(inetSocketAddress)
+            if (shouldDial) {
+                client.addClient(inetSocketAddress)
+            } else {
+                Timber.Forest.i(
+                    "Inbound-only mode for host=%s remoteNode=%s localNode=%s",
+                    hostAddress,
+                    remoteNodeId,
+                    resolveLocalNodeId()
+                )
+            }
         }
     }
 
     override fun onServiceLost(nsdServiceInfo: NsdServiceInfo) {
-        Timber.Forest.i("onServiceLost: $nsdServiceInfo")
-        val hostAddress = extractHostAddress(nsdServiceInfo)
-        if (!hostAddress.isNullOrBlank()) {
-            connectedDevicesRepository.setHostDisconnected(hostAddress)
-        } else {
-            connectedDevicesRepository.setHostDisconnectedByName(nsdServiceInfo.serviceName)
-        }
-
-        if (nsdServiceInfo.serviceName == currentServiceName) {
+        Timber.Forest.i("%s onServiceLost: %s", DIAG_PREFIX, nsdServiceInfo)
+        if (isSelfService(nsdServiceInfo.serviceName)) {
             Timber.Forest.i("onServiceLost: SELF")
             return
         }
+        // NSD can emit transient/false "lost" events during re-register/rejoin.
+        // Do not hard-disconnect from discovery callback; rely on heartbeat/socket stale detection.
+        val hostAddress = extractHostAddress(nsdServiceInfo)
+        Timber.Forest.i(
+            "%s onServiceLost ignored for stability; host=%s service=%s",
+            DIAG_PREFIX,
+            hostAddress,
+            nsdServiceInfo.serviceName
+        )
     }
 
     @Suppress("DEPRECATION")
@@ -289,4 +347,27 @@ internal class ChanelControllerImpl(
             nsdServiceInfo.host?.hostAddress
         }
     }
+
+    private fun extractNodeIdFromServiceName(serviceName: String?): String {
+        if (serviceName.isNullOrBlank()) return ""
+        val parts = serviceName.split(":")
+        return parts.getOrNull(1).orEmpty().trim()
+    }
+
+    private fun shouldInitiateOutboundConnection(remoteNodeId: String): Boolean {
+        if (remoteNodeId.isBlank()) return true
+        val local = resolveLocalNodeId()
+        if (local.isBlank()) return true
+        return local < remoteNodeId
+    }
+
+    private fun isSelfService(serviceName: String?): Boolean {
+        if (serviceName.isNullOrBlank()) return false
+        if (serviceName == currentServiceName) return true
+        val nodeId = extractNodeIdFromServiceName(serviceName)
+        return nodeId.isNotBlank() && nodeId == resolveLocalNodeId()
+    }
 }
+
+private const val DIAG_PREFIX = "[DIAG_CTRL]"
+private const val SNAPSHOT_LOG_INTERVAL_MS = 2_000L

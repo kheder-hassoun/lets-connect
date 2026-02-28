@@ -1,5 +1,7 @@
 package pro.devapp.walkietalkiek.feature.ptt.ui
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.adaptive.currentWindowSize
 import androidx.compose.runtime.Composable
@@ -28,17 +30,25 @@ fun PTTContent(
     val windowSize = with(LocalDensity.current) {
         currentWindowSize().toSize().toDpSize()
     }
-    if (windowSize.width > windowSize.height) {
-        // Landscape mode
-        PTTContentLandscape(
-            state = state.value,
-            onAction = viewModel::onPttAction
-        )
-    } else {
-        // Portrait mode
-        PTTContentPortrait(
-            state = state.value,
-            onAction = viewModel::onPttAction
-        )
+    Box(modifier = modifier.fillMaxSize()) {
+        if (windowSize.width > windowSize.height) {
+            // Landscape mode
+            PTTContentLandscape(
+                state = state.value,
+                onAction = viewModel::onPttAction
+            )
+        } else {
+            // Portrait mode
+            PTTContentPortrait(
+                state = state.value,
+                onAction = viewModel::onPttAction
+            )
+        }
+        if (state.value.isClusterStabilizing) {
+            ClusterStabilizingOverlay(
+                title = state.value.clusterStabilizingTitle,
+                detail = state.value.clusterStabilizingDetail
+            )
+        }
     }
 }

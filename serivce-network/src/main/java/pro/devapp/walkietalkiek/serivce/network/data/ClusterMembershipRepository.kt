@@ -3,6 +3,7 @@ package pro.devapp.walkietalkiek.serivce.network.data
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import timber.log.Timber
 import java.util.concurrent.ConcurrentHashMap
 
 data class ClusterStatus(
@@ -49,6 +50,7 @@ class ClusterMembershipRepository {
             _status.value = _status.value.copy(
                 selfNodeId = nodeId
             )
+            Timber.Forest.i("%s initializeSelf node=%s", DIAG_PREFIX, nodeId)
         }
         recalculateLeader(nowMs)
     }
@@ -62,6 +64,9 @@ class ClusterMembershipRepository {
         val seenAt = nowMs
         val existing = members[nodeId]
         val sessionStartedAtMs = existing?.sessionStartedAtMs ?: seenAt
+        if (existing == null) {
+            Timber.Forest.i("%s heartbeat newMember node=%s term=%d", DIAG_PREFIX, nodeId, term)
+        }
         members[nodeId] = MemberState(
             nodeId = nodeId,
             sessionStartedAtMs = sessionStartedAtMs,
@@ -87,6 +92,15 @@ class ClusterMembershipRepository {
         val seenAt = nowMs
         val existing = members[nodeId]
         val isNewSession = existing == null || existing.sessionStartedAtMs != joinedAtMs
+        if (isNewSession) {
+            Timber.Forest.i(
+                "%s heartbeat sessionChange node=%s oldSession=%d newSession=%d",
+                DIAG_PREFIX,
+                nodeId,
+                existing?.sessionStartedAtMs ?: -1L,
+                joinedAtMs
+            )
+        }
         val firstSeenMs = if (isNewSession) seenAt else (existing?.firstSeenMs ?: seenAt)
         members[nodeId] = MemberState(
             nodeId = nodeId,
@@ -114,6 +128,16 @@ class ClusterMembershipRepository {
         val seenAt = nowMs
         val existing = members[nodeId]
         val isNewSession = existing == null || existing.sessionStartedAtMs != joinedAtMs
+        if (isNewSession) {
+            Timber.Forest.i(
+                "%s heartbeat sessionChange+uptime node=%s oldSession=%d newSession=%d uptimeMs=%d",
+                DIAG_PREFIX,
+                nodeId,
+                existing?.sessionStartedAtMs ?: -1L,
+                joinedAtMs,
+                uptimeMs
+            )
+        }
         val firstSeenMs = if (isNewSession) seenAt else (existing?.firstSeenMs ?: seenAt)
         val computedUptime = if (isNewSession) {
             uptimeMs.coerceAtLeast(0L)
@@ -136,13 +160,24 @@ class ClusterMembershipRepository {
     }
 
     fun sweepStale(staleTimeoutMs: Long, nowMs: Long) {
+        val removed = mutableListOf<String>()
         members.entries.removeIf { (_, member) ->
-            nowMs - member.lastSeenMs > staleTimeoutMs
+            val shouldRemove = nowMs - member.lastSeenMs > staleTimeoutMs
+            if (shouldRemove) {
+                removed += member.nodeId
+            }
+            shouldRemove
+        }
+        if (removed.isNotEmpty()) {
+            Timber.Forest.i("%s staleMembers removed=%s timeoutMs=%d", DIAG_PREFIX, removed, staleTimeoutMs)
         }
         recalculateLeader(nowMs)
     }
 
     fun clear() {
+        if (members.isNotEmpty()) {
+            Timber.Forest.i("%s clear members=%s", DIAG_PREFIX, members.keys.joinToString(","))
+        }
         members.clear()
         localSeq = 0L
         _status.value = ClusterStatus()
@@ -184,12 +219,29 @@ class ClusterMembershipRepository {
         } else {
             ClusterRole.PEER
         }
-        _status.value = _status.value.copy(
+        val previous = _status.value
+        val next = previous.copy(
             leaderNodeId = leader,
             role = role,
             activeMembersCount = uniqueMembers.size.coerceAtLeast(1)
         )
+        _status.value = next
+        if (previous.leaderNodeId != next.leaderNodeId ||
+            previous.role != next.role ||
+            previous.activeMembersCount != next.activeMembersCount
+        ) {
+            Timber.Forest.i(
+                "%s statusChange self=%s leader=%s role=%s members=%d active=%s",
+                DIAG_PREFIX,
+                next.selfNodeId,
+                next.leaderNodeId,
+                next.role,
+                next.activeMembersCount,
+                uniqueMembers.joinToString(",") { it.nodeId }
+            )
+        }
     }
 }
 
 private const val ACTIVE_WINDOW_MS = 6_000L
+private const val DIAG_PREFIX = "[DIAG_CLUSTER]"

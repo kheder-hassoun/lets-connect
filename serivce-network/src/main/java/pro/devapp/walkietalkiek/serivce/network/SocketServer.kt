@@ -67,7 +67,7 @@ class SocketServer(
             soTimeout = 5000
         }
         serverPort = selectedPort
-        Timber.Forest.i("Server port initialized: $selectedPort")
+        Timber.Forest.i("%s serverPort=%d", DIAG_PREFIX, selectedPort)
         acceptConnectionScope.launch {
             delay(100L)
             while (acceptConnectionScope.isActive) {
@@ -79,6 +79,7 @@ class SocketServer(
                     val hostAddress = client.inetAddress.hostAddress.orEmpty()
                     outputQueueMap[hostAddress] = LinkedBlockingDeque()
                     connectedDevicesRepository.addOrUpdateHostStateToConnected(hostAddress, client.port)
+                    Timber.Forest.i("%s accepted host=%s remotePort=%d", DIAG_PREFIX, hostAddress, client.port)
                     handleConnection(client)
                 } catch (e: Exception) {
                     if (e !is java.net.SocketTimeoutException) {
@@ -192,6 +193,7 @@ class SocketServer(
 
     private fun closeClient(client: Socket) {
         val hostAddress = client.inetAddress?.hostAddress ?: return
+        Timber.Forest.i("%s closeClient host=%s", DIAG_PREFIX, hostAddress)
         client.close()
         outputQueueMap.remove(hostAddress)
         val removedNodeIds = floorArbitrationState.removeHost(hostAddress)
@@ -396,3 +398,4 @@ private const val AUDIO_PACKET_PREFIX: Byte = 1
 private const val MAX_PACKET_SIZE = 256 * 1024
 private const val DEFAULT_SERVER_PORT = 9915
 private const val PORT_FALLBACK_SPAN = 5
+private const val DIAG_PREFIX = "[DIAG_SOCK_SERVER]"

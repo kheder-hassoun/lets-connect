@@ -30,11 +30,25 @@ internal class PttViewModel(
 ): MviViewModel<PttScreenState, PttAction, PttEvent>(
     actionProcessor = actionProcessor
 ) {
+    private data class ClusterTopologySnapshot(
+        val connectedPeers: Int,
+        val membersCount: Int,
+        val leaderNodeId: String
+    )
+
     private var talkTimerJob: Job? = null
     private var floorRequestTimeoutJob: Job? = null
     private var floorRequestRetryJob: Job? = null
     private var remoteSpeakingWatchdogJob: Job? = null
+    private var clusterStabilizeHideJob: Job? = null
     private var lastRemoteVoicePacketAtMs: Long = 0L
+    private var lastTopologySnapshot: ClusterTopologySnapshot? = null
+    private var latestConnectedPeersCount: Int = 0
+    private var latestMembersCount: Int = 1
+    private var latestLeaderNodeId: String = "--"
+    private var hasConnectedTopologySignal: Boolean = false
+    private var hasClusterTopologySignal: Boolean = false
+    private var isClusterStabilizationArmed: Boolean = false
     private var collectorsStarted = false
 
     fun startCollectingConnectedDevices() {
@@ -56,6 +70,9 @@ internal class PttViewModel(
                     }
                 }
                 lastConnectedHosts = connectedHosts
+                hasConnectedTopologySignal = true
+                latestConnectedPeersCount = connectedHosts.size
+                evaluateClusterStabilization()
                 onPttAction(PttAction.ConnectedDevicesUpdated(it))
             }
         }
@@ -101,6 +118,10 @@ internal class PttViewModel(
                         membersCount = status.activeMembersCount
                     )
                 )
+                hasClusterTopologySignal = true
+                latestMembersCount = status.activeMembersCount
+                latestLeaderNodeId = leaderLabel
+                evaluateClusterStabilization()
             }
         }
         viewModelScope.launch {
@@ -203,6 +224,92 @@ internal class PttViewModel(
         talkTimerJob?.cancel()
         talkTimerJob = null
     }
+
+    private fun evaluateClusterStabilization() {
+        val current = ClusterTopologySnapshot(
+            connectedPeers = latestConnectedPeersCount,
+            membersCount = latestMembersCount,
+            leaderNodeId = latestLeaderNodeId
+        )
+        val previous = lastTopologySnapshot
+        if (previous == null) {
+            lastTopologySnapshot = current
+            return
+        }
+        if (!hasConnectedTopologySignal || !hasClusterTopologySignal) {
+            lastTopologySnapshot = current
+            return
+        }
+        if (!isClusterStabilizationArmed) {
+            // Suppress "fake" topology changes during initial screen hydration.
+            isClusterStabilizationArmed = true
+            lastTopologySnapshot = current
+            return
+        }
+        if (previous == current) {
+            return
+        }
+        val hasPeerContext = previous.connectedPeers > 0 ||
+            current.connectedPeers > 0 ||
+            previous.membersCount > 1 ||
+            current.membersCount > 1
+        lastTopologySnapshot = current
+        if (!hasPeerContext) {
+            return
+        }
+        showClusterStabilizingOverlay(previous, current)
+    }
+
+    private fun showClusterStabilizingOverlay(
+        previous: ClusterTopologySnapshot,
+        current: ClusterTopologySnapshot
+    ) {
+        if (state.value.isClusterStabilizing) {
+            // Don't keep extending the popup on every topology tick.
+            return
+        }
+        val title: String
+        val detail: String
+        when {
+            previous.leaderNodeId != current.leaderNodeId -> {
+                title = "Electing New Leader"
+                detail = "Please wait while the network selects a coordinator"
+            }
+            current.membersCount > previous.membersCount ||
+                current.connectedPeers > previous.connectedPeers -> {
+                title = "Device Joined"
+                detail = "Syncing channels and peer routes"
+            }
+            current.membersCount < previous.membersCount ||
+                current.connectedPeers < previous.connectedPeers -> {
+                title = "Device Left"
+                detail = "Rebalancing cluster connections"
+            }
+            else -> {
+                title = "Stabilizing Network"
+                detail = "Applying recent topology changes"
+            }
+        }
+
+        onPttAction(
+            PttAction.ClusterStabilizationChanged(
+                isVisible = true,
+                title = title,
+                detail = detail
+            )
+        )
+        clusterStabilizeHideJob?.cancel()
+        clusterStabilizeHideJob = viewModelScope.launch {
+            delay(CLUSTER_STABILIZATION_POPUP_MS)
+            onPttAction(
+                PttAction.ClusterStabilizationChanged(
+                    isVisible = false,
+                    title = title,
+                    detail = detail
+                )
+            )
+        }
+    }
 }
 
 private const val WAVE_UI_UPDATE_THROTTLE_MS = 140L
@@ -211,3 +318,4 @@ private const val FLOOR_REQUEST_RETRY_INITIAL_DELAY_MS = 500L
 private const val FLOOR_REQUEST_RETRY_MS = 900L
 private const val REMOTE_SPEAKING_TIMEOUT_MS = 850L
 private const val REMOTE_SPEAKING_WATCHDOG_INTERVAL_MS = 130L
+private const val CLUSTER_STABILIZATION_POPUP_MS = 2400L

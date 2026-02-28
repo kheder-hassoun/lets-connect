@@ -31,6 +31,9 @@ class SocketClient (
     private val coroutineContextProvider: CoroutineContextProvider
 ) {
     private val sockets = ConcurrentHashMap<String, Socket>()
+    private val dialPolicyByHost = ConcurrentHashMap<String, Boolean>()
+    private val latestEndpointByHost = ConcurrentHashMap<String, InetSocketAddress>()
+    private val reconnectJobsByHost = ConcurrentHashMap<String, Job>()
 
     var dataListener: ((bytes: ByteArray) -> Unit)? = null
 
@@ -77,11 +80,34 @@ class SocketClient (
         outputQueueMap[hostAddress]?.offerLast(data.copyOf())
     }
 
+    fun setOutboundDialPolicy(hostAddress: String, shouldDial: Boolean) {
+        if (hostAddress.isBlank()) return
+        dialPolicyByHost[hostAddress] = shouldDial
+        Timber.Forest.i("%s dialPolicy host=%s shouldDial=%s", DIAG_PREFIX, hostAddress, shouldDial)
+        if (!shouldDial) {
+            closeOutboundConnection(hostAddress, markDisconnected = false)
+        }
+    }
+
+    private fun canDialHost(hostAddress: String): Boolean {
+        return dialPolicyByHost[hostAddress] != false
+    }
+
     fun addClient(socketAddress: InetSocketAddress) {
         socketAddress.address.hostAddress?.let { hostAddress ->
+            latestEndpointByHost[hostAddress] = socketAddress
+            reconnectJobsByHost.remove(hostAddress)?.cancel()
+            if (!canDialHost(hostAddress)) {
+                Timber.Forest.i("%s skipConnect host=%s reason=dialPolicyDisabled", DIAG_PREFIX, hostAddress)
+                return
+            }
             addClientScope.launch {
                 lock.withLock {
                     try {
+                        if (!canDialHost(hostAddress)) {
+                            Timber.Forest.i("%s skipConnect host=%s reason=dialPolicyDisabledAfterSchedule", DIAG_PREFIX, hostAddress)
+                            return@withLock
+                        }
                         sockets[hostAddress]?.apply {
                             close()
                             sockets.remove(hostAddress)
@@ -96,19 +122,17 @@ class SocketClient (
                         socket.receiveBufferSize = 8192 * 2
                         sockets[hostAddress] = socket
                         outputQueueMap[hostAddress] = LinkedBlockingDeque()
-                        Timber.Forest.i("AddClient $hostAddress ${socketAddress.port}")
+                        Timber.Forest.i("%s connected host=%s port=%d activeSockets=%d", DIAG_PREFIX, hostAddress, socketAddress.port, sockets.size)
                         connectedDevicesRepository.addOrUpdateHostStateToConnected(hostAddress, socketAddress.port)
                         handleConnection(socket)
                     } catch (e: Exception) {
                         Timber.Forest.w(e)
-                        Timber.Forest.i("connection error ${hostAddress} ${socketAddress.port}")
-                        connectedDevicesRepository.setHostDisconnected(hostAddress)
-                        // try reconnect
-                        reconnectTimerScope.launch {
-                            Timber.Forest.i("reconnect $hostAddress")
-                            delay(1000L)
-                            addClient(socketAddress)
+                        Timber.Forest.i("%s connectError host=%s port=%d", DIAG_PREFIX, hostAddress, socketAddress.port)
+                        if (sockets[hostAddress]?.isConnected != true) {
+                            connectedDevicesRepository.setHostDisconnected(hostAddress)
                         }
+                        // try reconnect
+                        scheduleReconnect(hostAddress)
                     }
                 }
             }
@@ -117,7 +141,7 @@ class SocketClient (
 
     fun removeClient(hostAddress: String?) {
         hostAddress ?: return
-        Timber.Forest.i("removeClient $hostAddress")
+        Timber.Forest.i("%s removeClient host=%s", DIAG_PREFIX, hostAddress)
         val removedNodeIds = floorArbitrationState.removeHost(hostAddress)
         if (removedNodeIds.isNotEmpty()) {
             removedNodeIds.forEach { nodeId ->
@@ -132,20 +156,12 @@ class SocketClient (
         }
         outputQueueMap.remove(hostAddress)
         sockets[hostAddress]?.apply {
-            val socketAddress = InetSocketAddress(
-                hostAddress,
-                port
-            )
             close()
             sockets.remove(hostAddress)
-            Timber.Forest.i("removeClient $hostAddress $port")
+            Timber.Forest.i("%s socketClosed host=%s port=%d activeSockets=%d", DIAG_PREFIX, hostAddress, port, sockets.size)
             connectedDevicesRepository.setHostDisconnected(hostAddress)
             // try reconnect
-            reconnectTimerScope.launch {
-                delay(1000L)
-                Timber.Forest.i("reconnect $hostAddress $port")
-                addClient(socketAddress)
-            }
+            scheduleReconnect(hostAddress)
         }
     }
 
@@ -156,6 +172,10 @@ class SocketClient (
         floorOwnerMonitorJob?.cancel()
         floorOwnerMonitorJob = null
         outputQueueMap.clear()
+        dialPolicyByHost.clear()
+        latestEndpointByHost.clear()
+        reconnectJobsByHost.values.forEach { it.cancel() }
+        reconnectJobsByHost.clear()
         floorArbitrationState.clear()
         reconnectTimerScope.cancel()
         addClientScope.cancel()
@@ -304,6 +324,35 @@ class SocketClient (
         }
     }
 
+    private fun closeOutboundConnection(hostAddress: String, markDisconnected: Boolean) {
+        val existing = sockets.remove(hostAddress) ?: return
+        outputQueueMap.remove(hostAddress)
+        runCatching { existing.close() }
+            .onFailure { Timber.Forest.w(it, "Failed closing outbound socket for $hostAddress") }
+        if (markDisconnected) {
+            connectedDevicesRepository.setHostDisconnected(hostAddress)
+        }
+        Timber.Forest.i("%s closeOutbound host=%s markDisconnected=%s", DIAG_PREFIX, hostAddress, markDisconnected)
+    }
+
+    private fun scheduleReconnect(hostAddress: String) {
+        if (!canDialHost(hostAddress)) return
+        val target = latestEndpointByHost[hostAddress] ?: return
+        reconnectJobsByHost.remove(hostAddress)?.cancel()
+        reconnectJobsByHost[hostAddress] = reconnectTimerScope.launch {
+            delay(1000L)
+            if (!canDialHost(hostAddress)) return@launch
+            val latestTarget = latestEndpointByHost[hostAddress] ?: return@launch
+            Timber.Forest.i(
+                "%s reconnect host=%s port=%d",
+                DIAG_PREFIX,
+                hostAddress,
+                latestTarget.port
+            )
+            addClient(latestTarget)
+        }
+    }
+
     private fun handleFloorRequestAsLeader(request: ControlEnvelope.FloorRequest, requesterHostAddress: String) {
         val status = clusterMembershipRepository.status.value
         if (status.role != pro.devapp.walkietalkiek.serivce.network.data.ClusterRole.LEADER) return
@@ -402,3 +451,4 @@ class SocketClient (
 
 private const val AUDIO_PACKET_PREFIX: Byte = 1
 private const val MAX_PACKET_SIZE = 256 * 1024
+private const val DIAG_PREFIX = "[DIAG_SOCK_CLIENT]"

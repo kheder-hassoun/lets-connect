@@ -7,6 +7,7 @@ import pro.devapp.walkietalkiek.feature.ptt.PttActionProcessor
 import pro.devapp.walkietalkiek.feature.ptt.PttViewModel
 import pro.devapp.walkietalkiek.feature.ptt.factory.PttInitStateFactory
 import pro.devapp.walkietalkiek.feature.ptt.reducer.ClusterStatusChangedReducer
+import pro.devapp.walkietalkiek.feature.ptt.reducer.ClusterStabilizationChangedReducer
 import pro.devapp.walkietalkiek.feature.ptt.reducer.ClearVoiceVisualizationReducer
 import pro.devapp.walkietalkiek.feature.ptt.reducer.ConnectedDevicesUpdatedReducer
 import pro.devapp.walkietalkiek.feature.ptt.reducer.FloorOwnerChangedReducer
@@ -32,6 +33,7 @@ private fun Module.factoryDi() {
 private fun Module.reducersDi() {
     factoryOf(::InitScreenReducer)
     factoryOf(::ClusterStatusChangedReducer)
+    factoryOf(::ClusterStabilizationChangedReducer)
     factoryOf(::ConnectedDevicesUpdatedReducer)
     factoryOf(::FloorOwnerChangedReducer)
     factoryOf(::StartRecordingReducer)
@@ -47,6 +49,7 @@ private fun Module.reducersDi() {
             reducers = setOf(
                 get(InitScreenReducer::class),
                 get(ClusterStatusChangedReducer::class),
+                get(ClusterStabilizationChangedReducer::class),
                 get(ConnectedDevicesUpdatedReducer::class),
                 get(FloorOwnerChangedReducer::class),
                 get(StartRecordingReducer::class),

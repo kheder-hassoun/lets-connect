@@ -18,6 +18,9 @@ internal data class PttScreenState(
     val clusterRoleLabel: String = "Peer",
     val leaderNodeLabel: String = "--",
     val clusterMembersCount: Int = 1,
+    val isClusterStabilizing: Boolean = false,
+    val clusterStabilizingTitle: String = "Synchronizing cluster",
+    val clusterStabilizingDetail: String = "Please wait while peers reconnect",
     val talkDurationSeconds: Int = 10,
     val remainingTalkSeconds: Int = 10,
     val remainingTalkMillis: Long = 10_000L
@@ -43,6 +46,9 @@ internal data class PttScreenState(
         if (clusterRoleLabel != other.clusterRoleLabel) return false
         if (leaderNodeLabel != other.leaderNodeLabel) return false
         if (clusterMembersCount != other.clusterMembersCount) return false
+        if (isClusterStabilizing != other.isClusterStabilizing) return false
+        if (clusterStabilizingTitle != other.clusterStabilizingTitle) return false
+        if (clusterStabilizingDetail != other.clusterStabilizingDetail) return false
         if (talkDurationSeconds != other.talkDurationSeconds) return false
         if (remainingTalkSeconds != other.remainingTalkSeconds) return false
         if (remainingTalkMillis != other.remainingTalkMillis) return false
@@ -66,6 +72,9 @@ internal data class PttScreenState(
         result = 31 * result + clusterRoleLabel.hashCode()
         result = 31 * result + leaderNodeLabel.hashCode()
         result = 31 * result + clusterMembersCount
+        result = 31 * result + isClusterStabilizing.hashCode()
+        result = 31 * result + clusterStabilizingTitle.hashCode()
+        result = 31 * result + clusterStabilizingDetail.hashCode()
         result = 31 * result + talkDurationSeconds
         result = 31 * result + remainingTalkSeconds
         result = 31 * result + remainingTalkMillis.hashCode()

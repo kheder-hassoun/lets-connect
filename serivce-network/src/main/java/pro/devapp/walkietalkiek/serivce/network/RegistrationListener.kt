@@ -20,6 +20,6 @@ internal class RegistrationListener(private val chanelController: ChanelControll
 
     override fun onServiceRegistered(serviceInfo: NsdServiceInfo) {
         Timber.Forest.i("onServiceRegistered: $serviceInfo")
-        chanelController.onServiceRegister()
+        chanelController.onServiceRegister(serviceInfo)
     }
 }

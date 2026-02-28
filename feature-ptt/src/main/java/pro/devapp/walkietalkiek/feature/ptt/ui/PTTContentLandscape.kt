@@ -30,7 +30,7 @@ internal fun PTTContentLandscape(
         !state.isFloorHeldByMe &&
         !state.isRecording
     val isFloorBusyByRemote = isFloorOwnedByRemote || (state.isRemoteSpeaking && !state.isRecording)
-    val canPressPtt = (canTalk && !isFloorBusyByRemote) || state.isRecording
+    val canPressPtt = ((canTalk && !isFloorBusyByRemote) || state.isRecording)
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp

@@ -97,6 +97,11 @@ Get robust peer discovery/control without external broker.
 - [x] Serverless envelope adopted for membership heartbeat and cluster status.
 - [x] Heartbeat now carries `startedAtMs + uptimeMs` to support more stable cluster behavior.
 - [x] MQTT experimental path isolated from default production path.
+- [x] Socket server bind strategy hardened: fixed preferred port with bounded fallback range.
+- [x] Leader liveness/election updated to local receive-time semantics to avoid cross-device clock skew stalls.
+- [x] Rejoin handling hardened with session-aware membership (`nodeId + startedAtMs`).
+- [x] Deterministic single-dial policy added (`localNodeId < remoteNodeId` initiates outbound) to reduce dual-link churn.
+- [x] Connection state flapping reduced with short disconnect debounce on transport drops.
 
 ### Exit Criteria
 

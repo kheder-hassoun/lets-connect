@@ -18,6 +18,11 @@ internal sealed interface PttAction {
         val leaderNodeLabel: String,
         val membersCount: Int
     ) : PttAction
+    data class ClusterStabilizationChanged(
+        val isVisible: Boolean,
+        val title: String,
+        val detail: String
+    ) : PttAction
     data class TalkTimerTick(val remainingMillis: Long) : PttAction
     data class TalkDurationChanged(val seconds: Int) : PttAction
     data class RemoteSpeakingChanged(val isSpeaking: Boolean) : PttAction
