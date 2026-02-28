@@ -128,8 +128,10 @@ This project maintains the same license as the original LANwalkieTalkie project.
 
 ## Version History
 
-- **v0.2.2**: Current version with enhanced floor control and UI improvements
-- **v0.1.x**: Initial fork with bug fixes and basic enhancements
+- **v1.4.0**: Full two-language support foundation (English/Arabic) across Settings, PTT, Chat, About, and Status; localized role naming (`Leader/Peer` -> `أدمن/مستخدم` in Arabic); localized leader-election/join/leave cluster popups.
+- **v1.3.0**: UI and architecture hardening release with improved cluster behavior, modernized status panels, and version visibility in About.
+- **v0.2.2**: Early enhanced floor control and UI improvements.
+- **v0.1.x**: Initial fork with bug fixes and basic enhancements.
 
 ---
 

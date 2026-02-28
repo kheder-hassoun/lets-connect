@@ -128,6 +128,15 @@ Notes:
 - [ ] Phase 6 not started
 - [ ] Phase 7 not started
 
+## Current Release Snapshot
+
+- **App Version**: `1.4.0`
+- **Delivered in this release**:
+  - Two-language support foundation (`English` + `Arabic`) with in-app language switch.
+  - Localized key product surfaces: `Settings`, `PTT`, `Chat`, `About`, `Status`.
+  - Arabic role wording standardized to product language: `أدمن` / `مستخدم`.
+  - Cluster stabilization popup localization for leader election and member join/leave flows.
+
 ## Phase Plan (Always Runnable)
 
 ## Phase 0 - Baseline and Safety Net
