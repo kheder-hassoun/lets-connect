@@ -15,7 +15,7 @@ Let's-Connect is an enhanced Android walkie-talkie application that enables voic
 - [Version History](#version-history)
 
 ## Demo
-[Watch demo video](docs/demo/demo.mp4)
+[![Watch the video](https://raw.githubusercontent.com/username/repository/branch/docs/demo/demo.png)](https://raw.githubusercontent.com/username/repository/branch/docs/demo/demo.mp4)
 
 ## Features
 
