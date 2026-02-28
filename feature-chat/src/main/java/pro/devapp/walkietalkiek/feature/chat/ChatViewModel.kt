@@ -16,8 +16,11 @@ internal class ChatViewModel(
 ): MviViewModel<ChatScreenState, ChatAction, ChatEvent>(
     actionProcessor = actionProcessor
 ) {
+    private var collectorsStarted = false
 
     fun startCollectingConnectedDevices() {
+        if (collectorsStarted) return
+        collectorsStarted = true
         viewModelScope.launch {
             connectedDevicesRepository.clientsFlow.collect {
                 onAction(ChatAction.ConnectedDevicesUpdated(it))

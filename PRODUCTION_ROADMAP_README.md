@@ -43,12 +43,13 @@ Notes:
 ## Progress Status (Live)
 
 - [x] Phase 0 started
-- [~] Phase 1 in progress
+- [x] Phase 1 done
 - [~] Phase 2 in progress
-- [ ] Phase 3 not started
+- [~] Phase 3 in progress
 - [ ] Phase 4 not started
 - [ ] Phase 5 not started
 - [ ] Phase 6 not started
+- [ ] Phase 7 not started
 
 ## Phase Plan (Always Runnable)
 
@@ -93,7 +94,8 @@ Get robust peer discovery/control without external broker.
 
 - [x] Control-plane status visibility added in UI.
 - [x] Floor/chat workstreams started under feature-flag migration.
-- [~] Serverless envelope adopted for membership heartbeat and cluster status.
+- [x] Serverless envelope adopted for membership heartbeat and cluster status.
+- [x] Heartbeat now carries `startedAtMs + uptimeMs` to support more stable cluster behavior.
 - [x] MQTT experimental path isolated from default production path.
 
 ### Exit Criteria
@@ -123,8 +125,10 @@ Ensure only one active speaker at a time under contention.
 
 - [x] Leader-authoritative `FLOOR_REQUEST/GRANT/RELEASE` control messages added.
 - [x] PTT now waits for grant before transmit in serverless mode.
-- [~] Queueing implemented (busy response + FIFO grant), renew policy pending.
-- [~] Request-timeout fallback implemented; disconnect recovery lease cleanup still needs hardening.
+- [x] Queueing implemented (busy response + FIFO grant).
+- [x] Request-timeout fallback implemented.
+- [x] Lease cleanup hardening added on release/disconnect paths.
+- [x] UI-side remote-speaker state made robust with watchdog timeout + forced cleanup on floor release.
 
 ### Exit Criteria
 
@@ -145,6 +149,13 @@ Cluster-wide settings sync without external backend.
 - Versioned settings snapshot distribution.
 - Join-time sync for new peers.
 - Safe fallback to last good local config.
+
+### Current Status
+
+- [x] Coordinator/leader election is active in cluster membership state.
+- [x] Leader preference updated to oldest member in cluster session.
+- [x] Settings section now enforces leader-only controls for operational settings, with peer-safe options still available.
+- [~] Full versioned snapshot sync/distribution still pending.
 
 ### Exit Criteria
 
@@ -213,6 +224,30 @@ Secure serverless LAN operation and staged release.
 - Unauthorized peer cannot take floor/control.
 - Pilot passes SLO thresholds.
 
+---
+
+## Phase 7 - Embedded Local Data Store (Next)
+
+### Goal
+
+Persist core app data locally for better UX, diagnostics, and recovery.
+
+### Work
+
+- Add an embedded local database (Room preferred) for:
+  - call/session logs
+  - local username/profile metadata
+  - chat history
+- Define retention policy and lightweight cleanup job.
+- Expose repository APIs to PTT/chat/settings modules.
+- Add migration-safe schema versioning from day one.
+
+### Exit Criteria
+
+- Chat history survives app restart.
+- Username/profile persists across app restarts.
+- Call logs can be viewed/exported for diagnostics.
+
 ## What Is Out of Scope (for this plan)
 
 - Mandatory broker/server dependencies for basic operation.
@@ -227,6 +262,6 @@ Secure serverless LAN operation and staged release.
 
 ## Immediate Next Step
 
-1. Harden lease timeout/cleanup and recovery on leader disconnect.
-2. Add explicit request queue (FIFO) for fair floor arbitration.
-3. Add deterministic failover behavior when leader disappears.
+1. Implement Phase 7 foundation: Room schema + DAO + repositories for call logs, username, and chat history.
+2. Integrate chat feature with persisted message history (load on startup).
+3. Add basic logs/history UI read path and retention cleanup.

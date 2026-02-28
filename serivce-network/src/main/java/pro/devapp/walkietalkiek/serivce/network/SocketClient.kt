@@ -12,6 +12,7 @@ import pro.devapp.walkietalkiek.core.mvi.CoroutineContextProvider
 import pro.devapp.walkietalkiek.serivce.network.data.ClusterMembershipRepository
 import pro.devapp.walkietalkiek.serivce.network.data.ConnectedDevicesRepository
 import pro.devapp.walkietalkiek.serivce.network.data.PttFloorRepository
+import pro.devapp.walkietalkiek.serivce.network.data.TextMessagesRepository
 import timber.log.Timber
 import java.io.DataInputStream
 import java.io.DataOutputStream
@@ -26,6 +27,7 @@ class SocketClient (
     private val floorArbitrationState: FloorArbitrationState,
     private val clusterMembershipRepository: ClusterMembershipRepository,
     private val pttFloorRepository: PttFloorRepository,
+    private val textMessagesRepository: TextMessagesRepository,
     private val coroutineContextProvider: CoroutineContextProvider
 ) {
     private val sockets = ConcurrentHashMap<String, Socket>()
@@ -240,6 +242,16 @@ class SocketClient (
                                     FloorControlCommand.Acquire -> pttFloorRepository.acquire(hostAddress)
                                     FloorControlCommand.Release -> pttFloorRepository.release(hostAddress)
                                 }
+                            } else if (message == "ping") {
+                                sendMessageToHost(
+                                    hostAddress = hostAddress,
+                                    data = "pong".toByteArray()
+                                )
+                            } else if (message != "pong" && message.isNotEmpty()) {
+                                textMessagesRepository.addMessage(
+                                    message = message,
+                                    hostAddress = hostAddress
+                                )
                             }
                         }
                     }
