@@ -91,11 +91,7 @@ data class AppSettings(
 
 enum class ThemeColor(val title: String) {
     PURPLE("Purple"),
-    ORANGE("Orange"),
-    RED("Red"),
-    BLUE("Blue"),
-    GREEN("Green"),
-    YELLOW("Yellow")
+    BLUE("Blue")
 }
 
 enum class AppLanguage(

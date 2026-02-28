@@ -8,11 +8,7 @@ import pro.devapp.walkietalkiek.core.settings.ThemeColor
 
 private fun paletteFor(themeColor: ThemeColor): AccentPalette = when (themeColor) {
     ThemeColor.PURPLE -> PurplePalette
-    ThemeColor.ORANGE -> OrangePalette
-    ThemeColor.RED -> RedPalette
     ThemeColor.BLUE -> BluePalette
-    ThemeColor.GREEN -> GreenPalette
-    ThemeColor.YELLOW -> YellowPalette
 }
 
 private fun buildDarkColorScheme(palette: AccentPalette) = darkColorScheme(

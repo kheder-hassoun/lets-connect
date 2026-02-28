@@ -512,11 +512,7 @@ private data class ThemeOptionUi(
 
 private val themeOptions = listOf(
     ThemeOptionUi(ThemeColor.PURPLE, Color(0xFFA970FF), Color(0xFFC49BFF)),
-    ThemeOptionUi(ThemeColor.ORANGE, Color(0xFFFF8A00), Color(0xFFFFB347)),
-    ThemeOptionUi(ThemeColor.RED, Color(0xFFFF5252), Color(0xFFFF8A80)),
-    ThemeOptionUi(ThemeColor.BLUE, Color(0xFF4DA3FF), Color(0xFF82C4FF)),
-    ThemeOptionUi(ThemeColor.GREEN, Color(0xFF4CD964), Color(0xFF85F39B)),
-    ThemeOptionUi(ThemeColor.YELLOW, Color(0xFFFFD54F), Color(0xFFFFE082))
+    ThemeOptionUi(ThemeColor.BLUE, Color(0xFF4DA3FF), Color(0xFF82C4FF))
 )
 
 private fun themeOptionFor(themeColor: ThemeColor): ThemeOptionUi {
@@ -541,10 +537,6 @@ private fun languageDisplayName(language: AppLanguage): String {
 private fun themeDisplayName(themeColor: ThemeColor): String {
     return when (themeColor) {
         ThemeColor.PURPLE -> stringResource(R.string.theme_purple)
-        ThemeColor.ORANGE -> stringResource(R.string.theme_orange)
-        ThemeColor.RED -> stringResource(R.string.theme_red)
         ThemeColor.BLUE -> stringResource(R.string.theme_blue)
-        ThemeColor.GREEN -> stringResource(R.string.theme_green)
-        ThemeColor.YELLOW -> stringResource(R.string.theme_yellow)
     }
 }
