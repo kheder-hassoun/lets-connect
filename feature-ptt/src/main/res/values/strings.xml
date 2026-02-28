@@ -1,0 +1,32 @@
+<resources>
+    <string name="ptt_mode_talking">Talking</string>
+    <string name="ptt_mode_waiting">Waiting</string>
+    <string name="ptt_mode_busy">Busy</string>
+    <string name="ptt_mode_ready">Ready</string>
+    <string name="ptt_mode_offline">Offline</string>
+    <string name="ptt_role_admin">Leader</string>
+    <string name="ptt_role_user">Peer</string>
+    <string name="ptt_floor_mine">Mine</string>
+    <string name="ptt_floor_ask">Ask</string>
+    <string name="ptt_floor_busy">Busy</string>
+    <string name="ptt_floor_free">Free</string>
+    <string name="ptt_card_ptt_title">PTT</string>
+    <string name="ptt_card_mode">Mode %1$s</string>
+    <string name="ptt_card_local_online">Local Online</string>
+    <string name="ptt_card_local_offline">Local Offline</string>
+    <string name="ptt_card_cluster_title">Cluster</string>
+    <string name="ptt_card_role">Role %1$s</string>
+    <string name="ptt_card_peers">Peers %1$d</string>
+    <string name="ptt_card_floor_title">Floor</string>
+    <string name="ptt_card_state">State %1$s</string>
+    <string name="ptt_card_remote_speaking">Remote speaking</string>
+    <string name="ptt_card_open">Open</string>
+    <string name="ptt_ticker_line_1">Lets Connect is your choice</string>
+    <string name="ptt_ticker_line_2">Voice calls and chat support</string>
+    <string name="ptt_ticker_line_3">No internet needed</string>
+    <string name="ptt_peers_available">Peers Available</string>
+    <string name="ptt_scanning_nearby_devices">Scanning for nearby devices</string>
+    <string name="ptt_online">Online</string>
+    <string name="ptt_offline">Offline</string>
+    <string name="ptt_button_content_description">Push to talk</string>
+</resources>

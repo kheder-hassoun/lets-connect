@@ -1,0 +1,35 @@
+<resources>
+    <string name="settings_role_leader">الدور: أدمن (إعدادات الشبكة متاحة)</string>
+    <string name="settings_role_peer">الدور: مستخدم (تتم الإدارة من الأدمن)</string>
+    <string name="settings_talk_limit_title">حد التحدث</string>
+    <string name="settings_talk_limit_duration">المدة: %1$dث</string>
+    <string name="settings_ptt_tones_title">نغمات التحدث</string>
+    <string name="settings_language_title">اللغة</string>
+    <string name="settings_select_language">اختر اللغة</string>
+    <string name="settings_theme_color_title">لون الواجهة</string>
+    <string name="settings_select_theme">اختر اللون</string>
+    <string name="settings_advanced_flags_title">الخيارات المتقدمة</string>
+    <string name="settings_flag_serverless_control">تحكم بدون خادم</string>
+    <string name="settings_flag_webrtc_audio">صوت WebRTC</string>
+    <string name="settings_flag_central_settings">إعدادات مركزية</string>
+    <string name="settings_flag_floor_control_v2">تحكم الدور V2</string>
+    <string name="settings_flag_observability_v2">المراقبة V2</string>
+    <string name="settings_diagnostics_title">التشخيص</string>
+    <string name="settings_logs_path">السجلات: %1$s</string>
+    <string name="settings_share_app_log_chooser">مشاركة سجل التطبيق</string>
+    <string name="settings_share_crash_log_chooser">مشاركة سجل الأعطال</string>
+    <string name="settings_share_app_log_button">مشاركة سجل التطبيق</string>
+    <string name="settings_share_crash_button">مشاركة الأعطال</string>
+    <string name="settings_clear_logs_button">حذف السجلات</string>
+    <string name="settings_logs_cleared_toast">تم حذف السجلات</string>
+    <string name="common_on">تشغيل</string>
+    <string name="common_off">إيقاف</string>
+    <string name="language_english">الإنجليزية</string>
+    <string name="language_arabic">العربية</string>
+    <string name="theme_purple">بنفسجي</string>
+    <string name="theme_orange">برتقالي</string>
+    <string name="theme_red">أحمر</string>
+    <string name="theme_blue">أزرق</string>
+    <string name="theme_green">أخضر</string>
+    <string name="theme_yellow">أصفر</string>
+</resources>

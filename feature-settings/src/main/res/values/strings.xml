@@ -1,0 +1,35 @@
+<resources>
+    <string name="settings_role_leader">Role: Leader (network controls unlocked)</string>
+    <string name="settings_role_peer">Role: Peer (managed by leader)</string>
+    <string name="settings_talk_limit_title">Talk Limit</string>
+    <string name="settings_talk_limit_duration">Duration: %1$ds</string>
+    <string name="settings_ptt_tones_title">PTT Tones</string>
+    <string name="settings_language_title">Language</string>
+    <string name="settings_select_language">Select language</string>
+    <string name="settings_theme_color_title">Theme Color</string>
+    <string name="settings_select_theme">Select theme</string>
+    <string name="settings_advanced_flags_title">Advanced Flags</string>
+    <string name="settings_flag_serverless_control">Serverless Control</string>
+    <string name="settings_flag_webrtc_audio">WebRTC Audio</string>
+    <string name="settings_flag_central_settings">Central Settings</string>
+    <string name="settings_flag_floor_control_v2">Floor Control V2</string>
+    <string name="settings_flag_observability_v2">Observability V2</string>
+    <string name="settings_diagnostics_title">Diagnostics</string>
+    <string name="settings_logs_path">Logs: %1$s</string>
+    <string name="settings_share_app_log_chooser">Share app log</string>
+    <string name="settings_share_crash_log_chooser">Share crash log</string>
+    <string name="settings_share_app_log_button">Share App Log</string>
+    <string name="settings_share_crash_button">Share Crash</string>
+    <string name="settings_clear_logs_button">Clear Logs</string>
+    <string name="settings_logs_cleared_toast">Logs cleared</string>
+    <string name="common_on">On</string>
+    <string name="common_off">Off</string>
+    <string name="language_english">English</string>
+    <string name="language_arabic">Arabic</string>
+    <string name="theme_purple">Purple</string>
+    <string name="theme_orange">Orange</string>
+    <string name="theme_red">Red</string>
+    <string name="theme_blue">Blue</string>
+    <string name="theme_green">Green</string>
+    <string name="theme_yellow">Yellow</string>
+</resources>

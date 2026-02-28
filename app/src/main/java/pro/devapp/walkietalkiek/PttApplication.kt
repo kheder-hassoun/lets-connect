@@ -7,6 +7,8 @@ import org.koin.core.context.startKoin
 import pro.devapp.walkietalkiek.di.appModule
 import pro.devapp.walkietalkiek.core.diagnostics.DeviceFileLogTree
 import pro.devapp.walkietalkiek.core.diagnostics.DeviceLogStore
+import pro.devapp.walkietalkiek.core.settings.AppSettingsRepository
+import pro.devapp.walkietalkiek.localization.AppLocaleManager
 import timber.log.Timber
 
 class PttApplication: Application() {
@@ -23,6 +25,12 @@ class PttApplication: Application() {
             // Uncomment to add koin logs
             // androidLogger(Level.DEBUG)
         }
+
+        val appSettingsRepository: AppSettingsRepository = get()
+        AppLocaleManager.applyLanguage(
+            context = this,
+            language = appSettingsRepository.settings.value.appLanguage
+        )
 
         val deviceLogStore: DeviceLogStore = get()
         installCrashCapture(deviceLogStore)

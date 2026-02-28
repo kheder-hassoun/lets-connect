@@ -1,0 +1,7 @@
+<resources>
+    <string name="chat_empty_state">No messages yet.\nStart the conversation.</string>
+    <string name="chat_type_message">Type a message</string>
+    <string name="chat_send_message">Send message</string>
+    <string name="chat_timestamp_now">now</string>
+    <string name="chat_timestamp_minutes">%1$dm</string>
+</resources>

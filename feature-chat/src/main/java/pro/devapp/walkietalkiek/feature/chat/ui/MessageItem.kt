@@ -16,6 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import pro.devapp.walkietalkiek.feature.chat.R
 import pro.devapp.walkietalkiek.feature.chat.model.ChatMessageModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -78,6 +80,7 @@ internal fun MessageItem(
                 Column(
                     modifier = Modifier.padding(contentInset)
                 ) {
+                    val context = LocalContext.current
                     if (!isOutgoing) {
                         Surface(
                             shape = RoundedCornerShape(999.dp),
@@ -108,7 +111,10 @@ internal fun MessageItem(
                         horizontalArrangement = Arrangement.End
                     ) {
                         Text(
-                            text = formatTimestamp(message.timestamp),
+                            text = formatTimestamp(
+                                timestamp = message.timestamp,
+                                context = context
+                            ),
                             fontSize = 11.sp,
                             color = textColor.copy(alpha = 0.7f)
                         )
@@ -132,13 +138,19 @@ internal fun MessageItem(
     }
 }
 
-private fun formatTimestamp(timestamp: Long): String {
+private fun formatTimestamp(
+    timestamp: Long,
+    context: android.content.Context
+): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
 
     return when {
-        diff < 60_000 -> "now" // Less than 1 minute
-        diff < 3600_000 -> "${diff / 60_000}m" // Less than 1 hour
+        diff < 60_000 -> context.getString(R.string.chat_timestamp_now)
+        diff < 3600_000 -> context.getString(
+            R.string.chat_timestamp_minutes,
+            diff / 60_000
+        )
         diff < 86400_000 -> { // Less than 24 hours
             SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(timestamp))
         }

@@ -7,6 +7,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import pro.devapp.walkietalkiek.core.flags.FeatureFlagsRepository
 import pro.devapp.walkietalkiek.core.mvi.MviViewModel
+import pro.devapp.walkietalkiek.core.settings.AppLanguage
 import pro.devapp.walkietalkiek.core.settings.AppSettingsRepository
 import pro.devapp.walkietalkiek.feature.ptt.model.PttAction
 import pro.devapp.walkietalkiek.feature.ptt.model.PttEvent
@@ -106,9 +107,12 @@ internal class PttViewModel(
         viewModelScope.launch {
             clusterMembershipRepository.status.collect { status ->
                 val leaderLabel = status.leaderNodeId.ifBlank { "--" }
+                val isArabic = appSettingsRepository.settings.value.appLanguage == AppLanguage.ARABIC
                 val role = when (status.role) {
-                    pro.devapp.walkietalkiek.serivce.network.data.ClusterRole.LEADER -> "Leader"
-                    pro.devapp.walkietalkiek.serivce.network.data.ClusterRole.PEER -> "Peer"
+                    pro.devapp.walkietalkiek.serivce.network.data.ClusterRole.LEADER ->
+                        if (isArabic) "أدمن" else "Leader"
+                    pro.devapp.walkietalkiek.serivce.network.data.ClusterRole.PEER ->
+                        if (isArabic) "مستخدم" else "Peer"
                 }
                 onPttAction(
                     PttAction.ClusterStatusChanged(
@@ -270,24 +274,29 @@ internal class PttViewModel(
         }
         val title: String
         val detail: String
+        val isArabic = appSettingsRepository.settings.value.appLanguage == AppLanguage.ARABIC
         when {
             previous.leaderNodeId != current.leaderNodeId -> {
-                title = "Electing New Leader"
-                detail = "Please wait while the network selects a coordinator"
+                title = if (isArabic) "جاري انتخاب أدمن جديد" else "Electing New Leader"
+                detail = if (isArabic) {
+                    "يرجى الانتظار بينما تختار الشبكة المنسق"
+                } else {
+                    "Please wait while the network selects a coordinator"
+                }
             }
             current.membersCount > previous.membersCount ||
                 current.connectedPeers > previous.connectedPeers -> {
-                title = "Device Joined"
-                detail = "Syncing channels and peer routes"
+                title = if (isArabic) "تم انضمام جهاز" else "Device Joined"
+                detail = if (isArabic) "جاري مزامنة القنوات ومسارات الأقران" else "Syncing channels and peer routes"
             }
             current.membersCount < previous.membersCount ||
                 current.connectedPeers < previous.connectedPeers -> {
-                title = "Device Left"
-                detail = "Rebalancing cluster connections"
+                title = if (isArabic) "غادر جهاز" else "Device Left"
+                detail = if (isArabic) "جاري إعادة موازنة اتصالات المجموعة" else "Rebalancing cluster connections"
             }
             else -> {
-                title = "Stabilizing Network"
-                detail = "Applying recent topology changes"
+                title = if (isArabic) "جاري تثبيت الشبكة" else "Stabilizing Network"
+                detail = if (isArabic) "جاري تطبيق تغييرات الشبكة الأخيرة" else "Applying recent topology changes"
             }
         }
 

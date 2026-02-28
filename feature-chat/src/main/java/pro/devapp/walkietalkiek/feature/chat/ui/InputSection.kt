@@ -27,8 +27,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import pro.devapp.walkietalkiek.feature.chat.R
 
 @Composable
 internal fun InputSection(
@@ -65,7 +67,7 @@ internal fun InputSection(
                 modifier = Modifier.weight(1f),
                 placeholder = {
                     Text(
-                        text = "Type a message",
+                        text = stringResource(R.string.chat_type_message),
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.58f)
                     )
                 },
@@ -99,7 +101,7 @@ internal fun InputSection(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Send,
-                    contentDescription = "Send message",
+                    contentDescription = stringResource(R.string.chat_send_message),
                     tint = if (canSend) {
                         MaterialTheme.colorScheme.onPrimary
                     } else {

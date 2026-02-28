@@ -21,10 +21,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import pro.devapp.walkietalkiek.feature.chat.R
 import pro.devapp.walkietalkiek.feature.chat.model.ChatMessageModel
 
 @Composable
@@ -79,7 +81,7 @@ internal fun ChatContent(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No messages yet.\nStart the conversation.",
+                        text = stringResource(R.string.chat_empty_state),
                         style = MaterialTheme.typography.titleMedium,
                         color = Color(0xFFB8B8B8),
                         textAlign = TextAlign.Center,

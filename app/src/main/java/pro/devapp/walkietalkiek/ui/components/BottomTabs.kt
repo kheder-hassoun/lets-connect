@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import pro.devapp.walkietalkiek.model.MainScreenAction
 import pro.devapp.walkietalkiek.model.MainScreenState
 import pro.devapp.walkietalkiek.model.MainTab
+import pro.devapp.walkietalkiek.R
 
 @Composable
 fun BottomTabs(
@@ -116,7 +118,7 @@ fun BottomTabs(
                                 ) {
                                     Icon(
                                         painter = painterResource(it.icon),
-                                        contentDescription = it.title,
+                                        contentDescription = stringResource(it.titleRes),
                                         modifier = Modifier
                                             .padding(11.dp)
                                             .size(22.dp)
@@ -126,14 +128,18 @@ fun BottomTabs(
                             } else {
                                 Icon(
                                     painter = painterResource(it.icon),
-                                    contentDescription = it.title,
+                                    contentDescription = stringResource(it.titleRes),
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
                         },
                         label = {
                             Text(
-                                text = if (isPtt && isSelected) "PTT Live" else it.title,
+                                text = if (isPtt && isSelected) {
+                                    stringResource(R.string.tab_ptt_live)
+                                } else {
+                                    stringResource(it.titleRes)
+                                },
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.labelSmall,

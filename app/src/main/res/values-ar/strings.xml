@@ -1,0 +1,34 @@
+<resources>
+    <string name="app_name">Let\'s-Connect</string>
+    <string name="role_admin">أدمن</string>
+    <string name="role_user">مستخدم</string>
+    <string name="network_connected">متصل</string>
+    <string name="network_scanning">جارٍ البحث</string>
+    <string name="tab_settings">الإعدادات</string>
+    <string name="tab_chat">الدردشة</string>
+    <string name="tab_ptt">التحدث</string>
+    <string name="tab_about">حول</string>
+    <string name="tab_status">الحالة</string>
+    <string name="tab_ptt_live">البث المباشر</string>
+    <string name="about_version_format">الإصدار %1$s (%2$d)</string>
+    <string name="about_subtitle">تطبيق اتصال صوتي ودردشة للأجهزة القريبة.</string>
+    <string name="about_core_features_title">الميزات الأساسية</string>
+    <string name="about_feature_ptt_audio">صوت اضغط للتحدث</string>
+    <string name="about_feature_peer_discovery">اكتشاف الأجهزة على الشبكة المحلية</string>
+    <string name="about_feature_text_chat">دردشة نصية</string>
+    <string name="about_how_it_works_title">كيف يعمل</string>
+    <string name="about_how_it_works_body">تكتشف الأجهزة بعضها عبر Wi-Fi، ثم يتم انتخاب أدمن واحد، وبعدها تتم مشاركة التحكم بالدور والصوت بشكل مباشر.</string>
+    <string name="about_support_title">الدعم</string>
+    <string name="about_support_body">استخدم الإعدادات > التشخيص لتصدير سجلات التطبيق عند الإبلاغ عن مشكلة.</string>
+    <string name="status_title">الحالة</string>
+    <string name="status_role_title">الدور</string>
+    <string name="status_ip_title">IP</string>
+    <string name="status_ports_title">المنافذ</string>
+    <string name="status_ready">جاهز</string>
+    <string name="status_settings_reset">تمت إعادة ضبط الإعدادات</string>
+    <string name="status_reset_settings">إعادة ضبط الإعدادات</string>
+    <string name="status_force_close">إغلاق إجباري</string>
+    <string name="status_ticker_scanning_lan">جارٍ فحص الشبكة المحلية</string>
+    <string name="status_ticker_syncing_cluster">جارٍ مزامنة المجموعة</string>
+    <string name="status_ticker_linking_peers">جارٍ ربط الأجهزة</string>
+</resources>

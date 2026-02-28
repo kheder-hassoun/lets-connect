@@ -40,6 +40,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -67,10 +68,11 @@ internal fun OffContent() {
     val clusterStatus by clusterMembershipRepository.status.collectAsState()
     val clients by connectedDevicesRepository.clientsFlow.collectAsState(initial = emptyList())
 
-    val roleLabel = if (clusterStatus.role == pro.devapp.walkietalkiek.serivce.network.data.ClusterRole.LEADER) {
-        "Leader"
+    val isLeader = clusterStatus.role == pro.devapp.walkietalkiek.serivce.network.data.ClusterRole.LEADER
+    val roleLabel = if (isLeader) {
+        stringResource(R.string.role_admin)
     } else {
-        "Peer"
+        stringResource(R.string.role_user)
     }
     val ip = deviceInfoRepository.getCurrentIp().orEmpty().ifBlank { "--" }
     val localPort = deviceInfoRepository.getCurrentDeviceInfo().port
@@ -84,8 +86,10 @@ internal fun OffContent() {
     val cfg = androidx.compose.ui.platform.LocalConfiguration.current
     val base = cfg.screenWidthDp.dp.coerceAtMost(cfg.screenHeightDp.dp)
     val scale = (base / 400.dp).coerceIn(0.84f, 1.18f)
+    val readyText = stringResource(R.string.status_ready)
+    val settingsResetText = stringResource(R.string.status_settings_reset)
 
-    var statusText by remember { mutableStateOf("Ready") }
+    var statusText by remember(readyText) { mutableStateOf(readyText) }
 
     Column(
         modifier = Modifier
@@ -126,13 +130,13 @@ internal fun OffContent() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Status",
+                        text = stringResource(R.string.status_title),
                         fontSize = (18 * scale).sp,
                         fontWeight = FontWeight.Bold
                     )
                     androidx.compose.material3.Icon(
                         painter = painterResource(id = R.drawable.connection_on),
-                        contentDescription = "status",
+                        contentDescription = stringResource(R.string.status_title),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size((20 * scale).dp)
                     )
@@ -145,14 +149,14 @@ internal fun OffContent() {
                     horizontalArrangement = Arrangement.spacedBy((8 * scale).dp)
                 ) {
                     MiniInfoCard(
-                        title = "Role",
+                        title = stringResource(R.string.status_role_title),
                         value = roleLabel,
                         iconRes = R.drawable.connection_on,
                         modifier = Modifier.weight(1f),
                         scale = scale
                     )
                     MiniInfoCard(
-                        title = "IP",
+                        title = stringResource(R.string.status_ip_title),
                         value = ip,
                         iconRes = R.drawable.select_to_speak,
                         modifier = Modifier.weight(1f),
@@ -161,7 +165,7 @@ internal fun OffContent() {
                 }
 
                 MiniInfoCard(
-                    title = "Ports",
+                    title = stringResource(R.string.status_ports_title),
                     value = portsLabel,
                     iconRes = R.drawable.notifications_active,
                     modifier = Modifier.fillMaxWidth(),
@@ -184,7 +188,7 @@ internal fun OffContent() {
                 connectedDevicesRepository.clearAll()
                 textMessagesRepository.clearAll()
                 appSettingsRepository.resetToDefaults()
-                statusText = "Settings reset"
+                statusText = settingsResetText
             },
             shape = RoundedCornerShape((12 * scale).dp),
             colors = ButtonDefaults.buttonColors(
@@ -193,11 +197,15 @@ internal fun OffContent() {
         ) {
             androidx.compose.material3.Icon(
                 painter = painterResource(id = R.drawable.settings),
-                contentDescription = "reset",
+                contentDescription = stringResource(R.string.status_reset_settings),
                 modifier = Modifier.size((16 * scale).dp)
             )
             Spacer(modifier = Modifier.size((8 * scale).dp))
-            Text("Reset Settings", fontSize = (13 * scale).sp, fontWeight = FontWeight.SemiBold)
+            Text(
+                stringResource(R.string.status_reset_settings),
+                fontSize = (13 * scale).sp,
+                fontWeight = FontWeight.SemiBold
+            )
         }
 
         OutlinedButton(
@@ -212,12 +220,16 @@ internal fun OffContent() {
         ) {
             androidx.compose.material3.Icon(
                 painter = painterResource(id = R.drawable.power_off),
-                contentDescription = "force close",
+                contentDescription = stringResource(R.string.status_force_close),
                 modifier = Modifier.size((16 * scale).dp),
                 tint = Color(0xFFFF6B6B)
             )
             Spacer(modifier = Modifier.size((8 * scale).dp))
-            Text("Force Close", fontSize = (13 * scale).sp, fontWeight = FontWeight.SemiBold)
+            Text(
+                stringResource(R.string.status_force_close),
+                fontSize = (13 * scale).sp,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }
@@ -268,11 +280,16 @@ private fun MiniInfoCard(
 
 @Composable
 private fun StatusTicker(scale: Float) {
-    val lines = remember {
+    val lines = listOf(
+        stringResource(R.string.status_ticker_scanning_lan),
+        stringResource(R.string.status_ticker_syncing_cluster),
+        stringResource(R.string.status_ticker_linking_peers)
+    )
+    val stableLines = remember(lines) {
         listOf(
-            "Scanning LAN",
-            "Syncing cluster",
-            "Linking peers"
+            lines[0],
+            lines[1],
+            lines[2]
         )
     }
     var index by remember { mutableStateOf(0) }
@@ -289,15 +306,15 @@ private fun StatusTicker(scale: Float) {
         label = "status-dot-scale"
     )
 
-    LaunchedEffect(lines) {
+    LaunchedEffect(stableLines) {
         while (true) {
-            val line = lines[index]
+            val line = stableLines[index]
             for (i in 1..line.length) {
                 text = line.substring(0, i)
                 delay(45)
             }
             delay(800)
-            index = (index + 1) % lines.size
+            index = (index + 1) % stableLines.size
             text = ""
             delay(140)
         }

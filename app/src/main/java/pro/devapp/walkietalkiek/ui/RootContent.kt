@@ -1,5 +1,8 @@
 package pro.devapp.walkietalkiek.ui
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.graphics.Rect
 import android.net.Uri
@@ -40,6 +43,7 @@ import pro.devapp.walkietalkiek.model.MainTab
 import pro.devapp.walkietalkiek.serivce.network.data.ConnectedDevicesRepository
 import pro.devapp.walkietalkiek.serivce.network.data.DeviceInfoRepository
 import pro.devapp.walkietalkiek.service.WalkieService
+import pro.devapp.walkietalkiek.localization.AppLocaleManager
 import pro.devapp.walkietalkiek.ui.components.BottomTabs
 import pro.devapp.walkietalkiek.ui.components.MainTopBar
 import pro.devapp.walkietalkiek.ui.components.RailTabs
@@ -65,6 +69,16 @@ internal fun RootContent() {
 
     LaunchedEffect(Unit) {
         viewModel.onAction(MainScreenAction.InitApp)
+    }
+
+    LaunchedEffect(settings.value.appLanguage) {
+        val didChange = AppLocaleManager.applyLanguage(
+            context = context,
+            language = settings.value.appLanguage
+        )
+        if (didChange) {
+            context.findActivity()?.recreate()
+        }
     }
 
     DroidPTTTheme(themeColor = settings.value.themeColor) {
@@ -211,4 +225,12 @@ private fun rememberKeyboardVisible(): Boolean {
     }
 
     return isKeyboardVisible.value
+}
+
+private tailrec fun Context.findActivity(): Activity? {
+    return when (this) {
+        is Activity -> this
+        is ContextWrapper -> baseContext.findActivity()
+        else -> null
+    }
 }

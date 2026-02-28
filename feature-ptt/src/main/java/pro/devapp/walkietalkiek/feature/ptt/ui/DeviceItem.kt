@@ -18,9 +18,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import pro.devapp.walkietalkiek.feature.ptt.R
 
 @Composable
 internal fun DeviceItem(
@@ -82,7 +84,11 @@ internal fun DeviceItem(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = if (isOnline) "Online" else "Offline",
+                text = if (isOnline) {
+                    stringResource(R.string.ptt_online)
+                } else {
+                    stringResource(R.string.ptt_offline)
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = color,
                 fontWeight = FontWeight.SemiBold

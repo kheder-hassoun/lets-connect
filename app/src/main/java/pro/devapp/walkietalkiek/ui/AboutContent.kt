@@ -26,9 +26,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import pro.devapp.walkietalkiek.R
 import pro.devapp.walkietalkiek.BuildConfig
 
 @Composable
@@ -78,12 +80,16 @@ fun AboutContent() {
                         )
                         Column {
                             Text(
-                                text = "Let's-Connect",
+                                text = stringResource(R.string.app_name),
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.ExtraBold
                             )
                             Text(
-                                text = "Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                                text = stringResource(
+                                    R.string.about_version_format,
+                                    BuildConfig.VERSION_NAME,
+                                    BuildConfig.VERSION_CODE
+                                ),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                             )
@@ -91,7 +97,7 @@ fun AboutContent() {
                     }
 
                     Text(
-                        text = "Local walkie-talkie and chat for nearby devices.",
+                        text = stringResource(R.string.about_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -99,23 +105,23 @@ fun AboutContent() {
             }
         }
 
-        SectionCard(title = "Core Features") {
-            FeatureChip("Push-to-talk audio", MaterialTheme.colorScheme.primary)
-            FeatureChip("Peer discovery on LAN", MaterialTheme.colorScheme.secondary)
-            FeatureChip("Text chat", MaterialTheme.colorScheme.tertiary)
+        SectionCard(title = stringResource(R.string.about_core_features_title)) {
+            FeatureChip(stringResource(R.string.about_feature_ptt_audio), MaterialTheme.colorScheme.primary)
+            FeatureChip(stringResource(R.string.about_feature_peer_discovery), MaterialTheme.colorScheme.secondary)
+            FeatureChip(stringResource(R.string.about_feature_text_chat), MaterialTheme.colorScheme.tertiary)
         }
 
-        SectionCard(title = "How It Works") {
+        SectionCard(title = stringResource(R.string.about_how_it_works_title)) {
             Text(
-                text = "Devices discover each other on Wi-Fi, elect one leader, then share floor control and audio in real time.",
+                text = stringResource(R.string.about_how_it_works_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
             )
         }
 
-        SectionCard(title = "Support") {
+        SectionCard(title = stringResource(R.string.about_support_title)) {
             Text(
-                text = "Use Settings > Diagnostics to export app logs when reporting issues.",
+                text = stringResource(R.string.about_support_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
             )

@@ -51,9 +51,14 @@ fun MainTopBar(
     val accent = MaterialTheme.colorScheme.primary
     val clusterMembershipRepository = koinInject<ClusterMembershipRepository>()
     val clusterStatus by clusterMembershipRepository.status.collectAsState()
-    val roleLabel = if (clusterStatus.role == ClusterRole.LEADER) "Leader" else "Peer"
+    val isLeader = clusterStatus.role == ClusterRole.LEADER
+    val roleLabel = if (isLeader) {
+        stringResource(R.string.role_admin)
+    } else {
+        stringResource(R.string.role_user)
+    }
     val currentTab = state.mainTabs.firstOrNull { it.screen == state.currentTab }
-    val currentTabTitle = currentTab?.title ?: state.currentTab.name
+    val currentTabTitle = currentTab?.let { stringResource(it.titleRes) } ?: state.currentTab.name
 
     val cfg = androidx.compose.ui.platform.LocalConfiguration.current
     val scale = (cfg.screenWidthDp.dp.coerceAtMost(cfg.screenHeightDp.dp) / 400.dp).coerceIn(0.84f, 1.18f)
@@ -102,7 +107,7 @@ fun MainTopBar(
                 Text(
                     text = roleLabel,
                     fontSize = (11 * scale).sp,
-                    color = if (roleLabel == "Leader") Color(0xFFE53935) else Color(0xFF1E88E5),
+                    color = if (isLeader) Color(0xFFE53935) else Color(0xFF1E88E5),
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1
                 )
@@ -174,7 +179,11 @@ private fun SignalScanner(
         )
         Icon(
             painter = painterResource(id = R.drawable.connection_on),
-            contentDescription = if (isConnected) "Connected" else "Scanning",
+            contentDescription = if (isConnected) {
+                stringResource(R.string.network_connected)
+            } else {
+                stringResource(R.string.network_scanning)
+            },
             tint = color,
             modifier = Modifier.size((14 * scale).dp)
         )

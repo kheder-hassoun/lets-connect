@@ -31,9 +31,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import pro.devapp.walkietalkiek.feature.ptt.R
 import pro.devapp.walkietalkiek.serivce.network.data.model.ClientModel
 import kotlin.math.PI
 import kotlin.math.cos
@@ -89,7 +91,7 @@ internal fun ConnectedPeersList(
                 verticalArrangement = Arrangement.spacedBy((2 * scale).dp)
             ) {
                 Text(
-                    text = "Peers Available",
+                    text = stringResource(R.string.ptt_peers_available),
                     fontSize = (12 * scale).sp,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.SemiBold
@@ -105,7 +107,7 @@ internal fun ConnectedPeersList(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Scanning for nearby devices",
+                        text = stringResource(R.string.ptt_scanning_nearby_devices),
                         fontSize = (10 * scale).sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

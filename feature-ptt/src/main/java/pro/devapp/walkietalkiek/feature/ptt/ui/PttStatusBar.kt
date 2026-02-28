@@ -33,11 +33,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import pro.devapp.walkietalkiek.feature.ptt.R
 import pro.devapp.walkietalkiek.feature.ptt.model.PttScreenState
 
 @Composable
@@ -65,19 +67,20 @@ internal fun PttStatusBar(
         else -> Color(0xFFFF6B6B)
     }
     val modeLabel = when {
-        state.isRecording -> "Talking"
-        state.isFloorRequestPending -> "Waiting"
-        isFloorBusyByRemote -> "Busy"
-        canTalk -> "Ready"
-        else -> "Offline"
+        state.isRecording -> stringResource(R.string.ptt_mode_talking)
+        state.isFloorRequestPending -> stringResource(R.string.ptt_mode_waiting)
+        isFloorBusyByRemote -> stringResource(R.string.ptt_mode_busy)
+        canTalk -> stringResource(R.string.ptt_mode_ready)
+        else -> stringResource(R.string.ptt_mode_offline)
     }
-
-    val roleColor = if (state.clusterRoleLabel == "Leader") Color(0xFFE53935) else Color(0xFF1E88E5)
+    val roleLabelLocalized = localizeRoleLabel(state.clusterRoleLabel)
+    val isLeaderRole = roleLabelLocalized == stringResource(R.string.ptt_role_admin)
+    val roleColor = if (isLeaderRole) Color(0xFFE53935) else Color(0xFF1E88E5)
     val floorStatus = when {
-        state.isRecording || state.isFloorHeldByMe -> "Mine"
-        state.isFloorRequestPending -> "Ask"
-        isFloorBusyByRemote -> "Busy"
-        else -> "Free"
+        state.isRecording || state.isFloorHeldByMe -> stringResource(R.string.ptt_floor_mine)
+        state.isFloorRequestPending -> stringResource(R.string.ptt_floor_ask)
+        isFloorBusyByRemote -> stringResource(R.string.ptt_floor_busy)
+        else -> stringResource(R.string.ptt_floor_free)
     }
 
     val panelShape = RoundedCornerShape((16 * scale).dp)
@@ -138,9 +141,13 @@ internal fun PttStatusBar(
                 horizontalArrangement = Arrangement.spacedBy(gap)
             ) {
                 TinyStatusCard(
-                    title = "PTT",
-                    l1 = "Mode $modeLabel",
-                    l2 = if (canTalk) "Local Online" else "Local Offline",
+                    title = stringResource(R.string.ptt_card_ptt_title),
+                    l1 = stringResource(R.string.ptt_card_mode, modeLabel),
+                    l2 = if (canTalk) {
+                        stringResource(R.string.ptt_card_local_online)
+                    } else {
+                        stringResource(R.string.ptt_card_local_offline)
+                    },
                     accent = modeColor,
                     shape = cardShape,
                     scale = scale,
@@ -148,9 +155,9 @@ internal fun PttStatusBar(
                 )
 
                 TinyStatusCard(
-                    title = "Cluster",
-                    l1 = "Role ${state.clusterRoleLabel}",
-                    l2 = "Peers $connectedPeers",
+                    title = stringResource(R.string.ptt_card_cluster_title),
+                    l1 = stringResource(R.string.ptt_card_role, roleLabelLocalized),
+                    l2 = stringResource(R.string.ptt_card_peers, connectedPeers),
                     accent = roleColor,
                     shape = cardShape,
                     scale = scale,
@@ -158,9 +165,13 @@ internal fun PttStatusBar(
                 )
 
                 TinyStatusCard(
-                    title = "Floor",
-                    l1 = "State $floorStatus",
-                    l2 = if (isFloorBusyByRemote) "Remote speaking" else "Open",
+                    title = stringResource(R.string.ptt_card_floor_title),
+                    l1 = stringResource(R.string.ptt_card_state, floorStatus),
+                    l2 = if (isFloorBusyByRemote) {
+                        stringResource(R.string.ptt_card_remote_speaking)
+                    } else {
+                        stringResource(R.string.ptt_card_open)
+                    },
                     accent = Color(0xFF6FD3FF),
                     shape = cardShape,
                     scale = scale,
@@ -246,11 +257,16 @@ private fun StatusTypewriter(
     scale: Float,
     color: Color
 ) {
-    val lines = remember {
+    val lines = listOf(
+        stringResource(R.string.ptt_ticker_line_1),
+        stringResource(R.string.ptt_ticker_line_2),
+        stringResource(R.string.ptt_ticker_line_3)
+    )
+    val stableLines = remember(lines) {
         listOf(
-            "Let's Connect is your choice",
-            "Voice calls and chat support",
-            "No internet needed"
+            lines[0],
+            lines[1],
+            lines[2]
         )
     }
     var lineIndex by remember { mutableStateOf(0) }
@@ -267,9 +283,9 @@ private fun StatusTypewriter(
         label = "ptt-status-cursor-alpha"
     )
 
-    LaunchedEffect(lines) {
+    LaunchedEffect(stableLines) {
         while (true) {
-            val line = lines[lineIndex]
+            val line = stableLines[lineIndex]
             for (i in 1..line.length) {
                 visibleText = line.substring(0, i)
                 delay(48)
@@ -279,7 +295,7 @@ private fun StatusTypewriter(
                 visibleText = line.substring(0, i)
                 delay(30)
             }
-            lineIndex = (lineIndex + 1) % lines.size
+            lineIndex = (lineIndex + 1) % stableLines.size
             delay(200)
         }
     }
@@ -302,5 +318,14 @@ private fun StatusTypewriter(
             color = color.copy(alpha = cursorAlpha),
             fontWeight = FontWeight.Bold
         )
+    }
+}
+
+@Composable
+private fun localizeRoleLabel(rawRoleLabel: String): String {
+    return when (rawRoleLabel.lowercase()) {
+        "leader", "admin", "أدمن" -> stringResource(R.string.ptt_role_admin)
+        "peer", "user", "مستخدم" -> stringResource(R.string.ptt_role_user)
+        else -> rawRoleLabel
     }
 }

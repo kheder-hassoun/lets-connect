@@ -9,27 +9,27 @@ class MainTabsFactory {
     fun createTabs(): List<MainTabItem> {
         return listOf(
             MainTabItem(
-                title = "Settings",
+                titleRes = R.string.tab_settings,
                 icon = R.drawable.settings,
                 screen = MainTab.SETTINGS
             ),
             MainTabItem(
-                title = "Chat",
+                titleRes = R.string.tab_chat,
                 icon = R.drawable.chat,
                 screen = MainTab.CHAT
             ),
             MainTabItem(
-                title = "PTT",
+                titleRes = R.string.tab_ptt,
                 icon = R.drawable.ptt,
                 screen = MainTab.PTT
             ),
             MainTabItem(
-                title = "About",
+                titleRes = R.string.tab_about,
                 icon = R.drawable.about,
                 screen = MainTab.ABOUT
             ),
             MainTabItem(
-                title = "Status",
+                titleRes = R.string.tab_status,
                 icon = R.drawable.connection_on,
                 screen = MainTab.OFF
             ),

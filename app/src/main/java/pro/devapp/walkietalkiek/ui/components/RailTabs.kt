@@ -27,9 +27,11 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import pro.devapp.walkietalkiek.R
 import pro.devapp.walkietalkiek.model.MainScreenAction
 import pro.devapp.walkietalkiek.model.MainScreenState
 import pro.devapp.walkietalkiek.model.MainTab
@@ -103,7 +105,7 @@ fun RailTabs(
                             ) {
                                 Icon(
                                     painter = painterResource(it.icon),
-                                    contentDescription = it.title,
+                                    contentDescription = stringResource(it.titleRes),
                                     modifier = Modifier
                                         .padding(10.dp)
                                         .size(20.dp)
@@ -113,14 +115,18 @@ fun RailTabs(
                         } else {
                             Icon(
                                 painter = painterResource(it.icon),
-                                contentDescription = it.title,
+                                contentDescription = stringResource(it.titleRes),
                                 modifier = Modifier.size(18.dp)
                             )
                         }
                     },
                     label = {
                         Text(
-                            text = if (isPtt && isSelected) "PTT Live" else it.title,
+                            text = if (isPtt && isSelected) {
+                                stringResource(R.string.tab_ptt_live)
+                            } else {
+                                stringResource(it.titleRes)
+                            },
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.labelSmall,

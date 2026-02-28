@@ -1,0 +1,7 @@
+<resources>
+    <string name="chat_empty_state">لا توجد رسائل بعد.\nابدأ المحادثة الآن.</string>
+    <string name="chat_type_message">اكتب رسالة</string>
+    <string name="chat_send_message">إرسال الرسالة</string>
+    <string name="chat_timestamp_now">الآن</string>
+    <string name="chat_timestamp_minutes">%1$dد</string>
+</resources>

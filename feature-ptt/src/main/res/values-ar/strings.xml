@@ -1,0 +1,32 @@
+<resources>
+    <string name="ptt_mode_talking">يتحدث</string>
+    <string name="ptt_mode_waiting">ينتظر</string>
+    <string name="ptt_mode_busy">مشغول</string>
+    <string name="ptt_mode_ready">جاهز</string>
+    <string name="ptt_mode_offline">غير متصل</string>
+    <string name="ptt_role_admin">أدمن</string>
+    <string name="ptt_role_user">مستخدم</string>
+    <string name="ptt_floor_mine">لي</string>
+    <string name="ptt_floor_ask">طلب</string>
+    <string name="ptt_floor_busy">مشغول</string>
+    <string name="ptt_floor_free">متاح</string>
+    <string name="ptt_card_ptt_title">التحدث</string>
+    <string name="ptt_card_mode">الوضع %1$s</string>
+    <string name="ptt_card_local_online">محلي متصل</string>
+    <string name="ptt_card_local_offline">محلي غير متصل</string>
+    <string name="ptt_card_cluster_title">المجموعة</string>
+    <string name="ptt_card_role">الدور %1$s</string>
+    <string name="ptt_card_peers">الأجهزة %1$d</string>
+    <string name="ptt_card_floor_title">الدور</string>
+    <string name="ptt_card_state">الحالة %1$s</string>
+    <string name="ptt_card_remote_speaking">جهاز آخر يتحدث</string>
+    <string name="ptt_card_open">مفتوح</string>
+    <string name="ptt_ticker_line_1">Lets Connect خيارك الأفضل</string>
+    <string name="ptt_ticker_line_2">مكالمات صوتية ودعم للدردشة</string>
+    <string name="ptt_ticker_line_3">لا حاجة للإنترنت</string>
+    <string name="ptt_peers_available">الأجهزة المتاحة</string>
+    <string name="ptt_scanning_nearby_devices">جارٍ البحث عن أجهزة قريبة</string>
+    <string name="ptt_online">متصل</string>
+    <string name="ptt_offline">غير متصل</string>
+    <string name="ptt_button_content_description">اضغط للتحدث</string>
+</resources>

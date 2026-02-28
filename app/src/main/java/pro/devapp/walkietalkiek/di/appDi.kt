@@ -38,7 +38,7 @@ private fun Module.coreDi() {
     factoryOf(::CoroutineContextProvider)
     factoryOf(::PermissionState)
     factoryOf(::NotificationController)
-    singleOf(::AppSettingsRepository)
+    single { AppSettingsRepository(get()) }
     singleOf(::FeatureFlagsRepository)
     singleOf(::DeviceLogStore)
 }

@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import pro.devapp.walkietalkiek.feature.ptt.R
@@ -218,7 +219,7 @@ fun PTTButton(
                 painter = painterResource(
                     id = if (isRemoteSpeaking) R.drawable.speaker else R.drawable.ptt_call
                 ),
-                contentDescription = "Push to talk",
+                contentDescription = stringResource(R.string.ptt_button_content_description),
                 modifier = Modifier
                     .padding(iconPadding)
                     .fillMaxSize(),

@@ -43,12 +43,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import org.koin.compose.koinInject
 import pro.devapp.walkietalkiek.core.diagnostics.DeviceLogStore
 import pro.devapp.walkietalkiek.core.flags.FeatureFlagsRepository
+import pro.devapp.walkietalkiek.core.settings.AppLanguage
 import pro.devapp.walkietalkiek.core.settings.AppSettingsRepository
 import pro.devapp.walkietalkiek.core.settings.ThemeColor
 import pro.devapp.walkietalkiek.serivce.network.data.ClusterMembershipRepository
@@ -68,6 +70,7 @@ fun SettingsContent() {
     val clusterStatus by clusterMembershipRepository.status.collectAsState()
     val isLeader = clusterStatus.role == ClusterRole.LEADER
     var isThemeMenuExpanded by remember { mutableStateOf(false) }
+    var isLanguageMenuExpanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -87,9 +90,9 @@ fun SettingsContent() {
         ) {
             Text(
                 text = if (isLeader) {
-                    "Role: Leader (network controls unlocked)"
+                    stringResource(R.string.settings_role_leader)
                 } else {
-                    "Role: Peer (managed by leader)"
+                    stringResource(R.string.settings_role_peer)
                 },
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                 style = MaterialTheme.typography.labelLarge,
@@ -111,11 +114,14 @@ fun SettingsContent() {
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = "Talk Limit",
+                    text = stringResource(R.string.settings_talk_limit_title),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = "Duration: ${settings.talkDurationSeconds}s",
+                    text = stringResource(
+                        R.string.settings_talk_limit_duration,
+                        settings.talkDurationSeconds
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                 )
@@ -143,7 +149,7 @@ fun SettingsContent() {
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = "PTT Tones",
+                    text = stringResource(R.string.settings_ptt_tones_title),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Row(
@@ -154,13 +160,13 @@ fun SettingsContent() {
                         selected = settings.toneEnabled,
                         onClick = { settingsRepository.updateToneEnabled(true) },
                         enabled = isLeader,
-                        label = { Text("On") }
+                        label = { Text(stringResource(R.string.common_on)) }
                     )
                     FilterChip(
                         selected = !settings.toneEnabled,
                         onClick = { settingsRepository.updateToneEnabled(false) },
                         enabled = isLeader,
-                        label = { Text("Off") }
+                        label = { Text(stringResource(R.string.common_off)) }
                     )
                 }
             }
@@ -178,7 +184,76 @@ fun SettingsContent() {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Theme Color",
+                    text = stringResource(R.string.settings_language_title),
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    val selectedLanguage = settings.appLanguage
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(
+                                        Color(0x1A4DA3FF),
+                                        Color(0x1A56E39F)
+                                    )
+                                ),
+                                shape = RoundedCornerShape(14.dp)
+                            )
+                            .clickable { isLanguageMenuExpanded = true }
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = languageDisplayName(selectedLanguage),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Icon(
+                            imageVector = if (isLanguageMenuExpanded) {
+                                Icons.Default.KeyboardArrowUp
+                            } else {
+                                Icons.Default.KeyboardArrowDown
+                            },
+                            contentDescription = stringResource(R.string.settings_select_language)
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = isLanguageMenuExpanded,
+                        onDismissRequest = { isLanguageMenuExpanded = false },
+                        modifier = Modifier.fillMaxWidth(0.94f)
+                    ) {
+                        appLanguageOptions.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(text = languageDisplayName(option)) },
+                                onClick = {
+                                    settingsRepository.updateAppLanguage(option)
+                                    isLanguageMenuExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_theme_color_title),
                     style = MaterialTheme.typography.titleMedium
                 )
 
@@ -211,7 +286,7 @@ fun SettingsContent() {
                                     .background(selectedTheme.primary, CircleShape)
                             )
                             Text(
-                                text = selectedTheme.themeColor.title,
+                                text = themeDisplayName(selectedTheme.themeColor),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -222,7 +297,7 @@ fun SettingsContent() {
                             } else {
                                 Icons.Default.KeyboardArrowDown
                             },
-                            contentDescription = "Select theme"
+                            contentDescription = stringResource(R.string.settings_select_theme)
                         )
                     }
 
@@ -243,7 +318,7 @@ fun SettingsContent() {
                                                 .size(12.dp)
                                                 .background(option.primary, CircleShape)
                                         )
-                                        Text(text = option.themeColor.title)
+                                        Text(text = themeDisplayName(option.themeColor))
                                     }
                                 },
                                 onClick = {
@@ -269,36 +344,36 @@ fun SettingsContent() {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Advanced Flags",
+                    text = stringResource(R.string.settings_advanced_flags_title),
                     style = MaterialTheme.typography.titleMedium
                 )
 
                 FlagToggleRow(
-                    title = "Serverless Control",
+                    title = stringResource(R.string.settings_flag_serverless_control),
                     checked = flags.serverlessControl,
                     onCheckedChange = featureFlagsRepository::updateServerlessControl,
                     enabled = isLeader
                 )
                 FlagToggleRow(
-                    title = "WebRTC Audio",
+                    title = stringResource(R.string.settings_flag_webrtc_audio),
                     checked = flags.webrtcAudio,
                     onCheckedChange = featureFlagsRepository::updateWebrtcAudio,
                     enabled = isLeader
                 )
                 FlagToggleRow(
-                    title = "Central Settings",
+                    title = stringResource(R.string.settings_flag_central_settings),
                     checked = flags.centralSettings,
                     onCheckedChange = featureFlagsRepository::updateCentralSettings,
                     enabled = isLeader
                 )
                 FlagToggleRow(
-                    title = "Floor Control V2",
+                    title = stringResource(R.string.settings_flag_floor_control_v2),
                     checked = flags.floorV2,
                     onCheckedChange = featureFlagsRepository::updateFloorV2,
                     enabled = isLeader
                 )
                 FlagToggleRow(
-                    title = "Observability V2",
+                    title = stringResource(R.string.settings_flag_observability_v2),
                     checked = flags.observabilityV2,
                     onCheckedChange = featureFlagsRepository::updateObservabilityV2,
                     enabled = isLeader
@@ -318,11 +393,14 @@ fun SettingsContent() {
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = "Diagnostics",
+                    text = stringResource(R.string.settings_diagnostics_title),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = "Logs: ${deviceLogStore.logsDirectoryPath()}",
+                    text = stringResource(
+                        R.string.settings_logs_path,
+                        deviceLogStore.logsDirectoryPath()
+                    ),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
@@ -339,31 +417,35 @@ fun SettingsContent() {
                                 shareLogFile(
                                     context = context,
                                     file = deviceLogStore.appLogFile(),
-                                    chooserTitle = "Share app log"
+                                    chooserTitle = context.getString(R.string.settings_share_app_log_chooser)
                                 )
                             }
                         ) {
-                            Text("Share App Log")
+                            Text(stringResource(R.string.settings_share_app_log_button))
                         }
                         Button(
                             onClick = {
                                 shareLogFile(
                                     context = context,
                                     file = deviceLogStore.crashLogFile(),
-                                    chooserTitle = "Share crash log"
+                                    chooserTitle = context.getString(R.string.settings_share_crash_log_chooser)
                                 )
                             }
                         ) {
-                            Text("Share Crash")
+                            Text(stringResource(R.string.settings_share_crash_button))
                         }
                     }
                     Button(
                         onClick = {
                             deviceLogStore.clearLogs()
-                            Toast.makeText(context, "Logs cleared", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.settings_logs_cleared_toast),
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     ) {
-                        Text("Clear Logs")
+                        Text(stringResource(R.string.settings_clear_logs_button))
                     }
                 }
             }
@@ -440,4 +522,29 @@ private val themeOptions = listOf(
 private fun themeOptionFor(themeColor: ThemeColor): ThemeOptionUi {
     return themeOptions.firstOrNull { it.themeColor == themeColor }
         ?: themeOptions.first()
+}
+
+private val appLanguageOptions = listOf(
+    AppLanguage.ENGLISH,
+    AppLanguage.ARABIC
+)
+
+@Composable
+private fun languageDisplayName(language: AppLanguage): String {
+    return when (language) {
+        AppLanguage.ENGLISH -> stringResource(R.string.language_english)
+        AppLanguage.ARABIC -> stringResource(R.string.language_arabic)
+    }
+}
+
+@Composable
+private fun themeDisplayName(themeColor: ThemeColor): String {
+    return when (themeColor) {
+        ThemeColor.PURPLE -> stringResource(R.string.theme_purple)
+        ThemeColor.ORANGE -> stringResource(R.string.theme_orange)
+        ThemeColor.RED -> stringResource(R.string.theme_red)
+        ThemeColor.BLUE -> stringResource(R.string.theme_blue)
+        ThemeColor.GREEN -> stringResource(R.string.theme_green)
+        ThemeColor.YELLOW -> stringResource(R.string.theme_yellow)
+    }
 }
