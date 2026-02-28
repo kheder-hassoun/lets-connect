@@ -19,7 +19,6 @@ import java.net.Socket
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.TimeUnit
-import kotlin.random.Random
 
 class SocketServer(
     private val connectedDevicesRepository: ConnectedDevicesRepository,
@@ -44,18 +43,8 @@ class SocketServer(
     )
     private var floorOwnerMonitorJob: Job? = null
 
-    private val SERVER_PORT by lazy {
-        getPort().also { port ->
-            Timber.Forest.i("Server port initialized: $port")
-        }
-    }
-
-    private fun getPort(): Int {
-     //   return 9915
-        return Random.nextInt(8111, 9999).also { port ->
-            Timber.Forest.i("Generated random port: $port")
-        }
-    }
+    @Volatile
+    private var serverPort: Int? = null
 
     /**
      * Data for sending
@@ -69,12 +58,16 @@ class SocketServer(
     fun initServer(): Int {
         startFloorOwnerMonitorIfNeeded()
         if (socket != null && socket?.isClosed == false) {
-            return SERVER_PORT
+            return serverPort ?: DEFAULT_SERVER_PORT
         }
-        socket = ServerSocket(SERVER_PORT).apply {
+        val (createdSocket, selectedPort) = createServerSocket()
+        socket = createdSocket.apply {
             reuseAddress = false
-            soTimeout = 5000 // Set a timeout for accept to avoid blocking indefinitely
+            // Avoid blocking forever in accept loop.
+            soTimeout = 5000
         }
+        serverPort = selectedPort
+        Timber.Forest.i("Server port initialized: $selectedPort")
         acceptConnectionScope.launch {
             delay(100L)
             while (acceptConnectionScope.isActive) {
@@ -95,7 +88,26 @@ class SocketServer(
                 delay(1000L)
             }
         }
-        return SERVER_PORT
+        return selectedPort
+    }
+
+    private fun createServerSocket(): Pair<ServerSocket, Int> {
+        val preferredPort = DEFAULT_SERVER_PORT
+        val fallbackPorts = (preferredPort + 1)..(preferredPort + PORT_FALLBACK_SPAN)
+        val candidatePorts = sequenceOf(preferredPort) + fallbackPorts.asSequence()
+        var lastError: Exception? = null
+        candidatePorts.forEach { port ->
+            try {
+                return ServerSocket(port) to port
+            } catch (error: Exception) {
+                lastError = error
+                Timber.Forest.w(error, "Failed to bind server socket on port=%d", port)
+            }
+        }
+        throw IllegalStateException(
+            "Unable to bind server socket in range $preferredPort..${preferredPort + PORT_FALLBACK_SPAN}",
+            lastError
+        )
     }
 
     private fun startFloorOwnerMonitorIfNeeded() {
@@ -219,6 +231,7 @@ class SocketServer(
                             joinedAtMs = clusterControl.startedAtMs,
                             uptimeMs = clusterControl.uptimeMs
                         )
+                        floorArbitrationState.rememberNodeHost(clusterControl.nodeId, hostAddress)
                     }
                     is ControlEnvelope.FloorRequest -> {
                         clusterMembershipRepository.onHeartbeat(
@@ -381,3 +394,5 @@ class SocketServer(
 
 private const val AUDIO_PACKET_PREFIX: Byte = 1
 private const val MAX_PACKET_SIZE = 256 * 1024
+private const val DEFAULT_SERVER_PORT = 9915
+private const val PORT_FALLBACK_SPAN = 5

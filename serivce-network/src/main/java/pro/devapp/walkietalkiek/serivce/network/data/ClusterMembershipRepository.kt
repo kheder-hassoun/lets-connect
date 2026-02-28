@@ -21,6 +21,7 @@ enum class ClusterRole {
 class ClusterMembershipRepository {
     private data class MemberState(
         val nodeId: String,
+        val sessionStartedAtMs: Long,
         val firstSeenMs: Long,
         val lastSeenMs: Long,
         val term: Long,
@@ -38,6 +39,7 @@ class ClusterMembershipRepository {
         val existing = members[nodeId]
         members[nodeId] = MemberState(
             nodeId = nodeId,
+            sessionStartedAtMs = existing?.sessionStartedAtMs ?: nowMs,
             firstSeenMs = existing?.firstSeenMs ?: nowMs,
             lastSeenMs = nowMs,
             term = _status.value.term,
@@ -57,11 +59,13 @@ class ClusterMembershipRepository {
     }
 
     fun onHeartbeat(nodeId: String, term: Long, timestampMs: Long, nowMs: Long) {
-        val seenAt = maxOf(nowMs, timestampMs)
+        val seenAt = nowMs
         val existing = members[nodeId]
+        val sessionStartedAtMs = existing?.sessionStartedAtMs ?: seenAt
         members[nodeId] = MemberState(
             nodeId = nodeId,
-            firstSeenMs = existing?.firstSeenMs ?: seenAt,
+            sessionStartedAtMs = sessionStartedAtMs,
+            firstSeenMs = existing?.firstSeenMs ?: sessionStartedAtMs,
             lastSeenMs = seenAt,
             term = term,
             uptimeMs = existing?.uptimeMs ?: 0L
@@ -80,14 +84,17 @@ class ClusterMembershipRepository {
         nowMs: Long,
         joinedAtMs: Long
     ) {
-        val seenAt = maxOf(nowMs, timestampMs)
+        val seenAt = nowMs
         val existing = members[nodeId]
+        val isNewSession = existing == null || existing.sessionStartedAtMs != joinedAtMs
+        val firstSeenMs = if (isNewSession) seenAt else (existing?.firstSeenMs ?: seenAt)
         members[nodeId] = MemberState(
             nodeId = nodeId,
-            firstSeenMs = existing?.firstSeenMs ?: joinedAtMs,
+            sessionStartedAtMs = joinedAtMs,
+            firstSeenMs = firstSeenMs,
             lastSeenMs = seenAt,
             term = term,
-            uptimeMs = existing?.uptimeMs ?: 0L
+            uptimeMs = if (isNewSession) 0L else (existing?.uptimeMs ?: 0L)
         )
         val nextTerm = maxOf(_status.value.term, term)
         if (nextTerm != _status.value.term) {
@@ -104,14 +111,22 @@ class ClusterMembershipRepository {
         joinedAtMs: Long,
         uptimeMs: Long
     ) {
-        val seenAt = maxOf(nowMs, timestampMs)
+        val seenAt = nowMs
         val existing = members[nodeId]
+        val isNewSession = existing == null || existing.sessionStartedAtMs != joinedAtMs
+        val firstSeenMs = if (isNewSession) seenAt else (existing?.firstSeenMs ?: seenAt)
+        val computedUptime = if (isNewSession) {
+            uptimeMs.coerceAtLeast(0L)
+        } else {
+            uptimeMs.coerceAtLeast(existing?.uptimeMs ?: 0L)
+        }
         members[nodeId] = MemberState(
             nodeId = nodeId,
-            firstSeenMs = existing?.firstSeenMs ?: joinedAtMs,
+            sessionStartedAtMs = joinedAtMs,
+            firstSeenMs = firstSeenMs,
             lastSeenMs = seenAt,
             term = term,
-            uptimeMs = uptimeMs.coerceAtLeast(existing?.uptimeMs ?: 0L)
+            uptimeMs = computedUptime
         )
         val nextTerm = maxOf(_status.value.term, term)
         if (nextTerm != _status.value.term) {
@@ -143,6 +158,7 @@ class ClusterMembershipRepository {
         ) {
             activeMembers + MemberState(
                 nodeId = selfNodeId,
+                sessionStartedAtMs = nowMs,
                 firstSeenMs = nowMs,
                 lastSeenMs = nowMs,
                 term = _status.value.term,
@@ -176,4 +192,4 @@ class ClusterMembershipRepository {
     }
 }
 
-private const val ACTIVE_WINDOW_MS = 20_000L
+private const val ACTIVE_WINDOW_MS = 6_000L

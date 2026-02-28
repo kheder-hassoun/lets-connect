@@ -203,6 +203,7 @@ class SocketClient (
                                         joinedAtMs = clusterControl.startedAtMs,
                                         uptimeMs = clusterControl.uptimeMs
                                     )
+                                    floorArbitrationState.rememberNodeHost(clusterControl.nodeId, hostAddress)
                                 }
                                 is ControlEnvelope.FloorRequest -> {
                                     clusterMembershipRepository.onHeartbeat(

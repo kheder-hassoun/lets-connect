@@ -48,9 +48,15 @@ class ConnectedDevicesRepository {
         }
     }
 
-    fun setHostDisconnected(hostAddress: String) {
+    fun setHostDisconnected(hostAddress: String, nowMillis: Long = Date().time) {
         synchronized(lock) {
             val current = clients[hostAddress] ?: return
+            val shouldDisconnect = current.lastDataReceivedAt <= 0L ||
+                nowMillis - current.lastDataReceivedAt > DISCONNECT_DEBOUNCE_MS
+            if (!shouldDisconnect) {
+                // Avoid flapping when one socket path closes but another path is still alive.
+                return
+            }
             val updated = current.copy(isConnected = false)
             clients[hostAddress] = updated
             if (updated != current) {
@@ -59,11 +65,13 @@ class ConnectedDevicesRepository {
         }
     }
 
-    fun setHostDisconnectedByName(hostName: String) {
+    fun setHostDisconnectedByName(hostName: String, nowMillis: Long = Date().time) {
         synchronized(lock) {
             var changed = false
             clients.forEach { (hostAddress, client) ->
-                if (client.hostName == hostName && client.isConnected) {
+                val shouldDisconnect = client.lastDataReceivedAt <= 0L ||
+                    nowMillis - client.lastDataReceivedAt > DISCONNECT_DEBOUNCE_MS
+                if (client.hostName == hostName && client.isConnected && shouldDisconnect) {
                     clients[hostAddress] = client.copy(isConnected = false)
                     changed = true
                 }
@@ -136,3 +144,5 @@ class ConnectedDevicesRepository {
         }
     }
 }
+
+private const val DISCONNECT_DEBOUNCE_MS = 2_500L
