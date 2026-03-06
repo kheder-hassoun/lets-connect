@@ -76,7 +76,7 @@ fun AboutContent() {
                             modifier = Modifier
                                 .size(64.dp)
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(Color.Black.copy(alpha = 0.18f))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
                                 .padding(6.dp)
                         )
                         Column {

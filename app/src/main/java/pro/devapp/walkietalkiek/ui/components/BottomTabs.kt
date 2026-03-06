@@ -106,7 +106,7 @@ fun BottomTabs(
                                     color = if (isSelected) {
                                         accent.copy(alpha = 0.28f)
                                     } else {
-                                        Color(0x1EFFFFFF)
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
                                     },
                                     shadowElevation = if (isSelected) 12.dp else 3.dp,
                                     modifier = Modifier

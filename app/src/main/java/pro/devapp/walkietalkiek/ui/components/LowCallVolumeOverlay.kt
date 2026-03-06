@@ -19,7 +19,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import pro.devapp.walkietalkiek.R
@@ -36,8 +35,8 @@ internal fun LowCallVolumeOverlay(
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color(0x66B91C1C),
-                        Color(0x55A11A1A)
+                        MaterialTheme.colorScheme.error.copy(alpha = 0.28f),
+                        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
                     )
                 )
             ),
@@ -49,7 +48,7 @@ internal fun LowCallVolumeOverlay(
                 .fillMaxWidth()
                 .widthIn(max = 500.dp),
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF2B0A0A)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
             elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
         ) {
             Column(
@@ -59,7 +58,7 @@ internal fun LowCallVolumeOverlay(
                 Text(
                     text = stringResource(R.string.call_volume_warning_title),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
-                    color = Color(0xFFFCA5A5)
+                    color = MaterialTheme.colorScheme.onErrorContainer
                 )
                 Text(
                     text = stringResource(
@@ -68,18 +67,18 @@ internal fun LowCallVolumeOverlay(
                         CALL_VOLUME_MIN_PERCENT
                     ),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFFFEE2E2)
+                    color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.92f)
                 )
                 Button(
                     onClick = onOkClick,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFDC2626)
+                        containerColor = MaterialTheme.colorScheme.error
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
                         text = stringResource(R.string.call_volume_warning_ok),
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onError
                     )
                 }
             }

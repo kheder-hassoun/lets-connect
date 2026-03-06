@@ -10,11 +10,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateTopPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -64,30 +65,47 @@ fun MainTopBar(
     val minScreen = cfg.screenWidthDp.dp.coerceAtMost(cfg.screenHeightDp.dp)
     val scale = (minScreen / 400.dp).coerceIn(0.84f, 1.18f)
     val topBarGifSize = (minScreen * 0.12f).coerceIn(42.dp, 64.dp)
+    val safeTopInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val topGradient = Brush.linearGradient(
+        colors = listOf(
+            accent.copy(alpha = 0.64f),
+            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.52f),
+            MaterialTheme.colorScheme.secondary.copy(alpha = 0.46f)
+        ),
+        start = Offset(0f, 0f),
+        end = Offset(1200f, -420f)
+    )
+    val layerGradient = Brush.linearGradient(
+        colors = listOf(
+            accent.copy(alpha = 0.38f),
+            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.30f),
+            MaterialTheme.colorScheme.secondary.copy(alpha = 0.26f)
+        ),
+        start = Offset(0f, 0f),
+        end = Offset(1000f, -260f)
+    )
 
-    Surface(
+    Column(
         modifier = modifier
-            .statusBarsPadding()
             .fillMaxWidth()
-            .padding(horizontal = (10 * scale).dp, vertical = (6 * scale).dp),
-        shape = RoundedCornerShape((22 * scale).dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-        tonalElevation = 6.dp,
-        shadowElevation = 10.dp
+            .background(layerGradient)
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(safeTopInset)
+                .background(layerGradient)
+        )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            accent.copy(alpha = 0.26f),
-                            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.16f),
-                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)
-                        )
-                    )
-                )
-                .padding(horizontal = (14 * scale).dp, vertical = (10 * scale).dp),
+                .background(topGradient)
+                .padding(
+                    start = (14 * scale).dp,
+                    top = (8 * scale).dp,
+                    end = (14 * scale).dp,
+                    bottom = (12 * scale).dp
+                ),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {

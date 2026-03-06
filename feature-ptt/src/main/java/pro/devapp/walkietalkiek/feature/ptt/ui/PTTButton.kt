@@ -79,10 +79,15 @@ fun PTTButton(
     val accent = MaterialTheme.colorScheme.primary
     val accentSoft = MaterialTheme.colorScheme.secondary
     val accentDeep = MaterialTheme.colorScheme.tertiary
+    val idleBase = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.86f)
+    val disabledBase = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.52f)
+    val recordingBase = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.74f)
+    val innerSurface = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)
     val liquidBaseColor = when {
         isRemoteSpeaking -> Color(0xFF2B2B2B)
-        isOnline -> accent.copy(alpha = 0.2f)
-        else -> Color(0x22000000)
+        isRecording -> recordingBase
+        isOnline -> idleBase
+        else -> disabledBase
     }
     val liquidGradient = Brush.verticalGradient(
         colors = listOf(
@@ -129,7 +134,11 @@ fun PTTButton(
             val center = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f)
             val innerRadius = size.minDimension / 2.5f
 
-            drawCircle(color = Color(0xFF181818), radius = innerRadius, center = center)
+            drawCircle(
+                color = innerSurface,
+                radius = innerRadius,
+                center = center
+            )
 
             val remoteWaveLevel = 0.48f + (kotlin.math.sin(waveShift * 0.6f) * 0.14f)
             val levelFraction = when {

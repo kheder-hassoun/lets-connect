@@ -131,7 +131,7 @@ internal fun PttStatusBar(
             Text(
                 text = stringResource(R.string.ptt_status_panel_title),
                 fontSize = (12 * scale).sp,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1
             )
@@ -200,7 +200,7 @@ internal fun PttStatusBar(
                 Text(
                     text = speakNowText,
                     fontSize = (12 * scale).sp,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.ExtraBold,
                     maxLines = 1,
                     modifier = Modifier.alpha(if (state.isRecording) 1f else 0f)

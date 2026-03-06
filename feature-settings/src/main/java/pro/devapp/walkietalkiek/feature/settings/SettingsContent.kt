@@ -53,6 +53,7 @@ import pro.devapp.walkietalkiek.core.flags.FeatureFlagsRepository
 import pro.devapp.walkietalkiek.core.settings.AppLanguage
 import pro.devapp.walkietalkiek.core.settings.AppSettingsRepository
 import pro.devapp.walkietalkiek.core.settings.ThemeColor
+import pro.devapp.walkietalkiek.core.settings.ThemeMode
 import pro.devapp.walkietalkiek.serivce.network.data.ClusterMembershipRepository
 import pro.devapp.walkietalkiek.serivce.network.data.ClusterRole
 import java.io.File
@@ -69,6 +70,8 @@ fun SettingsContent() {
     val flags by featureFlagsRepository.flags.collectAsState()
     val clusterStatus by clusterMembershipRepository.status.collectAsState()
     val isLeader = clusterStatus.role == ClusterRole.LEADER
+    val isSystemTheme = settings.themeMode == ThemeMode.SYSTEM
+    val isLightMode = settings.themeMode == ThemeMode.LIGHT
     var isThemeMenuExpanded by remember { mutableStateOf(false) }
     var isLanguageMenuExpanded by remember { mutableStateOf(false) }
 
@@ -169,6 +172,54 @@ fun SettingsContent() {
                         label = { Text(stringResource(R.string.common_off)) }
                     )
                 }
+            }
+        }
+
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_theme_mode_title),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                FlagToggleRow(
+                    title = stringResource(R.string.settings_use_system_theme),
+                    checked = isSystemTheme,
+                    onCheckedChange = { checked ->
+                        settingsRepository.updateThemeMode(
+                            if (checked) ThemeMode.SYSTEM else ThemeMode.DARK
+                        )
+                    },
+                    enabled = true
+                )
+                if (!isSystemTheme) {
+                    FlagToggleRow(
+                        title = stringResource(R.string.settings_light_mode),
+                        checked = isLightMode,
+                        onCheckedChange = { checked ->
+                            settingsRepository.updateThemeMode(
+                                if (checked) ThemeMode.LIGHT else ThemeMode.DARK
+                            )
+                        },
+                        enabled = true
+                    )
+                }
+                Text(
+                    text = stringResource(
+                        R.string.settings_theme_mode_current,
+                        themeModeDisplayName(settings.themeMode)
+                    ),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+                )
             }
         }
 
@@ -538,5 +589,14 @@ private fun themeDisplayName(themeColor: ThemeColor): String {
     return when (themeColor) {
         ThemeColor.PURPLE -> stringResource(R.string.theme_purple)
         ThemeColor.BLUE -> stringResource(R.string.theme_blue)
+    }
+}
+
+@Composable
+private fun themeModeDisplayName(themeMode: ThemeMode): String {
+    return when (themeMode) {
+        ThemeMode.SYSTEM -> stringResource(R.string.theme_mode_system)
+        ThemeMode.LIGHT -> stringResource(R.string.theme_mode_light)
+        ThemeMode.DARK -> stringResource(R.string.theme_mode_dark)
     }
 }

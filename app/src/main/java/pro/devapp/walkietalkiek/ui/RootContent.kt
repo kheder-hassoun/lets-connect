@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.draw.blur
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.adaptive.currentWindowSize
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldLayout
@@ -22,6 +24,7 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -31,7 +34,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -39,10 +41,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
+import androidx.core.view.WindowCompat
 import org.koin.androidx.compose.getViewModel
 import org.koin.compose.koinInject
 import pro.devapp.walkietalkiek.MainViewMode
 import pro.devapp.walkietalkiek.core.settings.AppSettingsRepository
+import pro.devapp.walkietalkiek.core.settings.ThemeMode
 import pro.devapp.walkietalkiek.core.theme.DroidPTTTheme
 import pro.devapp.walkietalkiek.model.MainScreenAction
 import pro.devapp.walkietalkiek.model.MainScreenEvent
@@ -67,6 +71,12 @@ internal fun RootContent() {
     val state = viewModel.state.collectAsState()
     val settingsRepository = koinInject<AppSettingsRepository>()
     val settings = settingsRepository.settings.collectAsState()
+    val systemDarkTheme = isSystemInDarkTheme()
+    val isDarkTheme = when (settings.value.themeMode) {
+        ThemeMode.SYSTEM -> systemDarkTheme
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
     var showWelcomeTutorial by rememberSaveable(settings.value.showWelcomeTutorial) {
         mutableStateOf(settings.value.showWelcomeTutorial)
     }
@@ -98,7 +108,11 @@ internal fun RootContent() {
         }
     }
 
-    DroidPTTTheme(themeColor = settings.value.themeColor) {
+    DroidPTTTheme(
+        darkTheme = isDarkTheme,
+        themeColor = settings.value.themeColor
+    ) {
+        SyncSystemBarsAppearance(isDarkTheme = isDarkTheme)
         Box(modifier = Modifier.fillMaxSize()) {
             Scaffold(
                 modifier = Modifier
@@ -158,11 +172,19 @@ internal fun RootContent() {
                             .fillMaxSize()
                             .background(
                                 brush = Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color(0xFF050505),
-                                        Color(0xFF0D0D0D),
-                                        Color(0xFF050505)
-                                    )
+                                    colors = if (isDarkTheme) {
+                                        listOf(
+                                            MaterialTheme.colorScheme.background,
+                                            MaterialTheme.colorScheme.surface,
+                                            MaterialTheme.colorScheme.background
+                                        )
+                                    } else {
+                                        listOf(
+                                            MaterialTheme.colorScheme.background,
+                                            MaterialTheme.colorScheme.surfaceVariant,
+                                            MaterialTheme.colorScheme.background
+                                        )
+                                    }
                                 )
                             )
                             .padding(innerPadding)
@@ -287,4 +309,16 @@ private fun rememberCallVolumePercent(context: Context): Int {
         }
     }
     return percent
+}
+
+@Composable
+private fun SyncSystemBarsAppearance(isDarkTheme: Boolean) {
+    val view = LocalView.current
+    val activity = view.context.findActivity() ?: return
+    SideEffect {
+        WindowCompat.getInsetsController(activity.window, activity.window.decorView).apply {
+            isAppearanceLightStatusBars = !isDarkTheme
+            isAppearanceLightNavigationBars = !isDarkTheme
+        }
+    }
 }

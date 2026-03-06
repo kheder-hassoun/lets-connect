@@ -6,6 +6,10 @@
     <string name="settings_ptt_tones_title">PTT Tones</string>
     <string name="settings_language_title">Language</string>
     <string name="settings_select_language">Select language</string>
+    <string name="settings_theme_mode_title">Theme Mode</string>
+    <string name="settings_use_system_theme">Use system theme</string>
+    <string name="settings_light_mode">Light mode</string>
+    <string name="settings_theme_mode_current">Current mode: %1$s</string>
     <string name="settings_theme_color_title">Theme Color</string>
     <string name="settings_select_theme">Select theme</string>
     <string name="settings_advanced_flags_title">Advanced Flags</string>
@@ -32,4 +36,7 @@
     <string name="theme_blue">Blue</string>
     <string name="theme_green">Green</string>
     <string name="theme_yellow">Yellow</string>
+    <string name="theme_mode_system">System</string>
+    <string name="theme_mode_light">Light</string>
+    <string name="theme_mode_dark">Dark</string>
 </resources>
