@@ -1,36 +1,34 @@
 package pro.devapp.walkietalkiek.ui.components
 
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,16 +39,18 @@ import pro.devapp.walkietalkiek.R
 import pro.devapp.walkietalkiek.model.MainScreenState
 import pro.devapp.walkietalkiek.serivce.network.data.ClusterMembershipRepository
 import pro.devapp.walkietalkiek.serivce.network.data.ClusterRole
+import pro.devapp.walkietalkiek.service.voice.TalkingStateRepository
 
 @Composable
 fun MainTopBar(
     modifier: Modifier = Modifier,
-    state: MainScreenState,
-    isPttEnabled: Boolean
+    state: MainScreenState
 ) {
     val accent = MaterialTheme.colorScheme.primary
     val clusterMembershipRepository = koinInject<ClusterMembershipRepository>()
+    val talkingStateRepository = koinInject<TalkingStateRepository>()
     val clusterStatus by clusterMembershipRepository.status.collectAsState()
+    val isSomeoneTalking by talkingStateRepository.isAnyoneTalking.collectAsState()
     val isLeader = clusterStatus.role == ClusterRole.LEADER
     val roleLabel = if (isLeader) {
         stringResource(R.string.role_admin)
@@ -61,7 +61,9 @@ fun MainTopBar(
     val currentTabTitle = currentTab?.let { stringResource(it.titleRes) } ?: state.currentTab.name
 
     val cfg = androidx.compose.ui.platform.LocalConfiguration.current
-    val scale = (cfg.screenWidthDp.dp.coerceAtMost(cfg.screenHeightDp.dp) / 400.dp).coerceIn(0.84f, 1.18f)
+    val minScreen = cfg.screenWidthDp.dp.coerceAtMost(cfg.screenHeightDp.dp)
+    val scale = (minScreen / 400.dp).coerceIn(0.84f, 1.18f)
+    val topBarGifSize = (minScreen * 0.12f).coerceIn(42.dp, 64.dp)
 
     Surface(
         modifier = modifier
@@ -117,15 +119,9 @@ fun MainTopBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy((8 * scale).dp)
             ) {
-                SignalScanner(
-                    isConnected = isPttEnabled,
-                    scale = scale
-                )
-                Icon(
-                    painter = painterResource(id = currentTab?.icon ?: R.drawable.ptt),
-                    contentDescription = currentTabTitle,
-                    tint = accent,
-                    modifier = Modifier.size((18 * scale).dp)
+                WalkieConnectionGlyph(
+                    iconSize = topBarGifSize,
+                    isSomeoneTalking = isSomeoneTalking
                 )
             }
         }
@@ -133,59 +129,119 @@ fun MainTopBar(
 }
 
 @Composable
-private fun SignalScanner(
-    isConnected: Boolean,
-    scale: Float
+private fun WalkieConnectionGlyph(
+    iconSize: androidx.compose.ui.unit.Dp,
+    isSomeoneTalking: Boolean
 ) {
-    val transition = rememberInfiniteTransition(label = "scanner")
-    val pulse1 by transition.animateFloat(
-        initialValue = 0.65f,
-        targetValue = 1.25f,
+    val transition = rememberInfiniteTransition(label = "walkie-link")
+    val beamShift by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1400),
-            repeatMode = RepeatMode.Restart
+            animation = tween(durationMillis = 1400, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
         ),
-        label = "pulse-1"
+        label = "walkie-link-shift"
     )
-    val pulse2 by transition.animateFloat(
-        initialValue = 0.65f,
-        targetValue = 1.45f,
+    val beamAlpha by transition.animateFloat(
+        initialValue = 0.45f,
+        targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1700),
-            repeatMode = RepeatMode.Restart
+            animation = tween(durationMillis = 900, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
         ),
-        label = "pulse-2"
+        label = "walkie-link-alpha"
     )
+    val lineColor = if (isSomeoneTalking) Color(0xFF42A5F5) else Color(0xFFFFB347)
+    val gap = (iconSize * 0.26f).coerceIn(8.dp, 16.dp)
+    val beamWidth = (iconSize * 1.14f).coerceIn(48.dp, 84.dp)
 
-    val color = if (isConnected) Color(0xFF56E39F) else Color(0xFFFFB347)
-
-    Box(
-        modifier = Modifier.size((24 * scale).dp),
-        contentAlignment = Alignment.Center
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(gap)
     ) {
+        AnimatedBrandGifIcon(size = iconSize)
+
         Box(
             modifier = Modifier
-                .size((22 * scale).dp)
-                .scale(pulse2)
-                .alpha(0.15f)
-                .border(1.dp, color, CircleShape)
-        )
-        Box(
-            modifier = Modifier
-                .size((18 * scale).dp)
-                .scale(pulse1)
-                .alpha(0.22f)
-                .border(1.dp, color, CircleShape)
-        )
-        Icon(
-            painter = painterResource(id = R.drawable.connection_on),
-            contentDescription = if (isConnected) {
-                stringResource(R.string.network_connected)
-            } else {
-                stringResource(R.string.network_scanning)
-            },
-            tint = color,
-            modifier = Modifier.size((14 * scale).dp)
-        )
+                .width(beamWidth)
+                .height((iconSize * 0.24f).coerceIn(9.dp, 16.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            androidx.compose.foundation.Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+            ) {
+                val strokePx = 3.dp.toPx()
+                val glowStrokePx = 8.dp.toPx()
+                val baseLine = Brush.horizontalGradient(
+                    colors = listOf(
+                        lineColor.copy(alpha = 0.18f),
+                        lineColor.copy(alpha = 0.35f),
+                        lineColor.copy(alpha = 0.18f)
+                    )
+                )
+                drawLine(
+                    brush = baseLine,
+                    start = androidx.compose.ui.geometry.Offset(0f, size.height / 2f),
+                    end = androidx.compose.ui.geometry.Offset(size.width, size.height / 2f),
+                    strokeWidth = strokePx,
+                    cap = StrokeCap.Round
+                )
+
+                val forwardHead = size.width * beamShift
+                val backwardHead = size.width * (1f - beamShift)
+                val segmentSize = size.width * 0.34f
+                drawLine(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            lineColor.copy(alpha = 0f),
+                            lineColor.copy(alpha = 0.9f * beamAlpha),
+                            lineColor.copy(alpha = 0f)
+                        ),
+                        startX = (forwardHead - segmentSize).coerceAtLeast(0f),
+                        endX = (forwardHead + segmentSize).coerceAtMost(size.width)
+                    ),
+                    start = androidx.compose.ui.geometry.Offset(0f, size.height / 2f),
+                    end = androidx.compose.ui.geometry.Offset(size.width, size.height / 2f),
+                    strokeWidth = glowStrokePx,
+                    cap = StrokeCap.Round
+                )
+                drawLine(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            lineColor.copy(alpha = 0f),
+                            lineColor.copy(alpha = 0.72f * beamAlpha),
+                            lineColor.copy(alpha = 0f)
+                        ),
+                        startX = (backwardHead - segmentSize).coerceAtLeast(0f),
+                        endX = (backwardHead + segmentSize).coerceAtMost(size.width)
+                    ),
+                    start = androidx.compose.ui.geometry.Offset(0f, size.height / 2f),
+                    end = androidx.compose.ui.geometry.Offset(size.width, size.height / 2f),
+                    strokeWidth = glowStrokePx * 0.88f,
+                    cap = StrokeCap.Round
+                )
+                drawCircle(
+                    color = lineColor.copy(alpha = beamAlpha),
+                    radius = 2.4.dp.toPx(),
+                    center = androidx.compose.ui.geometry.Offset(
+                        x = forwardHead,
+                        y = size.height / 2f
+                    )
+                )
+                drawCircle(
+                    color = lineColor.copy(alpha = beamAlpha * 0.8f),
+                    radius = 2.dp.toPx(),
+                    center = androidx.compose.ui.geometry.Offset(
+                        x = backwardHead,
+                        y = size.height / 2f
+                    )
+                )
+            }
+        }
+
+        AnimatedBrandGifIcon(size = iconSize)
     }
 }

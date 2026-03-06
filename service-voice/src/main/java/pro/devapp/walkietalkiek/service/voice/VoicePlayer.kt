@@ -22,7 +22,8 @@ import timber.log.Timber
 class VoicePlayer(
     private val socketClient: SocketClient,
     private val socketServer: SocketServer,
-    private val pttTonePlayer: PttTonePlayer
+    private val pttTonePlayer: PttTonePlayer,
+    private val talkingStateRepository: TalkingStateRepository
 ) {
     private val channelConfig = AudioFormat.CHANNEL_OUT_MONO
     private val playbackLock = Any()
@@ -65,9 +66,9 @@ class VoicePlayer(
                 .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
                 .build()
             val playbackAttributes = AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                .setLegacyStreamType(AudioManager.STREAM_MUSIC)
+                .setLegacyStreamType(AudioManager.STREAM_VOICE_CALL)
                 .build()
             val builder = AudioTrack.Builder()
                 .setAudioAttributes(playbackAttributes)
@@ -99,6 +100,7 @@ class VoicePlayer(
                     val now = System.currentTimeMillis()
                     if (remoteBurstActive && now - lastVoicePacketAt > remoteSessionGapMs) {
                         remoteBurstActive = false
+                        talkingStateRepository.setRemoteTalking(false)
                         runCatching {
                             pttTonePlayer.playRelease()
                         }.onFailure { error ->
@@ -134,6 +136,7 @@ class VoicePlayer(
         }
         lastVoicePacketAt = now
         remoteBurstActive = true
+        talkingStateRepository.setRemoteTalking(true)
 
         runCatching {
             val track = audioTrack ?: return@runCatching
@@ -161,6 +164,7 @@ class VoicePlayer(
             remoteBurstMonitorJob?.cancel()
             remoteBurstMonitorJob = null
             remoteBurstActive = false
+            talkingStateRepository.setRemoteTalking(false)
             audioTrack?.apply {
                 runCatching { stop() }
                 runCatching { release() }

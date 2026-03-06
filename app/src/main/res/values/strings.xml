@@ -31,4 +31,21 @@
     <string name="status_ticker_scanning_lan">Scanning LAN</string>
     <string name="status_ticker_syncing_cluster">Syncing cluster</string>
     <string name="status_ticker_linking_peers">Linking peers</string>
+    <string name="welcome_title">Welcome to Let\'s-Connect</string>
+    <string name="welcome_step_counter">Step %1$d of %2$d</string>
+    <string name="welcome_step_1_title">Install on all devices</string>
+    <string name="welcome_step_1_body">Install Let\'s-Connect on every device that will join your team.</string>
+    <string name="welcome_step_2_title">Connect to one network</string>
+    <string name="welcome_step_2_body">Put all devices on the same network: use Wi-Fi, or create a hotspot on one phone and connect the others.</string>
+    <string name="welcome_step_3_title">Start talking</string>
+    <string name="welcome_step_3_body">When peers available is more than 1, press and hold the PTT button to speak.</string>
+    <string name="welcome_step_3_highlight_phrase">press and hold</string>
+    <string name="welcome_previous">Previous</string>
+    <string name="welcome_next">Next</string>
+    <string name="welcome_done">Start</string>
+    <string name="welcome_skip">Skip</string>
+    <string name="welcome_never_show_again">Do not show this again</string>
+    <string name="call_volume_warning_title">Low call volume</string>
+    <string name="call_volume_warning_body">Current call volume is %1$d%%. Raise it to at least %2$d%% for clear tones and voice audio.</string>
+    <string name="call_volume_warning_ok">OK</string>
 </resources>

@@ -13,7 +13,7 @@ android {
         minSdk = 24
         targetSdk = 35
         versionCode = 4
-        versionName = "1.4.0"
+        versionName = "1.4.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -59,6 +59,7 @@ dependencies {
     implementation(libs.koin.android.compose)
     implementation(libs.timber)
     implementation(libs.accompanist.permissions)
+    implementation("pl.droidsonroids.gif:android-gif-drawable:1.2.29")
 
     implementation(project(":core"))
     implementation(project(":core-ui"))

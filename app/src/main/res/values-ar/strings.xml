@@ -31,4 +31,21 @@
     <string name="status_ticker_scanning_lan">جارٍ فحص الشبكة المحلية</string>
     <string name="status_ticker_syncing_cluster">جارٍ مزامنة المجموعة</string>
     <string name="status_ticker_linking_peers">جارٍ ربط الأجهزة</string>
+    <string name="welcome_title">مرحباً بك في Let\'s-Connect</string>
+    <string name="welcome_step_counter">الخطوة %1$d من %2$d</string>
+    <string name="welcome_step_1_title">ثبت التطبيق على كل الأجهزة</string>
+    <string name="welcome_step_1_body">ثبت Let\'s-Connect على كل جهاز تريد أن ينضم للفريق.</string>
+    <string name="welcome_step_2_title">وصلهم على نفس الشبكة</string>
+    <string name="welcome_step_2_body">اجعل كل الأجهزة على نفس الشبكة: Wi-Fi أو شغّل نقطة الاتصال على جهاز ووصل الباقي عليه.</string>
+    <string name="welcome_step_3_title">ابدأ التحدث</string>
+    <string name="welcome_step_3_body">عندما يصبح عدد الأجهزة المتاحة أكبر من 1، اضغط مطولاً على زر التحدث.</string>
+    <string name="welcome_step_3_highlight_phrase">اضغط مطولاً</string>
+    <string name="welcome_previous">السابق</string>
+    <string name="welcome_next">التالي</string>
+    <string name="welcome_done">ابدأ</string>
+    <string name="welcome_skip">تخطي</string>
+    <string name="welcome_never_show_again">لا تظهر هذه الرسالة مرة أخرى</string>
+    <string name="call_volume_warning_title">مستوى صوت المكالمة منخفض</string>
+    <string name="call_volume_warning_body">مستوى صوت المكالمة الحالي هو %1$d%%. ارفعه إلى %2$d%% على الأقل لسماع النغمات والصوت بوضوح.</string>
+    <string name="call_volume_warning_ok">حسنًا</string>
 </resources>

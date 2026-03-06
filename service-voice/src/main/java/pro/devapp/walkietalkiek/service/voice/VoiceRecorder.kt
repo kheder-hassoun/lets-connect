@@ -16,7 +16,8 @@ import timber.log.Timber
 class VoiceRecorder(
     private val chanelController: MessageController,
     private val coroutineContextProvider: CoroutineContextProvider,
-    private val pttTonePlayer: PttTonePlayer
+    private val pttTonePlayer: PttTonePlayer,
+    private val talkingStateRepository: TalkingStateRepository
 ) {
     private val channelConfig = AudioFormat.CHANNEL_IN_MONO
 
@@ -57,6 +58,7 @@ class VoiceRecorder(
         audioRecord?.apply {
             release()
         }
+        talkingStateRepository.setLocalTalking(false)
         pttTonePlayer.release()
     }
 
@@ -71,6 +73,7 @@ class VoiceRecorder(
         }.onFailure { error ->
             Timber.Forest.w(error, "AudioRecord start failed")
         }
+        talkingStateRepository.setLocalTalking(true)
         startReading()
     }
 
@@ -81,6 +84,7 @@ class VoiceRecorder(
         }.onFailure { error ->
             Timber.Forest.w(error, "AudioRecord stop failed")
         }
+        talkingStateRepository.setLocalTalking(false)
         runCatching { pttTonePlayer.playRelease() }
             .onFailure { error -> Timber.Forest.w(error, "Release tone play failed on stopRecord") }
     }

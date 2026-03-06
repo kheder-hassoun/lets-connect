@@ -2,6 +2,7 @@ package pro.devapp.walkietalkiek.service.voice
 
 import android.content.Context
 import android.media.AudioAttributes
+import android.media.AudioManager
 import android.media.SoundPool
 import pro.devapp.walkietalkiek.core.settings.AppSettingsRepository
 import timber.log.Timber
@@ -35,8 +36,9 @@ class PttTonePlayer(
                 .setMaxStreams(2)
                 .setAudioAttributes(
                     AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                        .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION_SIGNALLING)
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setLegacyStreamType(AudioManager.STREAM_VOICE_CALL)
                         .build()
                 )
                 .build()

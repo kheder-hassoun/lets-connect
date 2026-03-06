@@ -1,6 +1,7 @@
 package pro.devapp.walkietalkiek.ui
 
 import android.app.Activity
+import android.media.AudioManager
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
@@ -13,6 +14,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.draw.blur
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.adaptive.currentWindowSize
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldLayout
@@ -20,15 +22,20 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
@@ -40,15 +47,17 @@ import pro.devapp.walkietalkiek.core.theme.DroidPTTTheme
 import pro.devapp.walkietalkiek.model.MainScreenAction
 import pro.devapp.walkietalkiek.model.MainScreenEvent
 import pro.devapp.walkietalkiek.model.MainTab
-import pro.devapp.walkietalkiek.serivce.network.data.ConnectedDevicesRepository
-import pro.devapp.walkietalkiek.serivce.network.data.DeviceInfoRepository
 import pro.devapp.walkietalkiek.service.WalkieService
 import pro.devapp.walkietalkiek.localization.AppLocaleManager
 import pro.devapp.walkietalkiek.ui.components.BottomTabs
+import pro.devapp.walkietalkiek.ui.components.CALL_VOLUME_MIN_PERCENT
+import pro.devapp.walkietalkiek.ui.components.LowCallVolumeOverlay
 import pro.devapp.walkietalkiek.ui.components.MainTopBar
 import pro.devapp.walkietalkiek.ui.components.RailTabs
 import pro.devapp.walkietalkiek.ui.components.RequiredPermissionsNotification
 import pro.devapp.walkietalkiek.ui.components.TabsContent
+import pro.devapp.walkietalkiek.ui.components.WelcomeTutorialOverlay
+import kotlinx.coroutines.delay
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @OptIn(ExperimentalPermissionsApi::class)
@@ -58,14 +67,22 @@ internal fun RootContent() {
     val state = viewModel.state.collectAsState()
     val settingsRepository = koinInject<AppSettingsRepository>()
     val settings = settingsRepository.settings.collectAsState()
-    val connectedDevicesRepository = koinInject<ConnectedDevicesRepository>()
-    val deviceInfoRepository = koinInject<DeviceInfoRepository>()
-    val connectedDevices = connectedDevicesRepository.clientsFlow.collectAsState(initial = emptyList())
-    val hasConnectedPeers = connectedDevices.value.any { it.isConnected }
-    val hasValidIp = deviceInfoRepository.getCurrentIp()?.isNotBlank() == true
-    val isPttEnabled = hasValidIp || hasConnectedPeers
+    var showWelcomeTutorial by rememberSaveable(settings.value.showWelcomeTutorial) {
+        mutableStateOf(settings.value.showWelcomeTutorial)
+    }
+    val tutorialVisible = showWelcomeTutorial && settings.value.showWelcomeTutorial
+    val appBlur = if (tutorialVisible) 12.dp else 0.dp
 
     val context = LocalContext.current
+    val callVolumePercent = rememberCallVolumePercent(context)
+    val isLowCallVolume = callVolumePercent in 0 until CALL_VOLUME_MIN_PERCENT
+    var lowVolumeWarningDismissed by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(isLowCallVolume) {
+        if (!isLowCallVolume) {
+            lowVolumeWarningDismissed = false
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.onAction(MainScreenAction.InitApp)
@@ -82,89 +99,109 @@ internal fun RootContent() {
     }
 
     DroidPTTTheme(themeColor = settings.value.themeColor) {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            topBar = {
-                MainTopBar(
-                    state = state.value,
-                    isPttEnabled = isPttEnabled
-                )
-            }
-        ) { innerPadding ->
-            val windowSize = with(LocalDensity.current) {
-                currentWindowSize().toSize().toDpSize()
-            }
-            val imeVisible = rememberKeyboardVisible()
-            val hideBottomTabsForChatIme =
-                state.value.currentTab == MainTab.CHAT && imeVisible
+        Box(modifier = Modifier.fillMaxSize()) {
+            Scaffold(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(appBlur),
+                topBar = {
+                    MainTopBar(
+                        state = state.value
+                    )
+                }
+            ) { innerPadding ->
+                val windowSize = with(LocalDensity.current) {
+                    currentWindowSize().toSize().toDpSize()
+                }
+                val imeVisible = rememberKeyboardVisible()
+                val hideBottomTabsForChatIme =
+                    state.value.currentTab == MainTab.CHAT && imeVisible
 
-            val navLayoutType = if (windowSize.width > windowSize.height) {
-                // Landscape mode
-                NavigationSuiteType.NavigationRail
-            } else {
-                // Portrait mode
-                NavigationSuiteType.NavigationBar
-            }
+                val navLayoutType = if (windowSize.width > windowSize.height) {
+                    // Landscape mode
+                    NavigationSuiteType.NavigationRail
+                } else {
+                    // Portrait mode
+                    NavigationSuiteType.NavigationBar
+                }
 
-            NavigationSuiteScaffoldLayout(
-                layoutType = navLayoutType,
-                navigationSuite = {
-                    when (navLayoutType) {
-                        NavigationSuiteType.NavigationBar -> {
-                            if (!hideBottomTabsForChatIme) {
-                                BottomTabs(
+                NavigationSuiteScaffoldLayout(
+                    layoutType = navLayoutType,
+                    navigationSuite = {
+                        when (navLayoutType) {
+                            NavigationSuiteType.NavigationBar -> {
+                                if (!hideBottomTabsForChatIme) {
+                                    BottomTabs(
+                                        screenState = state.value,
+                                        onAction = viewModel::onAction
+                                    )
+                                }
+                            }
+
+                            NavigationSuiteType.NavigationRail -> {
+                                RailTabs(
+                                    modifier = Modifier
+                                        .padding(innerPadding),
                                     screenState = state.value,
                                     onAction = viewModel::onAction
                                 )
                             }
-                        }
 
-                        NavigationSuiteType.NavigationRail -> {
-                            RailTabs(
-                                modifier = Modifier
-                                    .padding(innerPadding),
-                                screenState = state.value,
-                                onAction = viewModel::onAction
-                            )
-                        }
+                            NavigationSuiteType.NavigationDrawer -> {
 
-                        NavigationSuiteType.NavigationDrawer -> {
-
+                            }
                         }
                     }
-                }
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    Color(0xFF050505),
-                                    Color(0xFF0D0D0D),
-                                    Color(0xFF050505)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color(0xFF050505),
+                                        Color(0xFF0D0D0D),
+                                        Color(0xFF050505)
+                                    )
                                 )
                             )
+                            .padding(innerPadding)
+                    ) {
+                        TabsContent(
+                            state = state.value,
+                            onAction = viewModel::onAction
                         )
-                        .padding(innerPadding)
-                ) {
-                    TabsContent(
-                        state = state.value,
-                        onAction = viewModel::onAction
-                    )
-                    if (state.value.requiredPermissions.isNotEmpty()) {
-                        RequiredPermissionsNotification(
-                            requiredPermissions = state.value.requiredPermissions,
-                            onClick = {
-                                val intent =
-                                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                        data = Uri.fromParts("package", context.packageName, null)
-                                    }
-                                context.startActivity(intent)
-                            }
-                        )
+                        if (state.value.requiredPermissions.isNotEmpty()) {
+                            RequiredPermissionsNotification(
+                                requiredPermissions = state.value.requiredPermissions,
+                                onClick = {
+                                    val intent =
+                                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                            data =
+                                                Uri.fromParts("package", context.packageName, null)
+                                        }
+                                    context.startActivity(intent)
+                                }
+                            )
+                        }
                     }
                 }
+            }
+
+            if (tutorialVisible) {
+                WelcomeTutorialOverlay(
+                    onFinish = { neverShowAgain ->
+                        showWelcomeTutorial = false
+                        if (neverShowAgain) {
+                            settingsRepository.updateShowWelcomeTutorial(false)
+                        }
+                    }
+                )
+            } else if (isLowCallVolume && !lowVolumeWarningDismissed) {
+                LowCallVolumeOverlay(
+                    currentPercent = callVolumePercent,
+                    onOkClick = { lowVolumeWarningDismissed = true }
+                )
             }
         }
     }
@@ -233,4 +270,21 @@ private tailrec fun Context.findActivity(): Activity? {
         is ContextWrapper -> baseContext.findActivity()
         else -> null
     }
+}
+
+@Composable
+private fun rememberCallVolumePercent(context: Context): Int {
+    val appContext = context.applicationContext
+    val audioManager = remember {
+        appContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    }
+    val percent by produceState(initialValue = 100, audioManager) {
+        while (true) {
+            val max = audioManager.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL).coerceAtLeast(1)
+            val current = audioManager.getStreamVolume(AudioManager.STREAM_VOICE_CALL).coerceAtLeast(0)
+            value = ((current * 100f) / max).toInt().coerceIn(0, 100)
+            delay(600)
+        }
+    }
+    return percent
 }
