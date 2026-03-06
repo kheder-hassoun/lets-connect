@@ -39,8 +39,17 @@ class PttFloorRepository(
     }
 
     fun releaseIfOwner(hostAddress: String): Boolean {
+        val normalizedHost = hostAddress.trim()
+        if (normalizedHost.isBlank()) return false
         synchronized(lock) {
-            if (_currentFloorOwnerHost.value == hostAddress) {
+            val currentOwner = _currentFloorOwnerHost.value ?: return false
+            val ownerNodeToken = "node:$normalizedHost"
+            val ownerNodeId = currentOwner.removePrefix("node:").trim()
+            val isSameOwner = currentOwner.equals(normalizedHost, ignoreCase = true) ||
+                currentOwner.equals(ownerNodeToken, ignoreCase = true) ||
+                ownerNodeId.equals(normalizedHost, ignoreCase = true)
+
+            if (isSameOwner) {
                 _currentFloorOwnerHost.value = null
                 floorSessionVersion += 1
                 return true

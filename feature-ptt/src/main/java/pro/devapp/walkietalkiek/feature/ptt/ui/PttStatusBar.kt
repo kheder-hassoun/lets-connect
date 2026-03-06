@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -188,7 +189,8 @@ internal fun PttStatusBar(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height((18 * scale).dp)
+                    .heightIn(min = (24 * scale).dp.coerceAtLeast(22.dp)),
+                contentAlignment = androidx.compose.ui.Alignment.CenterStart
             ) {
                 val speakNowText = if (connectedPeers == 0) {
                     stringResource(R.string.ptt_speak_now_no_peers)

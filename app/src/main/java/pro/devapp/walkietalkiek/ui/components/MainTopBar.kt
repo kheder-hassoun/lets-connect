@@ -39,7 +39,7 @@ import pro.devapp.walkietalkiek.R
 import pro.devapp.walkietalkiek.model.MainScreenState
 import pro.devapp.walkietalkiek.serivce.network.data.ClusterMembershipRepository
 import pro.devapp.walkietalkiek.serivce.network.data.ClusterRole
-import pro.devapp.walkietalkiek.serivce.network.data.PttFloorRepository
+import pro.devapp.walkietalkiek.service.voice.TalkingStateRepository
 
 @Composable
 fun MainTopBar(
@@ -48,10 +48,9 @@ fun MainTopBar(
 ) {
     val accent = MaterialTheme.colorScheme.primary
     val clusterMembershipRepository = koinInject<ClusterMembershipRepository>()
-    val pttFloorRepository = koinInject<PttFloorRepository>()
+    val talkingStateRepository = koinInject<TalkingStateRepository>()
     val clusterStatus by clusterMembershipRepository.status.collectAsState()
-    val floorOwner by pttFloorRepository.currentFloorOwnerHost.collectAsState()
-    val isSomeoneTalking = floorOwner != null
+    val isSomeoneTalking by talkingStateRepository.isAnyoneTalking.collectAsState()
     val isLeader = clusterStatus.role == ClusterRole.LEADER
     val roleLabel = if (isLeader) {
         stringResource(R.string.role_admin)
