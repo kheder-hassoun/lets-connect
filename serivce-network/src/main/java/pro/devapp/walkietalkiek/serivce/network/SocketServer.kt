@@ -378,13 +378,9 @@ class SocketServer(
         socket?.apply {
             close()
         }
-        floorOwnerMonitorJob?.cancel()
-        floorOwnerMonitorJob = null
+        socket = null
         outputQueueMap.clear()
         floorArbitrationState.clear()
-        readDataScope.cancel()
-        writeDataScope.cancel()
-        acceptConnectionScope.cancel()
     }
 
     fun sendMessage(data: ByteArray) {

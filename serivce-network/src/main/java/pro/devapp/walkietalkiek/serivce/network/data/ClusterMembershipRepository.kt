@@ -206,12 +206,7 @@ class ClusterMembershipRepository {
             .filter { it.nodeId.isNotBlank() }
             .distinctBy { it.nodeId }
         val leader = uniqueMembers
-            .sortedWith(
-                compareByDescending<MemberState> { it.uptimeMs }
-                    .thenBy { it.firstSeenMs }
-                    .thenBy { it.nodeId }
-            )
-            .firstOrNull()
+            .minByOrNull { it.nodeId }
             ?.nodeId
             .orEmpty()
         val role = if (leader.isNotBlank() && leader == selfNodeId) {

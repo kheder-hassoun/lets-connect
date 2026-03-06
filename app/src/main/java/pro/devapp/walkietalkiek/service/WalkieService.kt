@@ -63,10 +63,15 @@ class WalkieService: Service() {
         super.onDestroy()
         serviceScope.cancel()
         runCatching { voiceRecorder.stopRecord() }
+            .onFailure { error -> Timber.Forest.w(error, "WalkieService cleanup: voiceRecorder.stopRecord failed") }
         runCatching { voiceRecorder.destroy() }
+            .onFailure { error -> Timber.Forest.w(error, "WalkieService cleanup: voiceRecorder.destroy failed") }
         runCatching { voicePlayer.shutdown() }
+            .onFailure { error -> Timber.Forest.w(error, "WalkieService cleanup: voicePlayer.shutdown failed") }
         runCatching { chanelController.stopDiscovery() }
+            .onFailure { error -> Timber.Forest.w(error, "WalkieService cleanup: stopDiscovery failed") }
         runCatching { releaseWakeLock() }
+            .onFailure { error -> Timber.Forest.w(error, "WalkieService cleanup: releaseWakeLock failed") }
     }
 
     private fun setWakeLock() {

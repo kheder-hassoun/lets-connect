@@ -23,18 +23,22 @@ internal class DiscoveryListener(
 
     override fun onStopDiscoveryFailed(serviceType: String?, errorCode: Int) {
         Timber.Forest.i("Stop discovery failed: $errorCode")
+        chanelController.onDiscoveryStopFailed(errorCode)
     }
 
     override fun onStartDiscoveryFailed(serviceType: String?, errorCode: Int) {
         Timber.Forest.i("Start discovery failed: $errorCode")
+        chanelController.onDiscoveryStartFailed(errorCode)
     }
 
     override fun onDiscoveryStarted(serviceType: String?) {
         Timber.Forest.i("Discovery started")
+        chanelController.onDiscoveryStarted()
     }
 
     override fun onDiscoveryStopped(serviceType: String?) {
         Timber.Forest.i("Discovery stopped")
+        chanelController.onDiscoveryStopped()
     }
 
     @RequiresExtension(extension = Build.VERSION_CODES.TIRAMISU, version = 7)

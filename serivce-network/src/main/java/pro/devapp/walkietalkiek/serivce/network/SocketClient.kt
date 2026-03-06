@@ -198,19 +198,13 @@ class SocketClient (
         sockets.forEach {
             it.value.close()
         }
-        floorOwnerMonitorJob?.cancel()
-        floorOwnerMonitorJob = null
+        sockets.clear()
         outputQueueMap.clear()
         dialPolicyByHost.clear()
         latestEndpointByHost.clear()
         reconnectJobsByHost.values.forEach { it.cancel() }
         reconnectJobsByHost.clear()
         floorArbitrationState.clear()
-        reconnectTimerScope.cancel()
-        addClientScope.cancel()
-        clientsScope.cancel()
-        readDataScope.cancel()
-        writeDataScope.cancel()
     }
 
     private fun handleConnection(socket: Socket) {
