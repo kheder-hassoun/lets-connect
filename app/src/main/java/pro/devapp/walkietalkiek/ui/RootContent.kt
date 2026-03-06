@@ -81,8 +81,8 @@ internal fun RootContent() {
     }
     val tutorialVisible = showWelcomeTutorial && settings.value.showWelcomeTutorial
     val blurPulse by rememberInfiniteTransition(label = "tutorial-blur").animateFloat(
-        initialValue = 22f,
-        targetValue = 30f,
+        initialValue = 10f,
+        targetValue = 14f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse

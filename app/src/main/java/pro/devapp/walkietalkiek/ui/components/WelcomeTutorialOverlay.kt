@@ -106,13 +106,22 @@ internal fun WelcomeTutorialOverlay(
         label = "welcome-border-shift"
     )
     val scrimAlpha by transition.animateFloat(
-        initialValue = 0.55f,
-        targetValue = 0.72f,
+        initialValue = 0.42f,
+        targetValue = 0.58f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 1500, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "welcome-scrim-alpha"
+    )
+    val wavePhase by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 3400, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "welcome-wave-phase"
     )
 
     BoxWithConstraints(
@@ -123,19 +132,41 @@ internal fun WelcomeTutorialOverlay(
         val screenHeight = maxHeight
         val cardWidth = (screenWidth * 0.9f).coerceAtMost(560.dp)
         val cardHeight = rememberCardHeight(screenHeight)
+        val primaryColor = MaterialTheme.colorScheme.primary
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Black.copy(alpha = scrimAlpha),
-                            Color(0xFF0A1424).copy(alpha = (scrimAlpha + 0.12f).coerceAtMost(0.82f))
-                        )
-                    )
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawRect(
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        Color.Black.copy(alpha = scrimAlpha),
+                        Color(0xFF0A1424).copy(alpha = (scrimAlpha + 0.08f).coerceAtMost(0.76f))
+                    ),
+                    start = Offset(0f, 0f),
+                    end = Offset(size.width, size.height)
                 )
-        )
+            )
+
+            val maxRadius = size.maxDimension * 1.15f
+            val minRadius = size.maxDimension * 0.12f
+            for (i in 0..2) {
+                val shift = (wavePhase + (i * 0.33f)) % 1f
+                val radius = minRadius + (maxRadius - minRadius) * shift
+                val waveAlpha = (1f - shift) * 0.14f
+
+                drawCircle(
+                    color = primaryColor.copy(alpha = waveAlpha),
+                    radius = radius,
+                    center = Offset(0f, 0f),
+                    style = Stroke(width = 2.dp.toPx())
+                )
+                drawCircle(
+                    color = Color(0xFF64B5F6).copy(alpha = waveAlpha * 0.92f),
+                    radius = radius,
+                    center = Offset(size.width, size.height),
+                    style = Stroke(width = 2.dp.toPx())
+                )
+            }
+        }
 
         Box(
             modifier = Modifier
@@ -224,11 +255,23 @@ internal fun WelcomeTutorialOverlay(
                             color = MaterialTheme.colorScheme.primary
                         )
                         TextButton(
-                            onClick = { onFinish(false) }
+                            onClick = { onFinish(false) },
+                            shape = RoundedCornerShape(20.dp),
+                            modifier = Modifier
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+                                    shape = RoundedCornerShape(20.dp)
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.42f),
+                                    shape = RoundedCornerShape(20.dp)
+                                )
                         ) {
                             Text(
                                 text = stringResource(R.string.welcome_skip),
-                                color = Color.White.copy(alpha = 0.92f)
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
