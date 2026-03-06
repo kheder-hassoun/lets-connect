@@ -115,20 +115,12 @@ internal fun WelcomeTutorialOverlay(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 12000, easing = LinearEasing),
+            animation = tween(durationMillis = 18000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "welcome-wave-phase"
     )
-    val gradientFlow by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 6200, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "welcome-gradient-flow"
-    )
+    val gradientFlow = wavePhase
 
     BoxWithConstraints(
         modifier = Modifier.fillMaxSize(),
