@@ -51,6 +51,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -119,6 +120,15 @@ internal fun WelcomeTutorialOverlay(
         ),
         label = "welcome-wave-phase"
     )
+    val gradientFlow by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 6200, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "welcome-gradient-flow"
+    )
 
     BoxWithConstraints(
         modifier = Modifier.fillMaxSize(),
@@ -131,27 +141,51 @@ internal fun WelcomeTutorialOverlay(
         val primaryColor = MaterialTheme.colorScheme.primary
 
         Canvas(modifier = Modifier.fillMaxSize()) {
+            val baseStart = lerp(
+                Color(0xFF060B16),
+                Color(0xFF0C1730),
+                gradientFlow
+            ).copy(alpha = 0.80f)
+            val baseMid = lerp(
+                Color(0xFF0C1A30),
+                Color(0xFF152746),
+                gradientFlow
+            ).copy(alpha = 0.76f)
+            val baseEnd = lerp(
+                Color(0xFF101D34),
+                Color(0xFF1B2D4D),
+                gradientFlow
+            ).copy(alpha = 0.72f)
+            val diagStart = Offset(
+                x = -size.width * 0.22f + (size.width * 0.30f * gradientFlow),
+                y = -size.height * 0.22f + (size.height * 0.30f * gradientFlow)
+            )
+            val diagEnd = Offset(
+                x = size.width * 1.05f + (size.width * 0.20f * gradientFlow),
+                y = size.height * 1.05f + (size.height * 0.20f * gradientFlow)
+            )
+
             drawRect(
                 brush = Brush.linearGradient(
                     colors = listOf(
-                        Color(0xFF060B16).copy(alpha = 0.78f),
-                        Color(0xFF0C1A30).copy(alpha = 0.74f),
-                        Color(0xFF101D34).copy(alpha = 0.70f)
+                        baseStart,
+                        baseMid,
+                        baseEnd
                     ),
-                    start = Offset(0f, 0f),
-                    end = Offset(size.width, size.height)
+                    start = diagStart,
+                    end = diagEnd
                 )
             )
             // Diagonal light lane to make corner-to-corner gradient direction obvious.
             drawRect(
                 brush = Brush.linearGradient(
                     colors = listOf(
-                        primaryColor.copy(alpha = 0.20f),
-                        Color(0xFF60A5FA).copy(alpha = 0.11f),
+                        primaryColor.copy(alpha = 0.12f + (0.12f * gradientFlow)),
+                        Color(0xFF60A5FA).copy(alpha = 0.07f + (0.08f * gradientFlow)),
                         Color.Transparent
                     ),
-                    start = Offset(0f, 0f),
-                    end = Offset(size.width, size.height)
+                    start = diagStart,
+                    end = diagEnd
                 )
             )
 
