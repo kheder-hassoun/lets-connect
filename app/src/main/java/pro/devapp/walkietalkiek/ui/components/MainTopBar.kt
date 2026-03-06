@@ -10,9 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.calculateTopPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,11 +27,15 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import org.koin.compose.koinInject
 import pro.devapp.walkietalkiek.R
 import pro.devapp.walkietalkiek.model.MainScreenState
@@ -65,7 +66,13 @@ fun MainTopBar(
     val minScreen = cfg.screenWidthDp.dp.coerceAtMost(cfg.screenHeightDp.dp)
     val scale = (minScreen / 400.dp).coerceIn(0.84f, 1.18f)
     val topBarGifSize = (minScreen * 0.12f).coerceIn(42.dp, 64.dp)
-    val safeTopInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val view = LocalView.current
+    val density = LocalDensity.current
+    val safeTopInsetPx = ViewCompat.getRootWindowInsets(view)
+        ?.getInsets(WindowInsetsCompat.Type.statusBars())
+        ?.top
+        ?: 0
+    val safeTopInset = with(density) { safeTopInsetPx.toDp() }
     val topGradient = Brush.linearGradient(
         colors = listOf(
             accent.copy(alpha = 0.64f),
