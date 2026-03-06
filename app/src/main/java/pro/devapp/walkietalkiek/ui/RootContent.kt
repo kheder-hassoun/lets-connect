@@ -13,22 +13,33 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.draw.blur
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.adaptive.currentWindowSize
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldLayout
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
@@ -49,6 +60,7 @@ import pro.devapp.walkietalkiek.ui.components.MainTopBar
 import pro.devapp.walkietalkiek.ui.components.RailTabs
 import pro.devapp.walkietalkiek.ui.components.RequiredPermissionsNotification
 import pro.devapp.walkietalkiek.ui.components.TabsContent
+import pro.devapp.walkietalkiek.ui.components.WelcomeTutorialOverlay
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @OptIn(ExperimentalPermissionsApi::class)
@@ -64,6 +76,20 @@ internal fun RootContent() {
     val hasConnectedPeers = connectedDevices.value.any { it.isConnected }
     val hasValidIp = deviceInfoRepository.getCurrentIp()?.isNotBlank() == true
     val isPttEnabled = hasValidIp || hasConnectedPeers
+    var showWelcomeTutorial by rememberSaveable(settings.value.showWelcomeTutorial) {
+        mutableStateOf(settings.value.showWelcomeTutorial)
+    }
+    val tutorialVisible = showWelcomeTutorial && settings.value.showWelcomeTutorial
+    val blurPulse by rememberInfiniteTransition(label = "tutorial-blur").animateFloat(
+        initialValue = 22f,
+        targetValue = 30f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "tutorial-blur-pulse"
+    )
+    val appBlur = if (tutorialVisible) blurPulse.dp else 0.dp
 
     val context = LocalContext.current
 
@@ -82,89 +108,105 @@ internal fun RootContent() {
     }
 
     DroidPTTTheme(themeColor = settings.value.themeColor) {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            topBar = {
-                MainTopBar(
-                    state = state.value,
-                    isPttEnabled = isPttEnabled
-                )
-            }
-        ) { innerPadding ->
-            val windowSize = with(LocalDensity.current) {
-                currentWindowSize().toSize().toDpSize()
-            }
-            val imeVisible = rememberKeyboardVisible()
-            val hideBottomTabsForChatIme =
-                state.value.currentTab == MainTab.CHAT && imeVisible
+        Box(modifier = Modifier.fillMaxSize()) {
+            Scaffold(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(appBlur),
+                topBar = {
+                    MainTopBar(
+                        state = state.value,
+                        isPttEnabled = isPttEnabled
+                    )
+                }
+            ) { innerPadding ->
+                val windowSize = with(LocalDensity.current) {
+                    currentWindowSize().toSize().toDpSize()
+                }
+                val imeVisible = rememberKeyboardVisible()
+                val hideBottomTabsForChatIme =
+                    state.value.currentTab == MainTab.CHAT && imeVisible
 
-            val navLayoutType = if (windowSize.width > windowSize.height) {
-                // Landscape mode
-                NavigationSuiteType.NavigationRail
-            } else {
-                // Portrait mode
-                NavigationSuiteType.NavigationBar
-            }
+                val navLayoutType = if (windowSize.width > windowSize.height) {
+                    // Landscape mode
+                    NavigationSuiteType.NavigationRail
+                } else {
+                    // Portrait mode
+                    NavigationSuiteType.NavigationBar
+                }
 
-            NavigationSuiteScaffoldLayout(
-                layoutType = navLayoutType,
-                navigationSuite = {
-                    when (navLayoutType) {
-                        NavigationSuiteType.NavigationBar -> {
-                            if (!hideBottomTabsForChatIme) {
-                                BottomTabs(
+                NavigationSuiteScaffoldLayout(
+                    layoutType = navLayoutType,
+                    navigationSuite = {
+                        when (navLayoutType) {
+                            NavigationSuiteType.NavigationBar -> {
+                                if (!hideBottomTabsForChatIme) {
+                                    BottomTabs(
+                                        screenState = state.value,
+                                        onAction = viewModel::onAction
+                                    )
+                                }
+                            }
+
+                            NavigationSuiteType.NavigationRail -> {
+                                RailTabs(
+                                    modifier = Modifier
+                                        .padding(innerPadding),
                                     screenState = state.value,
                                     onAction = viewModel::onAction
                                 )
                             }
-                        }
 
-                        NavigationSuiteType.NavigationRail -> {
-                            RailTabs(
-                                modifier = Modifier
-                                    .padding(innerPadding),
-                                screenState = state.value,
-                                onAction = viewModel::onAction
-                            )
-                        }
+                            NavigationSuiteType.NavigationDrawer -> {
 
-                        NavigationSuiteType.NavigationDrawer -> {
-
+                            }
                         }
                     }
-                }
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    Color(0xFF050505),
-                                    Color(0xFF0D0D0D),
-                                    Color(0xFF050505)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color(0xFF050505),
+                                        Color(0xFF0D0D0D),
+                                        Color(0xFF050505)
+                                    )
                                 )
                             )
+                            .padding(innerPadding)
+                    ) {
+                        TabsContent(
+                            state = state.value,
+                            onAction = viewModel::onAction
                         )
-                        .padding(innerPadding)
-                ) {
-                    TabsContent(
-                        state = state.value,
-                        onAction = viewModel::onAction
-                    )
-                    if (state.value.requiredPermissions.isNotEmpty()) {
-                        RequiredPermissionsNotification(
-                            requiredPermissions = state.value.requiredPermissions,
-                            onClick = {
-                                val intent =
-                                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                        data = Uri.fromParts("package", context.packageName, null)
-                                    }
-                                context.startActivity(intent)
-                            }
-                        )
+                        if (state.value.requiredPermissions.isNotEmpty()) {
+                            RequiredPermissionsNotification(
+                                requiredPermissions = state.value.requiredPermissions,
+                                onClick = {
+                                    val intent =
+                                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                            data =
+                                                Uri.fromParts("package", context.packageName, null)
+                                        }
+                                    context.startActivity(intent)
+                                }
+                            )
+                        }
                     }
                 }
+            }
+
+            if (tutorialVisible) {
+                WelcomeTutorialOverlay(
+                    onFinish = { neverShowAgain ->
+                        showWelcomeTutorial = false
+                        if (neverShowAgain) {
+                            settingsRepository.updateShowWelcomeTutorial(false)
+                        }
+                    }
+                )
             }
         }
     }
