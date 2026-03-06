@@ -7,6 +7,7 @@
     <string name="tab_settings">الإعدادات</string>
     <string name="tab_chat">الدردشة</string>
     <string name="tab_ptt">التحدث</string>
+    <string name="tab_talk">تحدث</string>
     <string name="tab_about">حول</string>
     <string name="tab_status">الحالة</string>
     <string name="tab_ptt_live">البث المباشر</string>

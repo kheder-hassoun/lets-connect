@@ -218,6 +218,21 @@ fun BottomTabs(
                 }
             }
 
+            Text(
+                text = stringResource(R.string.tab_talk),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = if (isPttSelected) FontWeight.SemiBold else FontWeight.Medium,
+                color = if (isPttSelected) {
+                    accent
+                } else {
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.62f)
+                },
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = pttFabSize + 6.dp)
+                    .zIndex(3f)
+            )
+
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
