@@ -44,7 +44,7 @@ internal fun PTTContentPortrait(
         modifier = Modifier.fillMaxSize()
     ) {
         Spacer(
-            modifier = Modifier.height((6 * scale).dp)
+            modifier = Modifier.height((10 * scale).dp)
         )
 
         PttStatusBar(
@@ -54,7 +54,7 @@ internal fun PTTContentPortrait(
         ConnectedPeersList(
             modifier = Modifier
                 .height(peersPanelHeight)
-                .padding(top = (4 * scale).dp),
+                .padding(top = (10 * scale).dp),
             devices = state.connectedDevices
         )
 

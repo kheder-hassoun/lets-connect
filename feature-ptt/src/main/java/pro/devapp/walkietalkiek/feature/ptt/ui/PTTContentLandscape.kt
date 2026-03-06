@@ -44,17 +44,19 @@ internal fun PTTContentLandscape(
         modifier = Modifier
             .fillMaxSize()
             .padding(contentPadding),
-        verticalArrangement = Arrangement.spacedBy((6 * scale).dp)
+        verticalArrangement = Arrangement.spacedBy((9 * scale).dp)
     ) {
         Spacer(
-            modifier = Modifier.height((4 * scale).dp)
+            modifier = Modifier.height((8 * scale).dp)
         )
         PttStatusBar(
             state = state,
             canTalk = canTalk
         )
         ConnectedPeersList(
-            modifier = Modifier.height(peersPanelHeight),
+            modifier = Modifier
+                .height(peersPanelHeight)
+                .padding(top = (6 * scale).dp),
             devices = state.connectedDevices
         )
         Box(

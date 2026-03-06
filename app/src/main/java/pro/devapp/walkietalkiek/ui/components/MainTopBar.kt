@@ -80,7 +80,7 @@ fun MainTopBar(
             MaterialTheme.colorScheme.background.copy(alpha = 0.90f)
         )
     )
-    val titleColor = MaterialTheme.colorScheme.onSurface
+    val titleColor = MaterialTheme.colorScheme.primary
     val metaColor = MaterialTheme.colorScheme.onSurfaceVariant
 
     Column(
@@ -93,13 +93,18 @@ fun MainTopBar(
                 .fillMaxWidth()
                 .height(safeTopInset)
         )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height((4 * scale).dp)
+        )
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
                     start = (14 * scale).dp,
-                    top = (6 * scale).dp,
+                    top = (8 * scale).dp,
                     end = (14 * scale).dp,
                     bottom = (10 * scale).dp
                 ),
