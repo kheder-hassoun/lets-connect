@@ -7,6 +7,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -28,6 +29,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -42,13 +44,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import pro.devapp.walkietalkiek.R
 
@@ -79,8 +86,8 @@ internal fun WelcomeTutorialOverlay(
     var neverShowAgain by remember { mutableStateOf(false) }
     val isLastStep = currentStep == steps.lastIndex
 
-    val pulse = rememberInfiniteTransition(label = "welcome-pulse")
-    val pulseScale by pulse.animateFloat(
+    val transition = rememberInfiniteTransition(label = "welcome-animations")
+    val pulseScale by transition.animateFloat(
         initialValue = 0.9f,
         targetValue = 1.12f,
         animationSpec = infiniteRepeatable(
@@ -88,6 +95,36 @@ internal fun WelcomeTutorialOverlay(
             repeatMode = RepeatMode.Reverse
         ),
         label = "welcome-pulse-scale"
+    )
+    val borderRotation by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 4800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "welcome-border-rotation"
+    )
+    val scrimAlpha by transition.animateFloat(
+        initialValue = 0.55f,
+        targetValue = 0.72f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "welcome-scrim-alpha"
+    )
+
+    val neonSweep = Brush.sweepGradient(
+        colors = listOf(
+            Color(0xFF90CAF9),
+            Color(0xFF64B5F6),
+            Color(0xFF7986CB),
+            Color(0xFF9575CD),
+            Color(0xFF7E57C2),
+            Color(0xFF5C6BC0),
+            Color(0xFF90CAF9)
+        )
     )
 
     BoxWithConstraints(
@@ -98,16 +135,6 @@ internal fun WelcomeTutorialOverlay(
         val screenHeight = maxHeight
         val cardWidth = (screenWidth * 0.9f).coerceAtMost(560.dp)
         val cardHeight = rememberCardHeight(screenHeight)
-
-        val scrimAlpha by rememberInfiniteTransition(label = "welcome-scrim").animateFloat(
-            initialValue = 0.55f,
-            targetValue = 0.72f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 1500, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse
-            ),
-            label = "welcome-scrim-alpha"
-        )
 
         Box(
             modifier = Modifier
@@ -122,152 +149,196 @@ internal fun WelcomeTutorialOverlay(
                 )
         )
 
-        Card(
+        Box(
             modifier = Modifier
                 .padding(horizontal = 20.dp)
                 .widthIn(max = cardWidth)
                 .fillMaxWidth()
-                .height(cardHeight),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 14.dp)
+                .height(cardHeight)
         ) {
-            Column(
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val stroke = 3.dp.toPx()
+                val glowStroke = 9.dp.toPx()
+                val inset = glowStroke
+                val corner = 24.dp.toPx()
+
+                rotate(degrees = borderRotation, pivot = center) {
+                    drawRoundRect(
+                        brush = neonSweep,
+                        topLeft = Offset(inset, inset),
+                        size = Size(
+                            width = size.width - (inset * 2f),
+                            height = size.height - (inset * 2f)
+                        ),
+                        cornerRadius = CornerRadius(corner, corner),
+                        style = Stroke(width = stroke)
+                    )
+                }
+
+                drawRoundRect(
+                    brush = neonSweep,
+                    topLeft = Offset(inset, inset),
+                    size = Size(
+                        width = size.width - (inset * 2f),
+                        height = size.height - (inset * 2f)
+                    ),
+                    cornerRadius = CornerRadius(corner, corner),
+                    style = Stroke(width = glowStroke),
+                    alpha = 0.15f
+                )
+            }
+
+            Card(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 18.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                    .padding(10.dp),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 14.dp)
             ) {
-                Text(
-                    text = stringResource(R.string.welcome_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.ExtraBold
-                )
-
-                Text(
-                    text = stringResource(
-                        R.string.welcome_step_counter,
-                        currentStep + 1,
-                        steps.size
-                    ),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary
-                )
-
-                Box(
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
+                        .fillMaxSize()
+                        .padding(horizontal = 18.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    AnimatedContent(
-                        targetState = currentStep,
-                        label = "welcome-step-content"
-                    ) { index ->
-                        val step = steps[index]
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(74.dp)
-                                    .background(
-                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
-                                        shape = CircleShape
-                                    )
-                                    .border(
-                                        width = 1.dp,
-                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
-                                        shape = CircleShape
-                                    ),
-                                contentAlignment = Alignment.Center
+                    Text(
+                        text = stringResource(R.string.welcome_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Text(
+                        text = stringResource(
+                            R.string.welcome_step_counter,
+                            currentStep + 1,
+                            steps.size
+                        ),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AnimatedContent(
+                            targetState = currentStep,
+                            label = "welcome-step-content"
+                        ) { index ->
+                            val step = steps[index]
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(58.dp)
-                                        .scale(pulseScale)
-                                        .alpha(0.2f)
+                                        .size(74.dp)
                                         .background(
-                                            color = MaterialTheme.colorScheme.primary,
+                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
                                             shape = CircleShape
                                         )
-                                )
-                                Icon(
-                                    painter = painterResource(step.iconRes),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(30.dp)
-                                )
-                            }
+                                        .border(
+                                            width = 1.dp,
+                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                                            shape = CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(58.dp)
+                                            .scale(pulseScale)
+                                            .alpha(0.2f)
+                                            .background(
+                                                color = MaterialTheme.colorScheme.primary,
+                                                shape = CircleShape
+                                            )
+                                    )
+                                    Icon(
+                                        painter = painterResource(step.iconRes),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(30.dp)
+                                    )
+                                }
 
-                            Text(
-                                text = stringResource(step.titleRes),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center
-                            )
-                            Text(
-                                text = stringResource(step.bodyRes),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.size(4.dp))
+                                Text(
+                                    text = stringResource(step.titleRes),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center
+                                )
+                                Text(
+                                    text = stringResource(step.bodyRes),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center
+                                )
+                                Spacer(modifier = Modifier.size(4.dp))
+                            }
                         }
                     }
-                }
 
-                if (isLastStep) {
+                    if (isLastStep) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = neverShowAgain,
+                                onCheckedChange = { neverShowAgain = it },
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = MaterialTheme.colorScheme.primary,
+                                    uncheckedColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                                )
+                            )
+                            Text(
+                                text = stringResource(R.string.welcome_never_show_again),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.size(4.dp))
+                    }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Checkbox(
-                            checked = neverShowAgain,
-                            onCheckedChange = { neverShowAgain = it }
-                        )
-                        Text(
-                            text = stringResource(R.string.welcome_never_show_again),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                } else {
-                    Spacer(modifier = Modifier.size(4.dp))
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    OutlinedButton(
-                        onClick = { currentStep = (currentStep - 1).coerceAtLeast(0) },
-                        enabled = currentStep > 0
-                    ) {
-                        Text(stringResource(R.string.welcome_previous))
-                    }
-                    Button(
-                        onClick = {
-                            if (isLastStep) {
-                                onFinish(neverShowAgain)
-                            } else {
-                                currentStep = (currentStep + 1).coerceAtMost(steps.lastIndex)
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Text(
-                            text = if (isLastStep) {
-                                stringResource(R.string.welcome_done)
-                            } else {
-                                stringResource(R.string.welcome_next)
-                            }
-                        )
+                        OutlinedButton(
+                            onClick = { currentStep = (currentStep - 1).coerceAtLeast(0) },
+                            enabled = currentStep > 0
+                        ) {
+                            Text(stringResource(R.string.welcome_previous))
+                        }
+                        Button(
+                            onClick = {
+                                if (isLastStep) {
+                                    onFinish(neverShowAgain)
+                                } else {
+                                    currentStep = (currentStep + 1).coerceAtMost(steps.lastIndex)
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Text(
+                                text = if (isLastStep) {
+                                    stringResource(R.string.welcome_done)
+                                } else {
+                                    stringResource(R.string.welcome_next)
+                                }
+                            )
+                        }
                     }
                 }
             }
