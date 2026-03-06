@@ -1,12 +1,17 @@
 package pro.devapp.walkietalkiek.ui.components
 
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -14,10 +19,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -106,10 +117,105 @@ fun MainTopBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy((8 * scale).dp)
             ) {
-                AnimatedBrandGifIcon(
-                    size = topBarGifSize
+                WalkieConnectionGlyph(
+                    iconSize = topBarGifSize,
+                    isConnected = isPttEnabled
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun WalkieConnectionGlyph(
+    iconSize: androidx.compose.ui.unit.Dp,
+    isConnected: Boolean
+) {
+    val transition = rememberInfiniteTransition(label = "walkie-link")
+    val beamShift by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1500, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "walkie-link-shift"
+    )
+    val beamAlpha by transition.animateFloat(
+        initialValue = 0.45f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 900, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "walkie-link-alpha"
+    )
+    val lineColor = if (isConnected) Color(0xFF56E39F) else Color(0xFFFFB347)
+    val gap = (iconSize * 0.26f).coerceIn(8.dp, 16.dp)
+    val beamWidth = (iconSize * 1.14f).coerceIn(48.dp, 84.dp)
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(gap)
+    ) {
+        AnimatedBrandGifIcon(size = iconSize)
+
+        Box(
+            modifier = Modifier
+                .width(beamWidth)
+                .height((iconSize * 0.24f).coerceIn(9.dp, 16.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            androidx.compose.foundation.Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+            ) {
+                val strokePx = 3.dp.toPx()
+                val glowStrokePx = 8.dp.toPx()
+                val baseLine = Brush.horizontalGradient(
+                    colors = listOf(
+                        lineColor.copy(alpha = 0.18f),
+                        lineColor.copy(alpha = 0.35f),
+                        lineColor.copy(alpha = 0.18f)
+                    )
+                )
+                drawLine(
+                    brush = baseLine,
+                    start = androidx.compose.ui.geometry.Offset(0f, size.height / 2f),
+                    end = androidx.compose.ui.geometry.Offset(size.width, size.height / 2f),
+                    strokeWidth = strokePx,
+                    cap = StrokeCap.Round
+                )
+
+                val beamStart = (size.width * beamShift) - (size.width * 0.42f)
+                val beamEnd = beamStart + (size.width * 0.42f)
+                drawLine(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            lineColor.copy(alpha = 0f),
+                            lineColor.copy(alpha = 0.9f * beamAlpha),
+                            lineColor.copy(alpha = 0f)
+                        ),
+                        startX = beamStart,
+                        endX = beamEnd
+                    ),
+                    start = androidx.compose.ui.geometry.Offset(0f, size.height / 2f),
+                    end = androidx.compose.ui.geometry.Offset(size.width, size.height / 2f),
+                    strokeWidth = glowStrokePx,
+                    cap = StrokeCap.Round
+                )
+                drawCircle(
+                    color = lineColor.copy(alpha = beamAlpha),
+                    radius = 2.4.dp.toPx(),
+                    center = androidx.compose.ui.geometry.Offset(
+                        x = size.width * beamShift,
+                        y = size.height / 2f
+                    )
+                )
+            }
+        }
+
+        AnimatedBrandGifIcon(size = iconSize)
     }
 }
