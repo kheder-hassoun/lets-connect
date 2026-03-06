@@ -59,6 +59,7 @@ dependencies {
     implementation(libs.koin.android.compose)
     implementation(libs.timber)
     implementation(libs.accompanist.permissions)
+    implementation("pl.droidsonroids.gif:android-gif-drawable:1.2.29")
 
     implementation(project(":core"))
     implementation(project(":core-ui"))

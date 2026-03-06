@@ -30,6 +30,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import pl.droidsonroids.gif.GifImageView
 import pro.devapp.walkietalkiek.R
 import pro.devapp.walkietalkiek.BuildConfig
 
@@ -67,16 +68,16 @@ fun AboutContent() {
                     ) {
                         AndroidView(
                             factory = { ctx ->
-                                ImageView(ctx).apply {
-                                    setImageDrawable(ctx.packageManager.getApplicationIcon(ctx.packageName))
-                                    scaleType = ImageView.ScaleType.CENTER_CROP
+                                GifImageView(ctx).apply {
+                                    setImageResource(R.drawable.icon_animated)
+                                    scaleType = ImageView.ScaleType.FIT_CENTER
                                 }
                             },
                             modifier = Modifier
-                                .size(56.dp)
-                                .clip(CircleShape)
+                                .size(64.dp)
+                                .clip(RoundedCornerShape(14.dp))
                                 .background(Color.Black.copy(alpha = 0.18f))
-                                .padding(8.dp)
+                                .padding(6.dp)
                         )
                         Column {
                             Text(
