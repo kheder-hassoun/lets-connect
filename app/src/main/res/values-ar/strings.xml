@@ -20,6 +20,8 @@
     <string name="about_how_it_works_body">تكتشف الأجهزة بعضها عبر Wi-Fi، ثم يتم انتخاب أدمن واحد، وبعدها تتم مشاركة التحكم بالدور والصوت بشكل مباشر.</string>
     <string name="about_support_title">الدعم</string>
     <string name="about_support_body">استخدم الإعدادات > التشخيص لتصدير سجلات التطبيق عند الإبلاغ عن مشكلة.</string>
+    <string name="about_designed_developed_by">Desgined and Developed by :</string>
+    <string name="about_developers_names">Kheder &amp; Haidar Hassoun</string>
     <string name="status_title">الحالة</string>
     <string name="status_role_title">الدور</string>
     <string name="status_ip_title">IP</string>

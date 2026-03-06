@@ -43,6 +43,9 @@ internal fun PTTContentPortrait(
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
+        Spacer(
+            modifier = Modifier.height((6 * scale).dp)
+        )
 
         PttStatusBar(
             state = state,
