@@ -42,5 +42,6 @@
     <string name="welcome_previous">السابق</string>
     <string name="welcome_next">التالي</string>
     <string name="welcome_done">ابدأ</string>
+    <string name="welcome_skip">تخطي</string>
     <string name="welcome_never_show_again">لا تظهر هذه الرسالة مرة أخرى</string>
 </resources>

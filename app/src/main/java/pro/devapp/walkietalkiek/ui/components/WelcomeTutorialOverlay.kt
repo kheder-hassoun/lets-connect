@@ -34,6 +34,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -50,7 +51,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -96,14 +96,14 @@ internal fun WelcomeTutorialOverlay(
         ),
         label = "welcome-pulse-scale"
     )
-    val borderRotation by transition.animateFloat(
+    val borderShiftAngle by transition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 4800, easing = FastOutSlowInEasing),
+            animation = tween(durationMillis = 4200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Restart
         ),
-        label = "welcome-border-rotation"
+        label = "welcome-border-shift"
     )
     val scrimAlpha by transition.animateFloat(
         initialValue = 0.55f,
@@ -113,18 +113,6 @@ internal fun WelcomeTutorialOverlay(
             repeatMode = RepeatMode.Reverse
         ),
         label = "welcome-scrim-alpha"
-    )
-
-    val neonSweep = Brush.sweepGradient(
-        colors = listOf(
-            Color(0xFF90CAF9),
-            Color(0xFF64B5F6),
-            Color(0xFF7986CB),
-            Color(0xFF9575CD),
-            Color(0xFF7E57C2),
-            Color(0xFF5C6BC0),
-            Color(0xFF90CAF9)
-        )
     )
 
     BoxWithConstraints(
@@ -161,22 +149,42 @@ internal fun WelcomeTutorialOverlay(
                 val glowStroke = 9.dp.toPx()
                 val inset = glowStroke
                 val corner = 24.dp.toPx()
-
-                rotate(degrees = borderRotation, pivot = center) {
-                    drawRoundRect(
-                        brush = neonSweep,
-                        topLeft = Offset(inset, inset),
-                        size = Size(
-                            width = size.width - (inset * 2f),
-                            height = size.height - (inset * 2f)
-                        ),
-                        cornerRadius = CornerRadius(corner, corner),
-                        style = Stroke(width = stroke)
-                    )
-                }
+                val angleRad = (borderShiftAngle * (Math.PI / 180f)).toFloat()
+                val travelRadius = size.maxDimension * 0.5f
+                val gradientStart = Offset(
+                    x = center.x + kotlin.math.cos(angleRad) * travelRadius,
+                    y = center.y + kotlin.math.sin(angleRad) * travelRadius
+                )
+                val gradientEnd = Offset(
+                    x = center.x - kotlin.math.cos(angleRad) * travelRadius,
+                    y = center.y - kotlin.math.sin(angleRad) * travelRadius
+                )
+                val animatedBorderBrush = Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xFF90CAF9),
+                        Color(0xFF64B5F6),
+                        Color(0xFF7986CB),
+                        Color(0xFF9575CD),
+                        Color(0xFF7E57C2),
+                        Color(0xFF5C6BC0)
+                    ),
+                    start = gradientStart,
+                    end = gradientEnd
+                )
 
                 drawRoundRect(
-                    brush = neonSweep,
+                    brush = animatedBorderBrush,
+                    topLeft = Offset(inset, inset),
+                    size = Size(
+                        width = size.width - (inset * 2f),
+                        height = size.height - (inset * 2f)
+                    ),
+                    cornerRadius = CornerRadius(corner, corner),
+                    style = Stroke(width = stroke)
+                )
+
+                drawRoundRect(
+                    brush = animatedBorderBrush,
                     topLeft = Offset(inset, inset),
                     size = Size(
                         width = size.width - (inset * 2f),
@@ -194,7 +202,7 @@ internal fun WelcomeTutorialOverlay(
                     .padding(10.dp),
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
+                    containerColor = Color(0xFF111827).copy(alpha = 0.97f)
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 14.dp)
             ) {
@@ -204,12 +212,26 @@ internal fun WelcomeTutorialOverlay(
                         .padding(horizontal = 18.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Text(
-                        text = stringResource(R.string.welcome_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.welcome_title),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        TextButton(
+                            onClick = { onFinish(false) }
+                        ) {
+                            Text(
+                                text = stringResource(R.string.welcome_skip),
+                                color = Color.White.copy(alpha = 0.92f)
+                            )
+                        }
+                    }
 
                     Text(
                         text = stringResource(
@@ -273,12 +295,13 @@ internal fun WelcomeTutorialOverlay(
                                     text = stringResource(step.titleRes),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    textAlign = TextAlign.Center
+                                    textAlign = TextAlign.Center,
+                                    color = Color.White
                                 )
                                 Text(
                                     text = stringResource(step.bodyRes),
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = Color.White.copy(alpha = 0.9f),
                                     textAlign = TextAlign.Center
                                 )
                                 Spacer(modifier = Modifier.size(4.dp))

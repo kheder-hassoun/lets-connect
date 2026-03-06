@@ -42,5 +42,6 @@
     <string name="welcome_previous">Previous</string>
     <string name="welcome_next">Next</string>
     <string name="welcome_done">Start</string>
+    <string name="welcome_skip">Skip</string>
     <string name="welcome_never_show_again">Do not show this again</string>
 </resources>
