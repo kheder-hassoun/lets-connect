@@ -39,16 +39,19 @@ import pro.devapp.walkietalkiek.R
 import pro.devapp.walkietalkiek.model.MainScreenState
 import pro.devapp.walkietalkiek.serivce.network.data.ClusterMembershipRepository
 import pro.devapp.walkietalkiek.serivce.network.data.ClusterRole
+import pro.devapp.walkietalkiek.serivce.network.data.PttFloorRepository
 
 @Composable
 fun MainTopBar(
     modifier: Modifier = Modifier,
-    state: MainScreenState,
-    isPttEnabled: Boolean
+    state: MainScreenState
 ) {
     val accent = MaterialTheme.colorScheme.primary
     val clusterMembershipRepository = koinInject<ClusterMembershipRepository>()
+    val pttFloorRepository = koinInject<PttFloorRepository>()
     val clusterStatus by clusterMembershipRepository.status.collectAsState()
+    val floorOwner by pttFloorRepository.currentFloorOwnerHost.collectAsState()
+    val isSomeoneTalking = floorOwner != null
     val isLeader = clusterStatus.role == ClusterRole.LEADER
     val roleLabel = if (isLeader) {
         stringResource(R.string.role_admin)
@@ -119,7 +122,7 @@ fun MainTopBar(
             ) {
                 WalkieConnectionGlyph(
                     iconSize = topBarGifSize,
-                    isConnected = isPttEnabled
+                    isSomeoneTalking = isSomeoneTalking
                 )
             }
         }
@@ -129,15 +132,15 @@ fun MainTopBar(
 @Composable
 private fun WalkieConnectionGlyph(
     iconSize: androidx.compose.ui.unit.Dp,
-    isConnected: Boolean
+    isSomeoneTalking: Boolean
 ) {
     val transition = rememberInfiniteTransition(label = "walkie-link")
     val beamShift by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1500, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
+            animation = tween(durationMillis = 1400, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
         ),
         label = "walkie-link-shift"
     )
@@ -150,7 +153,7 @@ private fun WalkieConnectionGlyph(
         ),
         label = "walkie-link-alpha"
     )
-    val lineColor = if (isConnected) Color(0xFF56E39F) else Color(0xFFFFB347)
+    val lineColor = if (isSomeoneTalking) Color(0xFF42A5F5) else Color(0xFFFFB347)
     val gap = (iconSize * 0.26f).coerceIn(8.dp, 16.dp)
     val beamWidth = (iconSize * 1.14f).coerceIn(48.dp, 84.dp)
 
@@ -188,8 +191,9 @@ private fun WalkieConnectionGlyph(
                     cap = StrokeCap.Round
                 )
 
-                val beamStart = (size.width * beamShift) - (size.width * 0.42f)
-                val beamEnd = beamStart + (size.width * 0.42f)
+                val forwardHead = size.width * beamShift
+                val backwardHead = size.width * (1f - beamShift)
+                val segmentSize = size.width * 0.34f
                 drawLine(
                     brush = Brush.horizontalGradient(
                         colors = listOf(
@@ -197,19 +201,42 @@ private fun WalkieConnectionGlyph(
                             lineColor.copy(alpha = 0.9f * beamAlpha),
                             lineColor.copy(alpha = 0f)
                         ),
-                        startX = beamStart,
-                        endX = beamEnd
+                        startX = (forwardHead - segmentSize).coerceAtLeast(0f),
+                        endX = (forwardHead + segmentSize).coerceAtMost(size.width)
                     ),
                     start = androidx.compose.ui.geometry.Offset(0f, size.height / 2f),
                     end = androidx.compose.ui.geometry.Offset(size.width, size.height / 2f),
                     strokeWidth = glowStrokePx,
                     cap = StrokeCap.Round
                 )
+                drawLine(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            lineColor.copy(alpha = 0f),
+                            lineColor.copy(alpha = 0.72f * beamAlpha),
+                            lineColor.copy(alpha = 0f)
+                        ),
+                        startX = (backwardHead - segmentSize).coerceAtLeast(0f),
+                        endX = (backwardHead + segmentSize).coerceAtMost(size.width)
+                    ),
+                    start = androidx.compose.ui.geometry.Offset(0f, size.height / 2f),
+                    end = androidx.compose.ui.geometry.Offset(size.width, size.height / 2f),
+                    strokeWidth = glowStrokePx * 0.88f,
+                    cap = StrokeCap.Round
+                )
                 drawCircle(
                     color = lineColor.copy(alpha = beamAlpha),
                     radius = 2.4.dp.toPx(),
                     center = androidx.compose.ui.geometry.Offset(
-                        x = size.width * beamShift,
+                        x = forwardHead,
+                        y = size.height / 2f
+                    )
+                )
+                drawCircle(
+                    color = lineColor.copy(alpha = beamAlpha * 0.8f),
+                    radius = 2.dp.toPx(),
+                    center = androidx.compose.ui.geometry.Offset(
+                        x = backwardHead,
                         y = size.height / 2f
                     )
                 )

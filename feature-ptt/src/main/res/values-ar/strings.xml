@@ -21,6 +21,9 @@
     <string name="ptt_card_state">الحالة %1$s</string>
     <string name="ptt_card_remote_speaking">جهاز آخر يتحدث</string>
     <string name="ptt_card_open">مفتوح</string>
+    <string name="ptt_status_panel_title">لوحة الحالة</string>
+    <string name="ptt_speak_now">تحدث الآن!</string>
+    <string name="ptt_speak_now_no_peers">تحدث الآن (لكن لا يوجد أجهزة متاحة)</string>
     <string name="ptt_ticker_line_1">Lets Connect خيارك الأفضل</string>
     <string name="ptt_ticker_line_2">مكالمات صوتية ودعم للدردشة</string>
     <string name="ptt_ticker_line_3">لا حاجة للإنترنت</string>

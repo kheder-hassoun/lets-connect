@@ -21,6 +21,9 @@
     <string name="ptt_card_state">State %1$s</string>
     <string name="ptt_card_remote_speaking">Remote speaking</string>
     <string name="ptt_card_open">Open</string>
+    <string name="ptt_status_panel_title">Status panle</string>
+    <string name="ptt_speak_now">Speak now!</string>
+    <string name="ptt_speak_now_no_peers">Speak now (but there are no available peers)</string>
     <string name="ptt_ticker_line_1">Lets Connect is your choice</string>
     <string name="ptt_ticker_line_2">Voice calls and chat support</string>
     <string name="ptt_ticker_line_3">No internet needed</string>

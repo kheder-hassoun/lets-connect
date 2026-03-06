@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,22 +15,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
@@ -133,6 +127,15 @@ internal fun PttStatusBar(
                 )
                 .padding((10 * scale).dp)
         ) {
+            Text(
+                text = stringResource(R.string.ptt_status_panel_title),
+                fontSize = (12 * scale).sp,
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
+            )
+            Spacer(modifier = Modifier.height((6 * scale).dp))
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -181,11 +184,26 @@ internal fun PttStatusBar(
                 Spacer(modifier = Modifier.width((24 * scale).dp))
             }
 
-            Spacer(modifier = Modifier.height((6 * scale).dp))
-            StatusTypewriter(
-                scale = scale,
-                color = modeColor
-            )
+            Spacer(modifier = Modifier.height((8 * scale).dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height((18 * scale).dp)
+            ) {
+                val speakNowText = if (connectedPeers == 0) {
+                    stringResource(R.string.ptt_speak_now_no_peers)
+                } else {
+                    stringResource(R.string.ptt_speak_now)
+                }
+                Text(
+                    text = speakNowText,
+                    fontSize = (12 * scale).sp,
+                    color = Color.White,
+                    fontWeight = FontWeight.ExtraBold,
+                    maxLines = 1,
+                    modifier = Modifier.alpha(if (state.isRecording) 1f else 0f)
+                )
+            }
         }
     }
 }
@@ -249,75 +267,6 @@ private fun TinyStatusCard(
                 overflow = TextOverflow.Ellipsis
             )
         }
-    }
-}
-
-@Composable
-private fun StatusTypewriter(
-    scale: Float,
-    color: Color
-) {
-    val lines = listOf(
-        stringResource(R.string.ptt_ticker_line_1),
-        stringResource(R.string.ptt_ticker_line_2),
-        stringResource(R.string.ptt_ticker_line_3)
-    )
-    val stableLines = remember(lines) {
-        listOf(
-            lines[0],
-            lines[1],
-            lines[2]
-        )
-    }
-    var lineIndex by remember { mutableStateOf(0) }
-    var visibleText by remember { mutableStateOf("") }
-
-    val cursorTransition = rememberInfiniteTransition(label = "ptt-status-cursor")
-    val cursorAlpha by cursorTransition.animateFloat(
-        initialValue = 0.25f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(450),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "ptt-status-cursor-alpha"
-    )
-
-    LaunchedEffect(stableLines) {
-        while (true) {
-            val line = stableLines[lineIndex]
-            for (i in 1..line.length) {
-                visibleText = line.substring(0, i)
-                delay(48)
-            }
-            delay(900)
-            for (i in line.length downTo 0) {
-                visibleText = line.substring(0, i)
-                delay(30)
-            }
-            lineIndex = (lineIndex + 1) % stableLines.size
-            delay(200)
-        }
-    }
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-    ) {
-        Text(
-            text = visibleText,
-            fontSize = (11 * scale).sp,
-            color = color,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Text(
-            text = "|",
-            fontSize = (11 * scale).sp,
-            color = color.copy(alpha = cursorAlpha),
-            fontWeight = FontWeight.Bold
-        )
     }
 }
 
