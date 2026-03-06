@@ -2,6 +2,7 @@ package pro.devapp.walkietalkiek.ui.components
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -113,7 +114,7 @@ internal fun WelcomeTutorialOverlay(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 4200, easing = FastOutSlowInEasing),
+            animation = tween(durationMillis = 12000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "welcome-wave-phase"
@@ -141,19 +142,36 @@ internal fun WelcomeTutorialOverlay(
                     end = Offset(size.width, size.height)
                 )
             )
+            // Diagonal light lane to make corner-to-corner gradient direction obvious.
+            drawRect(
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        primaryColor.copy(alpha = 0.20f),
+                        Color(0xFF60A5FA).copy(alpha = 0.11f),
+                        Color.Transparent
+                    ),
+                    start = Offset(0f, 0f),
+                    end = Offset(size.width, size.height)
+                )
+            )
 
-            val maxRadius = size.maxDimension * 1.42f
-            val minRadius = size.maxDimension * 0.18f
+            val maxRadius = size.maxDimension * 1.55f
+            val minRadius = size.maxDimension * 0.10f
             val waveCenter = Offset(-size.width * 0.08f, -size.height * 0.08f)
-            for (i in 0..5) {
-                val shift = (wavePhase + (i * 0.17f)) % 1f
-                val radius = minRadius + (maxRadius - minRadius) * shift
-                val waveAlpha = (1f - shift) * 0.26f
+            val ringCount = 18
+            val spacing = 1f / ringCount
+            for (i in 0 until ringCount) {
+                val shift = (wavePhase + (i * spacing)) % 1f
+                // Ease-out expansion: fast near the corner, slower as rings grow.
+                val eased = 1f - (1f - shift).let { it * it }
+                val radius = minRadius + (maxRadius - minRadius) * eased
+                val waveAlpha = (1f - eased) * 0.34f
+                val strokeWidth = (2.4f + (eased * 2.8f)).dp.toPx()
                 val waveBrush = Brush.linearGradient(
                     colors = listOf(
                         primaryColor.copy(alpha = waveAlpha),
-                        Color(0xFF60A5FA).copy(alpha = waveAlpha * 0.82f),
-                        Color(0xFF818CF8).copy(alpha = waveAlpha * 0.64f),
+                        Color(0xFF60A5FA).copy(alpha = waveAlpha * 0.88f),
+                        Color(0xFF818CF8).copy(alpha = waveAlpha * 0.76f),
                         Color.Transparent
                     ),
                     start = Offset(0f, 0f),
@@ -164,7 +182,7 @@ internal fun WelcomeTutorialOverlay(
                     brush = waveBrush,
                     radius = radius,
                     center = waveCenter,
-                    style = Stroke(width = 6.dp.toPx())
+                    style = Stroke(width = strokeWidth)
                 )
             }
         }
