@@ -31,10 +31,11 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -54,9 +55,11 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import pro.devapp.walkietalkiek.R
 
 @Composable
@@ -154,13 +157,29 @@ internal fun WelcomeTutorialOverlay(
                 val waveAlpha = (1f - shift) * 0.14f
 
                 drawCircle(
-                    color = primaryColor.copy(alpha = waveAlpha),
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            primaryColor.copy(alpha = waveAlpha),
+                            Color(0xFF64B5F6).copy(alpha = waveAlpha * 0.84f),
+                            Color.Transparent
+                        ),
+                        start = Offset(0f, 0f),
+                        end = Offset(radius, radius)
+                    ),
                     radius = radius,
                     center = Offset(0f, 0f),
                     style = Stroke(width = 2.dp.toPx())
                 )
                 drawCircle(
-                    color = Color(0xFF64B5F6).copy(alpha = waveAlpha * 0.92f),
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color(0xFF64B5F6).copy(alpha = waveAlpha * 0.92f),
+                            primaryColor.copy(alpha = waveAlpha * 0.82f),
+                            Color.Transparent
+                        ),
+                        start = Offset(size.width, size.height),
+                        end = Offset(size.width - radius, size.height - radius)
+                    ),
                     radius = radius,
                     center = Offset(size.width, size.height),
                     style = Stroke(width = 2.dp.toPx())
@@ -254,22 +273,21 @@ internal fun WelcomeTutorialOverlay(
                             fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.primary
                         )
-                        TextButton(
+                        IconButton(
                             onClick = { onFinish(false) },
-                            shape = RoundedCornerShape(20.dp),
                             modifier = Modifier
                                 .background(
                                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
-                                    shape = RoundedCornerShape(20.dp)
+                                    shape = CircleShape
                                 )
                                 .border(
                                     width = 1.dp,
                                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.42f),
-                                    shape = RoundedCornerShape(20.dp)
+                                    shape = CircleShape
                                 )
                         ) {
                             Text(
-                                text = stringResource(R.string.welcome_skip),
+                                text = "X",
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -334,14 +352,14 @@ internal fun WelcomeTutorialOverlay(
                                     )
                                 }
 
-                                Text(
+                                TypewriterText(
                                     text = stringResource(step.titleRes),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     textAlign = TextAlign.Center,
                                     color = Color.White
                                 )
-                                Text(
+                                TypewriterText(
                                     text = stringResource(step.bodyRes),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = Color.White.copy(alpha = 0.9f),
@@ -423,3 +441,30 @@ private data class TutorialStepUi(
     val titleRes: Int,
     val bodyRes: Int
 )
+
+@Composable
+private fun TypewriterText(
+    text: String,
+    style: TextStyle,
+    color: Color,
+    textAlign: TextAlign = TextAlign.Start,
+    fontWeight: FontWeight? = null
+) {
+    var visibleChars by remember(text) { mutableIntStateOf(0) }
+
+    LaunchedEffect(text) {
+        visibleChars = 0
+        for (i in 1..text.length) {
+            visibleChars = i
+            delay(14)
+        }
+    }
+
+    Text(
+        text = text.take(visibleChars),
+        style = style,
+        color = color,
+        textAlign = textAlign,
+        fontWeight = fontWeight
+    )
+}
