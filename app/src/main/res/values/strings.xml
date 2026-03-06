@@ -44,4 +44,7 @@
     <string name="welcome_done">Start</string>
     <string name="welcome_skip">Skip</string>
     <string name="welcome_never_show_again">Do not show this again</string>
+    <string name="call_volume_warning_title">Low call volume</string>
+    <string name="call_volume_warning_body">Current call volume is %1$d%%. Raise it to at least %2$d%% for clear tones and voice audio.</string>
+    <string name="call_volume_warning_ok">OK</string>
 </resources>

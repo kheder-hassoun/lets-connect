@@ -44,4 +44,7 @@
     <string name="welcome_done">ابدأ</string>
     <string name="welcome_skip">تخطي</string>
     <string name="welcome_never_show_again">لا تظهر هذه الرسالة مرة أخرى</string>
+    <string name="call_volume_warning_title">مستوى صوت المكالمة منخفض</string>
+    <string name="call_volume_warning_body">مستوى صوت المكالمة الحالي هو %1$d%%. ارفعه إلى %2$d%% على الأقل لسماع النغمات والصوت بوضوح.</string>
+    <string name="call_volume_warning_ok">حسنًا</string>
 </resources>

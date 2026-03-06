@@ -1,6 +1,7 @@
 package pro.devapp.walkietalkiek.ui
 
 import android.app.Activity
+import android.media.AudioManager
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
@@ -21,6 +22,7 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,11 +52,14 @@ import pro.devapp.walkietalkiek.serivce.network.data.DeviceInfoRepository
 import pro.devapp.walkietalkiek.service.WalkieService
 import pro.devapp.walkietalkiek.localization.AppLocaleManager
 import pro.devapp.walkietalkiek.ui.components.BottomTabs
+import pro.devapp.walkietalkiek.ui.components.CALL_VOLUME_MIN_PERCENT
+import pro.devapp.walkietalkiek.ui.components.LowCallVolumeOverlay
 import pro.devapp.walkietalkiek.ui.components.MainTopBar
 import pro.devapp.walkietalkiek.ui.components.RailTabs
 import pro.devapp.walkietalkiek.ui.components.RequiredPermissionsNotification
 import pro.devapp.walkietalkiek.ui.components.TabsContent
 import pro.devapp.walkietalkiek.ui.components.WelcomeTutorialOverlay
+import kotlinx.coroutines.delay
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @OptIn(ExperimentalPermissionsApi::class)
@@ -77,6 +82,15 @@ internal fun RootContent() {
     val appBlur = if (tutorialVisible) 12.dp else 0.dp
 
     val context = LocalContext.current
+    val callVolumePercent = rememberCallVolumePercent(context)
+    val isLowCallVolume = callVolumePercent in 0 until CALL_VOLUME_MIN_PERCENT
+    var lowVolumeWarningDismissed by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(isLowCallVolume) {
+        if (!isLowCallVolume) {
+            lowVolumeWarningDismissed = false
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.onAction(MainScreenAction.InitApp)
@@ -192,6 +206,11 @@ internal fun RootContent() {
                         }
                     }
                 )
+            } else if (isLowCallVolume && !lowVolumeWarningDismissed) {
+                LowCallVolumeOverlay(
+                    currentPercent = callVolumePercent,
+                    onOkClick = { lowVolumeWarningDismissed = true }
+                )
             }
         }
     }
@@ -260,4 +279,21 @@ private tailrec fun Context.findActivity(): Activity? {
         is ContextWrapper -> baseContext.findActivity()
         else -> null
     }
+}
+
+@Composable
+private fun rememberCallVolumePercent(context: Context): Int {
+    val appContext = context.applicationContext
+    val audioManager = remember {
+        appContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    }
+    val percent by produceState(initialValue = 100, audioManager) {
+        while (true) {
+            val max = audioManager.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL).coerceAtLeast(1)
+            val current = audioManager.getStreamVolume(AudioManager.STREAM_VOICE_CALL).coerceAtLeast(0)
+            value = ((current * 100f) / max).toInt().coerceIn(0, 100)
+            delay(600)
+        }
+    }
+    return percent
 }
