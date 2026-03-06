@@ -130,6 +130,7 @@ internal fun WelcomeTutorialOverlay(
         val screenHeight = maxHeight
         val cardWidth = (screenWidth * 0.9f).coerceAtMost(560.dp)
         val cardHeight = rememberCardHeight(screenHeight)
+        val tutorialGifSize = (screenWidth * 0.16f).coerceIn(46.dp, 86.dp)
         val primaryColor = MaterialTheme.colorScheme.primary
 
         Canvas(modifier = Modifier.fillMaxSize()) {
@@ -290,6 +291,16 @@ internal fun WelcomeTutorialOverlay(
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        AnimatedBrandGifIcon(
+                            size = tutorialGifSize
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Start,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -301,15 +312,21 @@ internal fun WelcomeTutorialOverlay(
                         )
                     }
 
-                    Text(
-                        text = stringResource(
-                            R.string.welcome_step_counter,
-                            currentStep + 1,
-                            steps.size
-                        ),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        Text(
+                            text = stringResource(
+                                R.string.welcome_step_counter,
+                                currentStep + 1,
+                                steps.size
+                            ),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
 
                     Box(
                         modifier = Modifier
@@ -324,6 +341,11 @@ internal fun WelcomeTutorialOverlay(
                             val step = steps[index]
                             val stepTitle = stringResource(step.titleRes)
                             val stepBody = stringResource(step.bodyRes)
+                            val bodyHighlightPhrase = if (index == steps.lastIndex) {
+                                stringResource(R.string.welcome_step_3_highlight_phrase)
+                            } else {
+                                null
+                            }
                             val titleCharDelayMs = 30
                             val bodyStartDelayMs = (stepTitle.length * titleCharDelayMs) + 260
                             Column(
@@ -377,7 +399,9 @@ internal fun WelcomeTutorialOverlay(
                                     color = Color.White.copy(alpha = 0.9f),
                                     textAlign = TextAlign.Center,
                                     startDelayMs = bodyStartDelayMs,
-                                    charDelayMs = 24
+                                    charDelayMs = 24,
+                                    highlightPhrase = bodyHighlightPhrase,
+                                    highlightColor = MaterialTheme.colorScheme.primary
                                 )
                                 Spacer(modifier = Modifier.size(4.dp))
                             }
@@ -464,7 +488,9 @@ private fun TypewriterText(
     textAlign: TextAlign = TextAlign.Start,
     fontWeight: FontWeight? = null,
     startDelayMs: Int = 0,
-    charDelayMs: Int = 26
+    charDelayMs: Int = 26,
+    highlightPhrase: String? = null,
+    highlightColor: Color = color
 ) {
     var visibleChars by remember(text, startDelayMs, charDelayMs) { mutableIntStateOf(0) }
     val cursorAlpha by rememberInfiniteTransition(label = "typewriter-cursor").animateFloat(
@@ -488,7 +514,22 @@ private fun TypewriterText(
 
     Text(
         text = buildAnnotatedString {
-            append(text.take(visibleChars))
+            val visibleText = text.take(visibleChars)
+            append(visibleText)
+
+            val phrase = highlightPhrase?.trim().orEmpty()
+            if (phrase.isNotEmpty()) {
+                val highlightStart = text.indexOf(phrase)
+                if (highlightStart >= 0 && visibleChars > highlightStart) {
+                    val highlightEnd = (highlightStart + phrase.length).coerceAtMost(visibleChars)
+                    addStyle(
+                        style = SpanStyle(color = highlightColor),
+                        start = highlightStart,
+                        end = highlightEnd
+                    )
+                }
+            }
+
             append(" ")
             pushStyle(SpanStyle(color = color.copy(alpha = cursorAlpha)))
             append("|")

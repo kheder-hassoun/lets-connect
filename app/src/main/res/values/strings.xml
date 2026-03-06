@@ -39,6 +39,7 @@
     <string name="welcome_step_2_body">Put all devices on the same network: use Wi-Fi, or create a hotspot on one phone and connect the others.</string>
     <string name="welcome_step_3_title">Start talking</string>
     <string name="welcome_step_3_body">When peers available is more than 1, press and hold the PTT button to speak.</string>
+    <string name="welcome_step_3_highlight_phrase">press and hold</string>
     <string name="welcome_previous">Previous</string>
     <string name="welcome_next">Next</string>
     <string name="welcome_done">Start</string>
