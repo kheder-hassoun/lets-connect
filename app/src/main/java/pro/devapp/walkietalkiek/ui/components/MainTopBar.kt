@@ -25,7 +25,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -73,40 +72,27 @@ fun MainTopBar(
         ?.top
         ?: 0
     val safeTopInset = with(density) { safeTopInsetPx.toDp() }
-    val topGradient = Brush.linearGradient(
+    val topBarGradient = Brush.verticalGradient(
         colors = listOf(
             accent.copy(alpha = 0.64f),
             MaterialTheme.colorScheme.tertiary.copy(alpha = 0.52f),
             MaterialTheme.colorScheme.secondary.copy(alpha = 0.46f)
-        ),
-        start = Offset(0f, 0f),
-        end = Offset(1200f, -420f)
-    )
-    val layerGradient = Brush.linearGradient(
-        colors = listOf(
-            accent.copy(alpha = 0.38f),
-            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.30f),
-            MaterialTheme.colorScheme.secondary.copy(alpha = 0.26f)
-        ),
-        start = Offset(0f, 0f),
-        end = Offset(1000f, -260f)
+        )
     )
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(layerGradient)
+            .background(topBarGradient)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(safeTopInset)
-                .background(layerGradient)
         )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(topGradient)
                 .padding(
                     start = (14 * scale).dp,
                     top = (8 * scale).dp,
