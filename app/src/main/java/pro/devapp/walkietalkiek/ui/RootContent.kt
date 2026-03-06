@@ -18,12 +18,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.adaptive.currentWindowSize
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldLayout
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -80,16 +74,7 @@ internal fun RootContent() {
         mutableStateOf(settings.value.showWelcomeTutorial)
     }
     val tutorialVisible = showWelcomeTutorial && settings.value.showWelcomeTutorial
-    val blurPulse by rememberInfiniteTransition(label = "tutorial-blur").animateFloat(
-        initialValue = 10f,
-        targetValue = 14f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "tutorial-blur-pulse"
-    )
-    val appBlur = if (tutorialVisible) blurPulse.dp else 0.dp
+    val appBlur = if (tutorialVisible) 12.dp else 0.dp
 
     val context = LocalContext.current
 

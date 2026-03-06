@@ -31,7 +31,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -54,8 +53,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -108,20 +109,11 @@ internal fun WelcomeTutorialOverlay(
         ),
         label = "welcome-border-shift"
     )
-    val scrimAlpha by transition.animateFloat(
-        initialValue = 0.42f,
-        targetValue = 0.58f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1500, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "welcome-scrim-alpha"
-    )
     val wavePhase by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 3400, easing = FastOutSlowInEasing),
+            animation = tween(durationMillis = 4200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "welcome-wave-phase"
@@ -141,48 +133,38 @@ internal fun WelcomeTutorialOverlay(
             drawRect(
                 brush = Brush.linearGradient(
                     colors = listOf(
-                        Color.Black.copy(alpha = scrimAlpha),
-                        Color(0xFF0A1424).copy(alpha = (scrimAlpha + 0.08f).coerceAtMost(0.76f))
+                        Color(0xFF060B16).copy(alpha = 0.78f),
+                        Color(0xFF0C1A30).copy(alpha = 0.74f),
+                        Color(0xFF101D34).copy(alpha = 0.70f)
                     ),
                     start = Offset(0f, 0f),
                     end = Offset(size.width, size.height)
                 )
             )
 
-            val maxRadius = size.maxDimension * 1.15f
-            val minRadius = size.maxDimension * 0.12f
-            for (i in 0..2) {
-                val shift = (wavePhase + (i * 0.33f)) % 1f
+            val maxRadius = size.maxDimension * 1.42f
+            val minRadius = size.maxDimension * 0.18f
+            val waveCenter = Offset(-size.width * 0.08f, -size.height * 0.08f)
+            for (i in 0..5) {
+                val shift = (wavePhase + (i * 0.17f)) % 1f
                 val radius = minRadius + (maxRadius - minRadius) * shift
-                val waveAlpha = (1f - shift) * 0.14f
+                val waveAlpha = (1f - shift) * 0.26f
+                val waveBrush = Brush.linearGradient(
+                    colors = listOf(
+                        primaryColor.copy(alpha = waveAlpha),
+                        Color(0xFF60A5FA).copy(alpha = waveAlpha * 0.82f),
+                        Color(0xFF818CF8).copy(alpha = waveAlpha * 0.64f),
+                        Color.Transparent
+                    ),
+                    start = Offset(0f, 0f),
+                    end = Offset(size.width, size.height)
+                )
 
                 drawCircle(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            primaryColor.copy(alpha = waveAlpha),
-                            Color(0xFF64B5F6).copy(alpha = waveAlpha * 0.84f),
-                            Color.Transparent
-                        ),
-                        start = Offset(0f, 0f),
-                        end = Offset(radius, radius)
-                    ),
+                    brush = waveBrush,
                     radius = radius,
-                    center = Offset(0f, 0f),
-                    style = Stroke(width = 2.dp.toPx())
-                )
-                drawCircle(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            Color(0xFF64B5F6).copy(alpha = waveAlpha * 0.92f),
-                            primaryColor.copy(alpha = waveAlpha * 0.82f),
-                            Color.Transparent
-                        ),
-                        start = Offset(size.width, size.height),
-                        end = Offset(size.width - radius, size.height - radius)
-                    ),
-                    radius = radius,
-                    center = Offset(size.width, size.height),
-                    style = Stroke(width = 2.dp.toPx())
+                    center = waveCenter,
+                    style = Stroke(width = 6.dp.toPx())
                 )
             }
         }
@@ -264,7 +246,7 @@ internal fun WelcomeTutorialOverlay(
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = Arrangement.Start,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
@@ -273,25 +255,6 @@ internal fun WelcomeTutorialOverlay(
                             fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.primary
                         )
-                        IconButton(
-                            onClick = { onFinish(false) },
-                            modifier = Modifier
-                                .background(
-                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
-                                    shape = CircleShape
-                                )
-                                .border(
-                                    width = 1.dp,
-                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.42f),
-                                    shape = CircleShape
-                                )
-                        ) {
-                            Text(
-                                text = "X",
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
                     }
 
                     Text(
@@ -315,6 +278,10 @@ internal fun WelcomeTutorialOverlay(
                             label = "welcome-step-content"
                         ) { index ->
                             val step = steps[index]
+                            val stepTitle = stringResource(step.titleRes)
+                            val stepBody = stringResource(step.bodyRes)
+                            val titleCharDelayMs = 30
+                            val bodyStartDelayMs = (stepTitle.length * titleCharDelayMs) + 260
                             Column(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -353,17 +320,20 @@ internal fun WelcomeTutorialOverlay(
                                 }
 
                                 TypewriterText(
-                                    text = stringResource(step.titleRes),
+                                    text = stepTitle,
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     textAlign = TextAlign.Center,
-                                    color = Color.White
+                                    color = Color.White,
+                                    charDelayMs = titleCharDelayMs
                                 )
                                 TypewriterText(
-                                    text = stringResource(step.bodyRes),
+                                    text = stepBody,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = Color.White.copy(alpha = 0.9f),
-                                    textAlign = TextAlign.Center
+                                    textAlign = TextAlign.Center,
+                                    startDelayMs = bodyStartDelayMs,
+                                    charDelayMs = 24
                                 )
                                 Spacer(modifier = Modifier.size(4.dp))
                             }
@@ -448,20 +418,38 @@ private fun TypewriterText(
     style: TextStyle,
     color: Color,
     textAlign: TextAlign = TextAlign.Start,
-    fontWeight: FontWeight? = null
+    fontWeight: FontWeight? = null,
+    startDelayMs: Int = 0,
+    charDelayMs: Int = 26
 ) {
-    var visibleChars by remember(text) { mutableIntStateOf(0) }
+    var visibleChars by remember(text, startDelayMs, charDelayMs) { mutableIntStateOf(0) }
+    val cursorAlpha by rememberInfiniteTransition(label = "typewriter-cursor").animateFloat(
+        initialValue = 0.2f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 620, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "typewriter-cursor-alpha"
+    )
 
-    LaunchedEffect(text) {
+    LaunchedEffect(text, startDelayMs, charDelayMs) {
         visibleChars = 0
+        if (startDelayMs > 0) delay(startDelayMs.toLong())
         for (i in 1..text.length) {
             visibleChars = i
-            delay(14)
+            delay(charDelayMs.toLong())
         }
     }
 
     Text(
-        text = text.take(visibleChars),
+        text = buildAnnotatedString {
+            append(text.take(visibleChars))
+            append(" ")
+            pushStyle(SpanStyle(color = color.copy(alpha = cursorAlpha)))
+            append("|")
+            pop()
+        },
         style = style,
         color = color,
         textAlign = textAlign,
