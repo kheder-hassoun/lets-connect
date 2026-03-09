@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,7 +22,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.window.Dialog
@@ -226,7 +226,7 @@ fun AboutContent() {
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(dims.dialogImageHeight)
+                            .aspectRatio(dims.dialogImageAspectRatio)
                             .align(Alignment.CenterHorizontally)
                             .clip(RoundedCornerShape(dims.dialogImageCorner))
                             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
@@ -369,14 +369,15 @@ private fun DeveloperProfileCard(
             Image(
                 painter = painterResource(id = R.drawable.dev_picture),
                 contentDescription = stringResource(R.string.about_developer_profile_name),
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Fit,
                 modifier = Modifier
-                    .size(dims.developerAvatarSize)
-                    .clip(CircleShape)
+                    .size(dims.developerImageSize)
+                    .clip(RoundedCornerShape(dims.developerImageCorner))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
                     .border(
                         width = 1.dp,
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
-                        shape = CircleShape
+                        shape = RoundedCornerShape(dims.developerImageCorner)
                     )
             )
             Column(
@@ -423,13 +424,14 @@ private data class AboutDims(
     val developerCardCorner: Dp = (16 * scale).dp,
     val developerCardPadding: Dp = (12 * scale).dp,
     val developerCardSpacing: Dp = (12 * scale).dp,
-    val developerAvatarSize: Dp = (72 * scale).dp,
+    val developerImageSize: Dp = (90 * scale).dp,
+    val developerImageCorner: Dp = (12 * scale).dp,
     val dialogCorner: Dp = (22 * scale).dp,
     val dialogElevation: Dp = (16 * scale).dp,
     val dialogPadding: Dp = (16 * scale).dp,
     val dialogSpacing: Dp = (12 * scale).dp,
     val dialogImageCorner: Dp = (18 * scale).dp,
-    val dialogImageHeight: Dp = (220 * scale).dp,
+    val dialogImageAspectRatio: Float = 0.78f,
     val dialogContactCorner: Dp = (12 * scale).dp,
     val dialogContactHorizontalPadding: Dp = (10 * scale).dp,
     val dialogContactVerticalPadding: Dp = (8 * scale).dp,
