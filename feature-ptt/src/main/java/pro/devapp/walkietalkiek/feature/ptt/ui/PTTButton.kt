@@ -85,9 +85,9 @@ fun PTTButton(
     val idleBase = if (isDark) Color(0xFF111827) else Color(0xFFF9FAFB)
     val idleGradient = Brush.verticalGradient(
         colors = if (isDark) {
-            listOf(Color(0xFF374151), Color(0xFF1F2937), Color(0xFF111827))
+            listOf(Color(0xFFB45309), Color(0xFF9A3412), Color(0xFF7C2D12))
         } else {
-            listOf(Color(0xFFF3F4F6), Color(0xFFE5E7EB), Color(0xFFD1D5DB))
+            listOf(Color(0xFFFFF4E6), Color(0xFFFFE8CC), Color(0xFFFED7AA))
         }
     )
     val disabledBase = if (isDark) Color(0xFF1F2937) else Color(0xFFE5E7EB)
