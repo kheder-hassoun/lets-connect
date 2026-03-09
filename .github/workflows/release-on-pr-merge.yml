@@ -3,7 +3,7 @@ name: Build And Release On PR Merge
 on:
   pull_request:
     types: [closed]
-    branches: [main]
+    branches: [master, main]
 
 permissions:
   contents: write
