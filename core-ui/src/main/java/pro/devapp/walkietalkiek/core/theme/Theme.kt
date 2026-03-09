@@ -1,6 +1,7 @@
 package pro.devapp.walkietalkiek.core.theme
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -59,6 +60,7 @@ private fun buildLightColorScheme(palette: AccentPalette) = lightColorScheme(
 fun DroidPTTTheme(
     darkTheme: Boolean = true,
     themeColor: ThemeColor = ThemeColor.PURPLE,
+    typography: Typography = Typography,
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
@@ -72,7 +74,7 @@ fun DroidPTTTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = typography,
         content = content
     )
 }
