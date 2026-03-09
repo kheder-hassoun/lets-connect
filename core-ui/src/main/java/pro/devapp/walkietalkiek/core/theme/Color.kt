@@ -15,9 +15,9 @@ val PurplePalette = AccentPalette(
 )
 
 val OrangePalette = AccentPalette(
-    primary = Color(0xFFFF8A00),
-    secondary = Color(0xFFFFB347),
-    tertiary = Color(0xFFCC6E00)
+    primary = Color(0xFFE36B1F),
+    secondary = Color(0xFFF1A25E),
+    tertiary = Color(0xFFB45309)
 )
 
 val RedPalette = AccentPalette(

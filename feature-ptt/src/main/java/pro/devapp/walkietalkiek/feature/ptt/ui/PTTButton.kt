@@ -83,6 +83,13 @@ fun PTTButton(
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
     val idleBase = if (isDark) Color(0xFF111827) else Color(0xFFF9FAFB)
+    val idleGradient = Brush.verticalGradient(
+        colors = if (isDark) {
+            listOf(Color(0xFF374151), Color(0xFF1F2937), Color(0xFF111827))
+        } else {
+            listOf(Color(0xFFF3F4F6), Color(0xFFE5E7EB), Color(0xFFD1D5DB))
+        }
+    )
     val disabledBase = if (isDark) Color(0xFF1F2937) else Color(0xFFE5E7EB)
     val holdingBase = if (isDark) Color(0xFF7C2D12) else Color(0xFFFFEDD5)
     val holdingGradient = if (isDark) {
@@ -105,6 +112,11 @@ fun PTTButton(
         isRecording -> holdingBase
         isOnline -> idleBase
         else -> disabledBase
+    }
+    val baseFill = if (!isDisabled && !isRemoteBusy && !isRecording && isOnline) {
+        idleGradient
+    } else {
+        Brush.verticalGradient(listOf(liquidBaseColor, liquidBaseColor))
     }
     val liquidGradient = Brush.verticalGradient(
         colors = holdingGradient
@@ -199,7 +211,7 @@ fun PTTButton(
                 )
             }
             clipPath(clipCircle) {
-                drawRect(color = liquidBaseColor)
+                drawRect(brush = baseFill)
                 if (isRecording || isRemoteBusy) {
                     drawPath(
                         path = liquidPath,

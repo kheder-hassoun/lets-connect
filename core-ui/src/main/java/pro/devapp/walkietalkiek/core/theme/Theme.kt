@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import pro.devapp.walkietalkiek.core.settings.ThemeColor
 
 private fun paletteFor(themeColor: ThemeColor): AccentPalette = when (themeColor) {
+    ThemeColor.ORANGE -> OrangePalette
     ThemeColor.PURPLE -> PurplePalette
     ThemeColor.BLUE -> BluePalette
 }
@@ -59,7 +60,7 @@ private fun buildLightColorScheme(palette: AccentPalette) = lightColorScheme(
 @Composable
 fun DroidPTTTheme(
     darkTheme: Boolean = true,
-    themeColor: ThemeColor = ThemeColor.PURPLE,
+    themeColor: ThemeColor = ThemeColor.ORANGE,
     typography: Typography = Typography,
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,

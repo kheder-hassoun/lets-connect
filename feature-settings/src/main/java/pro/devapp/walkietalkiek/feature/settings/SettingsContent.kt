@@ -562,6 +562,7 @@ private data class ThemeOptionUi(
 )
 
 private val themeOptions = listOf(
+    ThemeOptionUi(ThemeColor.ORANGE, Color(0xFFE36B1F), Color(0xFFF1A25E)),
     ThemeOptionUi(ThemeColor.PURPLE, Color(0xFFA970FF), Color(0xFFC49BFF)),
     ThemeOptionUi(ThemeColor.BLUE, Color(0xFF4DA3FF), Color(0xFF82C4FF))
 )
@@ -587,6 +588,7 @@ private fun languageDisplayName(language: AppLanguage): String {
 @Composable
 private fun themeDisplayName(themeColor: ThemeColor): String {
     return when (themeColor) {
+        ThemeColor.ORANGE -> stringResource(R.string.theme_orange)
         ThemeColor.PURPLE -> stringResource(R.string.theme_purple)
         ThemeColor.BLUE -> stringResource(R.string.theme_blue)
     }
