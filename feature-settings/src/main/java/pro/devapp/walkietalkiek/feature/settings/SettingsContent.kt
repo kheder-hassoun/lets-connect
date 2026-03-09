@@ -19,8 +19,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -70,8 +73,12 @@ fun SettingsContent() {
     val flags by featureFlagsRepository.flags.collectAsState()
     val clusterStatus by clusterMembershipRepository.status.collectAsState()
     val isLeader = clusterStatus.role == ClusterRole.LEADER
-    val isSystemTheme = settings.themeMode == ThemeMode.SYSTEM
-    val isLightMode = settings.themeMode == ThemeMode.LIGHT
+    val systemDarkTheme = isSystemInDarkTheme()
+    val isDarkMode = when (settings.themeMode) {
+        ThemeMode.SYSTEM -> systemDarkTheme
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
     var isThemeMenuExpanded by remember { mutableStateOf(false) }
     var isLanguageMenuExpanded by remember { mutableStateOf(false) }
 
@@ -190,32 +197,41 @@ fun SettingsContent() {
                     text = stringResource(R.string.settings_theme_mode_title),
                     style = MaterialTheme.typography.titleMedium
                 )
-                FlagToggleRow(
-                    title = stringResource(R.string.settings_use_system_theme),
-                    checked = isSystemTheme,
-                    onCheckedChange = { checked ->
-                        settingsRepository.updateThemeMode(
-                            if (checked) ThemeMode.SYSTEM else ThemeMode.DARK
-                        )
-                    },
-                    enabled = true
-                )
-                if (!isSystemTheme) {
-                    FlagToggleRow(
-                        title = stringResource(R.string.settings_light_mode),
-                        checked = isLightMode,
-                        onCheckedChange = { checked ->
-                            settingsRepository.updateThemeMode(
-                                if (checked) ThemeMode.LIGHT else ThemeMode.DARK
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    FilterChip(
+                        selected = !isDarkMode,
+                        onClick = { settingsRepository.updateThemeMode(ThemeMode.LIGHT) },
+                        label = { Text(stringResource(R.string.theme_mode_light)) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.LightMode,
+                                contentDescription = null
                             )
-                        },
-                        enabled = true
+                        }
+                    )
+                    FilterChip(
+                        selected = isDarkMode,
+                        onClick = { settingsRepository.updateThemeMode(ThemeMode.DARK) },
+                        label = { Text(stringResource(R.string.theme_mode_dark)) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.DarkMode,
+                                contentDescription = null
+                            )
+                        }
                     )
                 }
                 Text(
                     text = stringResource(
                         R.string.settings_theme_mode_current,
-                        themeModeDisplayName(settings.themeMode)
+                        if (isDarkMode) {
+                            stringResource(R.string.theme_mode_dark)
+                        } else {
+                            stringResource(R.string.theme_mode_light)
+                        }
                     ),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
@@ -591,14 +607,5 @@ private fun themeDisplayName(themeColor: ThemeColor): String {
         ThemeColor.ORANGE -> stringResource(R.string.theme_orange)
         ThemeColor.PURPLE -> stringResource(R.string.theme_purple)
         ThemeColor.BLUE -> stringResource(R.string.theme_blue)
-    }
-}
-
-@Composable
-private fun themeModeDisplayName(themeMode: ThemeMode): String {
-    return when (themeMode) {
-        ThemeMode.SYSTEM -> stringResource(R.string.theme_mode_system)
-        ThemeMode.LIGHT -> stringResource(R.string.theme_mode_light)
-        ThemeMode.DARK -> stringResource(R.string.theme_mode_dark)
     }
 }

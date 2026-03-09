@@ -7,6 +7,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.LightMode
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,6 +42,8 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import org.koin.compose.koinInject
 import pro.devapp.walkietalkiek.R
+import pro.devapp.walkietalkiek.core.settings.AppSettingsRepository
+import pro.devapp.walkietalkiek.core.settings.ThemeMode
 import pro.devapp.walkietalkiek.model.MainScreenState
 import pro.devapp.walkietalkiek.serivce.network.data.ClusterMembershipRepository
 import pro.devapp.walkietalkiek.serivce.network.data.ClusterRole
@@ -49,8 +56,16 @@ fun MainTopBar(
 ) {
     val clusterMembershipRepository = koinInject<ClusterMembershipRepository>()
     val talkingStateRepository = koinInject<TalkingStateRepository>()
+    val settingsRepository = koinInject<AppSettingsRepository>()
     val clusterStatus by clusterMembershipRepository.status.collectAsState()
     val isSomeoneTalking by talkingStateRepository.isAnyoneTalking.collectAsState()
+    val settings by settingsRepository.settings.collectAsState()
+    val systemDarkTheme = isSystemInDarkTheme()
+    val isDarkMode = when (settings.themeMode) {
+        ThemeMode.SYSTEM -> systemDarkTheme
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
     val isLeader = clusterStatus.role == ClusterRole.LEADER
     val roleLabel = if (isLeader) {
         stringResource(R.string.role_admin)
@@ -145,13 +160,28 @@ fun MainTopBar(
                             )
                             .padding(horizontal = (10 * scale).dp, vertical = (3 * scale).dp)
                     ) {
-                        Text(
-                            text = roleLabel,
-                            fontSize = (11 * scale).sp,
-                            color = metaColor,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy((4 * scale).dp)
+                        ) {
+                            Icon(
+                                imageVector = if (isDarkMode) {
+                                    Icons.Outlined.DarkMode
+                                } else {
+                                    Icons.Outlined.LightMode
+                                },
+                                contentDescription = null,
+                                tint = metaColor,
+                                modifier = Modifier.height((12 * scale).dp)
+                            )
+                            Text(
+                                text = roleLabel,
+                                fontSize = (11 * scale).sp,
+                                color = metaColor,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
             }
