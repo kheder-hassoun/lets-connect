@@ -26,15 +26,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import org.koin.compose.koinInject
 import pro.devapp.walkietalkiek.R
 import pro.devapp.walkietalkiek.model.MainScreenState
@@ -64,13 +60,6 @@ fun MainTopBar(
     val minScreen = cfg.screenWidthDp.dp.coerceAtMost(cfg.screenHeightDp.dp)
     val scale = (minScreen / 400.dp).coerceIn(0.84f, 1.18f)
     val topBarGifSize = (minScreen * 0.12f).coerceIn(42.dp, 64.dp)
-    val view = LocalView.current
-    val density = LocalDensity.current
-    val safeTopInsetPx = ViewCompat.getRootWindowInsets(view)
-        ?.getInsets(WindowInsetsCompat.Type.statusBars())
-        ?.top
-        ?: 0
-    val safeTopInset = with(density) { safeTopInsetPx.toDp() }
 
     val topBarGradient = Brush.verticalGradient(
         colors = listOf(
@@ -87,23 +76,12 @@ fun MainTopBar(
             .fillMaxWidth()
             .background(topBarGradient)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(safeTopInset)
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height((4 * scale).dp)
-        )
-
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
                     start = (14 * scale).dp,
-                    top = (8 * scale).dp,
+                    top = (4 * scale).dp,
                     end = (14 * scale).dp,
                     bottom = (10 * scale).dp
                 ),

@@ -24,11 +24,11 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -80,16 +80,15 @@ fun PTTButton(
         animationSpec = tween(durationMillis = 120, easing = LinearEasing),
         label = "liquid-level"
     )
-    val isDark = LocalConfiguration.current.uiMode and
-        android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
-        android.content.res.Configuration.UI_MODE_NIGHT_YES
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
-    val idleBase = if (isDark) Color(0xFF4B5563) else Color(0xFFD1D5DB)
-    val disabledBase = if (isDark) Color(0xFF374151) else Color(0xFF9CA3AF)
+    val idleBase = if (isDark) Color(0xFF111827) else Color(0xFFF9FAFB)
+    val disabledBase = if (isDark) Color(0xFF1F2937) else Color(0xFFE5E7EB)
+    val holdingBase = if (isDark) Color(0xFF7C2D12) else Color(0xFFFFEDD5)
     val holdingGradient = if (isDark) {
-        listOf(Color(0xFF93C5FD), Color(0xFF60A5FA), Color(0xFF3B82F6))
+        listOf(Color(0xFFF59E0B), Color(0xFFEA580C), Color(0xFFC2410C))
     } else {
-        listOf(Color(0xFF60A5FA), Color(0xFF2563EB), Color(0xFF1D4ED8))
+        listOf(Color(0xFFFBBF24), Color(0xFFF97316), Color(0xFFEA580C))
     }
     val remoteGradient = if (isDark) {
         listOf(Color(0xFFFCD34D), Color(0xFFFBBF24), Color(0xFFF59E0B))
@@ -103,12 +102,21 @@ fun PTTButton(
     val liquidBaseColor = when {
         isDisabled -> disabledBase
         isRemoteBusy -> if (isDark) Color(0xFF6B4A1E) else Color(0xFFFDE68A)
-        isRecording -> if (isDark) Color(0xFF1E3A8A) else Color(0xFFDBEAFE)
+        isRecording -> holdingBase
         isOnline -> idleBase
         else -> disabledBase
     }
     val liquidGradient = Brush.verticalGradient(
         colors = holdingGradient
+    )
+    val ringWarmGradient = listOf(
+        Color(0xFFFFB74D),
+        Color(0xFFFF9800),
+        Color(0xFFFF7043),
+        Color(0xFFEF5350),
+        Color(0xFFE53935),
+        Color(0xFFFF8A65),
+        Color(0xFFFFB74D)
     )
     val neonSweep = Brush.sweepGradient(
         colors = when {
@@ -123,17 +131,7 @@ fun PTTButton(
                 remoteGradient[2],
                 remoteGradient[0]
             )
-            isRecording -> listOf(
-                holdingGradient[0],
-                holdingGradient[1],
-                holdingGradient[2],
-                holdingGradient[0]
-            )
-            else -> listOf(
-                idleBase.copy(alpha = 0.8f),
-                idleBase,
-                idleBase.copy(alpha = 0.8f)
-            )
+            else -> ringWarmGradient
         }
     )
     val remoteWaveGradient = Brush.verticalGradient(

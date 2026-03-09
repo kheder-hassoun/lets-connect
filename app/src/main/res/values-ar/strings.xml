@@ -26,7 +26,11 @@
     <string name="about_developer_card_title">المطوّر</string>
     <string name="about_developer_profile_tap_hint">اضغط على الصورة لفتح الملف الشخصي</string>
     <string name="about_developer_popup_title">الملف الشخصي للمطوّر</string>
-    <string name="about_developer_popup_body">تم تصميم وتطوير هذا التطبيق بواسطة Kheder Hassoun تحت رخصة MIT.\n\nللتواصل: +963 935750906</string>
+    <string name="about_developer_popup_body">تم تصميم وتطوير هذا التطبيق بواسطة Kheder Hassoun تحت رخصة MIT.</string>
+    <string name="about_developer_contact_label">للتواصل</string>
+    <string name="about_developer_contact_number">+963 935750906</string>
+    <string name="about_developer_copy_button">نسخ</string>
+    <string name="about_developer_contact_copied">تم نسخ رقم التواصل</string>
     <string name="about_developer_popup_close">إغلاق</string>
     <string name="status_title">الحالة</string>
     <string name="status_role_title">الدور</string>

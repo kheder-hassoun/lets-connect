@@ -26,7 +26,11 @@
     <string name="about_developer_card_title">Developer</string>
     <string name="about_developer_profile_tap_hint">Tap the photo to open profile</string>
     <string name="about_developer_popup_title">Developer Profile</string>
-    <string name="about_developer_popup_body">This app was designed and developed by Kheder Hassoun under MIT license.\n\nContact: +963 935750906</string>
+    <string name="about_developer_popup_body">This app was designed and developed by Kheder Hassoun under MIT license.</string>
+    <string name="about_developer_contact_label">Contact</string>
+    <string name="about_developer_contact_number">+963 935750906</string>
+    <string name="about_developer_copy_button">Copy</string>
+    <string name="about_developer_contact_copied">Contact number copied</string>
     <string name="about_developer_popup_close">Close</string>
     <string name="status_title">Status</string>
     <string name="status_role_title">Role</string>
