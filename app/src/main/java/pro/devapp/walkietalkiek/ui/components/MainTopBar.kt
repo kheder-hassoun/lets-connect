@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -71,7 +70,7 @@ fun MainTopBar(
         ?.getInsets(WindowInsetsCompat.Type.statusBars())
         ?.top
         ?: 0
-    val safeTopInset = with(density) { safeTopInsetPx.toDp() }
+    val statusTopInset = with(density) { safeTopInsetPx.toDp() }
 
     val topBarGradient = Brush.verticalGradient(
         colors = listOf(
@@ -88,23 +87,12 @@ fun MainTopBar(
             .fillMaxWidth()
             .background(topBarGradient)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(safeTopInset)
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height((4 * scale).dp)
-        )
-
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
                     start = (14 * scale).dp,
-                    top = (8 * scale).dp,
+                    top = statusTopInset + (4 * scale).dp,
                     end = (14 * scale).dp,
                     bottom = (10 * scale).dp
                 ),

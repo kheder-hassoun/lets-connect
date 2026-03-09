@@ -81,7 +81,7 @@ class AppSettingsRepository(
     private fun loadSettings(): AppSettings {
         val talkDuration = prefs.getInt(KEY_TALK_DURATION, 10).coerceIn(5, 120)
         val toneEnabled = prefs.getBoolean(KEY_TONE_ENABLED, true)
-        val themeName = prefs.getString(KEY_THEME_COLOR, ThemeColor.PURPLE.name)
+        val themeName = prefs.getString(KEY_THEME_COLOR, ThemeColor.ORANGE.name)
         val themeModeName = prefs.getString(KEY_THEME_MODE, ThemeMode.SYSTEM.name)
         val showWelcomeTutorial = prefs.getBoolean(KEY_SHOW_WELCOME_TUTORIAL, true)
         val languageCode = if (prefs.contains(KEY_APP_LANGUAGE)) {
@@ -92,7 +92,7 @@ class AppSettingsRepository(
         return AppSettings(
             talkDurationSeconds = talkDuration,
             toneEnabled = toneEnabled,
-            themeColor = ThemeColor.entries.firstOrNull { it.name == themeName } ?: ThemeColor.PURPLE,
+            themeColor = ThemeColor.entries.firstOrNull { it.name == themeName } ?: ThemeColor.ORANGE,
             themeMode = ThemeMode.entries.firstOrNull { it.name == themeModeName } ?: ThemeMode.SYSTEM,
             appLanguage = AppLanguage.entries.firstOrNull { it.code == languageCode } ?: AppLanguage.ENGLISH,
             showWelcomeTutorial = showWelcomeTutorial
@@ -140,13 +140,14 @@ class AppSettingsRepository(
 data class AppSettings(
     val talkDurationSeconds: Int = 10,
     val toneEnabled: Boolean = true,
-    val themeColor: ThemeColor = ThemeColor.PURPLE,
+    val themeColor: ThemeColor = ThemeColor.ORANGE,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val appLanguage: AppLanguage = AppLanguage.ENGLISH,
     val showWelcomeTutorial: Boolean = true
 )
 
 enum class ThemeColor(val title: String) {
+    ORANGE("Orange"),
     PURPLE("Purple"),
     BLUE("Blue")
 }

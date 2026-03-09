@@ -35,6 +35,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -117,7 +119,11 @@ internal fun RootContent() {
         typography = rememberResponsiveTypography()
     ) {
         CompositionLocalProvider(LocalDensity provides rememberBoundedDensity()) {
-            SyncSystemBarsAppearance(isDarkTheme = isDarkTheme)
+            SyncSystemBarsAppearance(
+                isDarkTheme = isDarkTheme,
+                statusBarColor = MaterialTheme.colorScheme.surfaceVariant,
+                navigationBarColor = MaterialTheme.colorScheme.background
+            )
             Box(modifier = Modifier.fillMaxSize()) {
                 Scaffold(
                     modifier = Modifier
@@ -318,10 +324,20 @@ private fun rememberCallVolumePercent(context: Context): Int {
 }
 
 @Composable
-private fun SyncSystemBarsAppearance(isDarkTheme: Boolean) {
+private fun SyncSystemBarsAppearance(
+    isDarkTheme: Boolean,
+    statusBarColor: Color = Color.Transparent,
+    navigationBarColor: Color = Color.Transparent
+) {
     val view = LocalView.current
     val activity = view.context.findActivity() ?: return
     SideEffect {
+        activity.window.statusBarColor = statusBarColor.toArgb()
+        activity.window.navigationBarColor = navigationBarColor.toArgb()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            activity.window.isStatusBarContrastEnforced = false
+            activity.window.isNavigationBarContrastEnforced = false
+        }
         WindowCompat.getInsetsController(activity.window, activity.window.decorView).apply {
             isAppearanceLightStatusBars = !isDarkTheme
             isAppearanceLightNavigationBars = !isDarkTheme

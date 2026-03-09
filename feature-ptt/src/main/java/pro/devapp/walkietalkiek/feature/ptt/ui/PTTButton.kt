@@ -1,5 +1,6 @@
 package pro.devapp.walkietalkiek.feature.ptt.ui
 
+import android.widget.ImageView
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateFloat
@@ -23,6 +24,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -31,7 +33,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import pro.devapp.walkietalkiek.feature.ptt.R
+import pl.droidsonroids.gif.GifImageView
 
 @Composable
 fun PTTButton(
@@ -76,52 +80,86 @@ fun PTTButton(
         animationSpec = tween(durationMillis = 120, easing = LinearEasing),
         label = "liquid-level"
     )
-    val accent = MaterialTheme.colorScheme.primary
-    val accentSoft = MaterialTheme.colorScheme.secondary
-    val accentDeep = MaterialTheme.colorScheme.tertiary
-    val idleBase = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.86f)
-    val disabledBase = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.52f)
-    val recordingBase = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.74f)
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+
+    val idleBase = if (isDark) Color(0xFF111827) else Color(0xFFF9FAFB)
+    val idleGradient = Brush.verticalGradient(
+        colors = if (isDark) {
+            listOf(Color(0xFF374151), Color(0xFF1F2937), Color(0xFF111827))
+        } else {
+            listOf(Color(0xFFF3F4F6), Color(0xFFE5E7EB), Color(0xFFD1D5DB))
+        }
+    )
+    val disabledBase = if (isDark) Color(0xFF1F2937) else Color(0xFFE5E7EB)
+    val holdingBase = if (isDark) Color(0xFF7C2D12) else Color(0xFFFFEDD5)
+    val holdingGradient = if (isDark) {
+        listOf(Color(0xFFF59E0B), Color(0xFFEA580C), Color(0xFFC2410C))
+    } else {
+        listOf(Color(0xFFFBBF24), Color(0xFFF97316), Color(0xFFEA580C))
+    }
+    val remoteGradient = if (isDark) {
+        listOf(Color(0xFFFCD34D), Color(0xFFFBBF24), Color(0xFFF59E0B))
+    } else {
+        listOf(Color(0xFFFBBF24), Color(0xFFF59E0B), Color(0xFFD97706))
+    }
+
+    val isDisabled = !isOnline || !isEnabled
+    val isRemoteBusy = isRemoteSpeaking || isLockedByRemote
     val innerSurface = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)
     val liquidBaseColor = when {
-        isRemoteSpeaking -> Color(0xFF2B2B2B)
-        isRecording -> recordingBase
+        isDisabled -> disabledBase
+        isRemoteBusy -> if (isDark) Color(0xFF6B4A1E) else Color(0xFFFDE68A)
+        isRecording -> holdingBase
         isOnline -> idleBase
         else -> disabledBase
     }
+    val baseFill = if (!isDisabled && !isRemoteBusy && !isRecording && isOnline) {
+        idleGradient
+    } else {
+        Brush.verticalGradient(listOf(liquidBaseColor, liquidBaseColor))
+    }
     val liquidGradient = Brush.verticalGradient(
-        colors = listOf(
-            accentSoft,
-            accent,
-            accentDeep
-        )
+        colors = holdingGradient
+    )
+    val ringWarmGradient = listOf(
+        Color(0xFFFFB74D),
+        Color(0xFFFF9800),
+        Color(0xFFFF7043),
+        Color(0xFFEF5350),
+        Color(0xFFE53935),
+        Color(0xFFFF8A65),
+        Color(0xFFFFB74D)
     )
     val neonSweep = Brush.sweepGradient(
-        colors = if (isRemoteSpeaking) {
-            listOf(
-                Color(0xFF5A5A5A),
-                Color(0xFF6C6C6C),
-                Color(0xFF4A4A4A),
-                Color(0xFF5A5A5A)
+        colors = when {
+            isDisabled -> listOf(
+                disabledBase.copy(alpha = 0.65f),
+                disabledBase.copy(alpha = 0.9f),
+                disabledBase.copy(alpha = 0.65f)
             )
-        } else {
-            listOf(
-                Color(0xFF90CAF9),
-                Color(0xFF64B5F6),
-                Color(0xFF7986CB),
-                Color(0xFF9575CD),
-                Color(0xFF7E57C2),
-                Color(0xFF5C6BC0),
-                Color(0xFF90CAF9)
+            isRemoteBusy -> listOf(
+                remoteGradient[0],
+                remoteGradient[1],
+                remoteGradient[2],
+                remoteGradient[0]
             )
+            else -> ringWarmGradient
         }
     )
     val remoteWaveGradient = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFF7A7A7A),
-            Color(0xFF5A5A5A),
-            Color(0xFF3A3A3A)
-        )
+        colors = if (isDark) {
+            listOf(
+                Color(0xFFFCD34D),
+                Color(0xFFFBBF24),
+                Color(0xFFF59E0B)
+            )
+        } else {
+            listOf(
+                Color(0xFFFDE68A),
+                Color(0xFFFBBF24),
+                Color(0xFFD97706)
+            )
+        }
     )
     val touchSize = buttonSize * 0.74f
     val iconPadding = (buttonSize * 0.12f).coerceAtLeast(18.dp)
@@ -143,7 +181,7 @@ fun PTTButton(
             val remoteWaveLevel = 0.48f + (kotlin.math.sin(waveShift * 0.6f) * 0.14f)
             val levelFraction = when {
                 isRecording -> fraction
-                isRemoteSpeaking -> remoteWaveLevel.coerceIn(0.22f, 0.78f)
+                isRemoteBusy -> remoteWaveLevel.coerceIn(0.22f, 0.78f)
                 else -> 1f
             }
             val liquidLevel = center.y + innerRadius - (innerRadius * 2f * levelFraction)
@@ -173,12 +211,12 @@ fun PTTButton(
                 )
             }
             clipPath(clipCircle) {
-                drawRect(color = liquidBaseColor)
-                if (isRecording || isRemoteSpeaking) {
+                drawRect(brush = baseFill)
+                if (isRecording || isRemoteBusy) {
                     drawPath(
                         path = liquidPath,
-                        brush = if (isRemoteSpeaking) remoteWaveGradient else liquidGradient,
-                        alpha = if (isRemoteSpeaking) 0.82f else 0.95f
+                        brush = if (isRemoteBusy) remoteWaveGradient else liquidGradient,
+                        alpha = if (isRemoteBusy) 0.86f else 0.95f
                     )
                 }
             }
@@ -224,21 +262,31 @@ fun PTTButton(
                 },
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                painter = painterResource(
-                    id = if (isRemoteSpeaking) R.drawable.speaker else R.drawable.ptt_call
-                ),
-                contentDescription = stringResource(R.string.ptt_button_content_description),
-                modifier = Modifier
-                    .padding(iconPadding)
-                    .fillMaxSize(),
-                tint = when {
-                    isRecording -> MaterialTheme.colorScheme.onPrimary
-                    isRemoteSpeaking -> Color(0xFFBDBDBD)
-                    !isEnabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
-                    else -> MaterialTheme.colorScheme.onSurface
-                }
-            )
+            if (isRemoteSpeaking) {
+                Icon(
+                    painter = painterResource(id = R.drawable.speaker),
+                    contentDescription = stringResource(R.string.ptt_button_content_description),
+                    modifier = Modifier
+                        .padding(iconPadding)
+                        .fillMaxSize(),
+                    tint = Color(0xFFBDBDBD)
+                )
+            } else {
+                AndroidView(
+                    factory = { ctx ->
+                        GifImageView(ctx).apply {
+                            setImageResource(R.drawable.ptt_icone)
+                            scaleType = ImageView.ScaleType.FIT_CENTER
+                        }
+                    },
+                    update = { gifView ->
+                        gifView.alpha = if (isEnabled) 1f else 0.45f
+                    },
+                    modifier = Modifier
+                        .padding(iconPadding)
+                        .fillMaxSize()
+                )
+            }
         }
     }
 }

@@ -350,8 +350,7 @@ internal fun WelcomeTutorialOverlay(
                             } else {
                                 null
                             }
-                            val titleCharDelayMs = 30
-                            val bodyStartDelayMs = (stepTitle.length * titleCharDelayMs) + 260
+                            val bodyStartDelayMs = 120
                             Column(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -389,13 +388,12 @@ internal fun WelcomeTutorialOverlay(
                                     )
                                 }
 
-                                TypewriterText(
+                                Text(
                                     text = stepTitle,
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     textAlign = TextAlign.Center,
-                                    color = onSurfaceColor,
-                                    charDelayMs = titleCharDelayMs
+                                    color = onSurfaceColor
                                 )
                                 TypewriterText(
                                     text = stepBody,
