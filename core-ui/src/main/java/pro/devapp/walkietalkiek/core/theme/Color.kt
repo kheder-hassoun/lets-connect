@@ -47,6 +47,13 @@ val YellowPalette = AccentPalette(
 val Black900 = Color(0xFF050505)
 val Black800 = Color(0xFF121212)
 val Black700 = Color(0xFF1A1A1A)
+val Black500 = Color(0xFF2E2E2E)
 
 val TextLight = Color(0xFFF5F5F5)
 val TextMuted = Color(0xFFB8B8B8)
+val TextDark = Color(0xFF121212)
+val TextDarkMuted = Color(0xFF4A4A4A)
+
+val LightBackground = Color(0xFFF6F8FB)
+val LightSurface = Color(0xFFFFFFFF)
+val LightSurfaceVariant = Color(0xFFE8EDF5)

@@ -1,0 +1,66 @@
+2026-03-07 02:02:29.869 I/SocketClient$handleConnection$readingFuture: message: __CTRL2__:HEARTBEAT|a699d5b1f727c42d|0|462|1772838149809|1772837478013|671797 from 10.214.96.47
+2026-03-07 02:02:29.871 I/SocketClient$handleConnection$readingFuture: message: ping from 10.214.96.47
+2026-03-07 02:02:30.282 I/ChanelControllerImpl: [DIAG_CTRL] snapshot self=6b78472a8445453b role=PEER leader=a699d5b1f727c42d members=2 connected=connected=1 total=1 [10.214.96.47|c=true|p=9915|ageMs=407|n=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:]
+2026-03-07 02:02:30.848 I/SocketClient$handleConnection$readingFuture: message: __CTRL2__:HEARTBEAT|a699d5b1f727c42d|0|463|1772838150815|1772837478013|672803 from 10.214.96.47
+2026-03-07 02:02:30.851 I/SocketClient$handleConnection$readingFuture: message: ping from 10.214.96.47
+2026-03-07 02:04:23.623 I/VoiceRecorder: create
+2026-03-07 02:04:23.663 I/VoiceRecorder: sampleRate: 16000
+2026-03-07 02:04:23.671 I/VoiceRecorder: internal audio buffer size: 2560
+2026-03-07 02:04:23.788 I/WalkieService: WalkieService onCreate
+2026-03-07 02:04:23.796 I/WalkieService: WalkieService onStartCommand startId=1 flags=0
+2026-03-07 02:04:23.827 I/WalkieService: WalkieService initializeRuntimeIfNeeded start
+2026-03-07 02:04:23.895 I/ClusterMembershipRepository: [DIAG_CLUSTER] initializeSelf node=6b78472a8445453b
+2026-03-07 02:04:23.906 I/ClusterMembershipRepository: [DIAG_CLUSTER] statusChange self=6b78472a8445453b leader=6b78472a8445453b role=LEADER members=1 active=6b78472a8445453b
+2026-03-07 02:04:23.916 I/SocketServer: [DIAG_SOCK_SERVER] serverPort=9915
+2026-03-07 02:04:23.927 I/ChanelControllerImpl: registerService
+2026-03-07 02:04:23.934 I/ChanelControllerImpl: try register Xiaomi 24117RN76G 15 35: name: WGlhb21pIDI0MTE3Uk43NkcgMTUgMzU:6b78472a8445453b:, type: _wfwt._tcp, subtypes: , hostAddresses: , hostname: null, port: 9915, network: null, expirationTime: null, txtRecord: {}
+2026-03-07 02:04:23.945 I/WalkieService$initializeRuntimeIfNeeded: WalkieService runtime initialized successfully
+2026-03-07 02:04:23.952 I/ChanelControllerImpl: [DIAG_CTRL] snapshot self=6b78472a8445453b role=LEADER leader=6b78472a8445453b members=1 connected=connected=0 total=0 []
+2026-03-07 02:04:24.932 I/RegistrationListener: onServiceRegistered: name: WGlhb21pIDI0MTE3Uk43NkcgMTUgMzU:6b78472a8445453b:, type: null, subtypes: , hostAddresses: , hostname: null, port: 0, network: null, expirationTime: null, txtRecord: {}
+2026-03-07 02:04:24.935 I/ChanelControllerImpl: onServiceRegister: using registered serviceName=WGlhb21pIDI0MTE3Uk43NkcgMTUgMzU:6b78472a8445453b:
+2026-03-07 02:04:24.945 I/DiscoveryListener: Discovery started
+2026-03-07 02:04:24.994 I/DiscoveryListener: DiscoveryListener: Xiaomi 24117RN76G 15 35: name: WGlhb21pIDI0MTE3Uk43NkcgMTUgMzU:6b78472a8445453b:, type: _wfwt._tcp., subtypes: , hostAddresses: , hostname: null, port: 0, network: null, expirationTime: 2026-03-06T23:06:24Z, txtRecord: {}
+2026-03-07 02:04:24.998 I/ChanelControllerImpl: [DIAG_CTRL] onServiceFound service=WGlhb21pIDI0MTE3Uk43NkcgMTUgMzU:6b78472a8445453b: current=WGlhb21pIDI0MTE3Uk43NkcgMTUgMzU:6b78472a8445453b: localNode=6b78472a8445453b
+2026-03-07 02:04:25.000 I/ChanelControllerImpl: onServiceFound: SELF
+2026-03-07 02:04:25.599 I/DiscoveryListener: DiscoveryListener: HUAWEI AMN-LX9 9 28: name: SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:, type: _wfwt._tcp., subtypes: , hostAddresses: , hostname: null, port: 0, network: null, expirationTime: 2026-03-06T23:06:25Z, txtRecord: {}
+2026-03-07 02:04:25.601 I/ChanelControllerImpl: [DIAG_CTRL] onServiceFound service=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d: current=WGlhb21pIDI0MTE3Uk43NkcgMTUgMzU:6b78472a8445453b: localNode=6b78472a8445453b
+2026-03-07 02:04:25.603 I/ClientInfoResolver: resolve
+2026-03-07 02:04:25.606 I/ClientInfoResolver$resolve: resolveNext name: SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:, type: _wfwt._tcp., subtypes: , hostAddresses: , hostname: null, port: 0, network: null, expirationTime: 2026-03-06T23:06:25Z, txtRecord: {}
+2026-03-07 02:04:25.616 I/ClientInfoResolver$resolveWithServiceInfoCallback: onServiceResolved: /10.214.96.47:9915
+2026-03-07 02:04:25.619 I/ChanelControllerImpl: [DIAG_CTRL] resolved service=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d: host=10.214.96.47 port=9915
+2026-03-07 02:04:25.624 I/SocketClient: [DIAG_SOCK_CLIENT] dialPolicy host=10.214.96.47 shouldDial=true
+2026-03-07 02:04:25.627 I/ConnectedDevicesRepository: [DIAG_CONN] hostInfo host=10.214.96.47 name=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d: summary=connected=0 total=1 [10.214.96.47|c=false|p=0|ageMs=-1|n=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:]
+2026-03-07 02:04:25.964 I/ChanelControllerImpl: [DIAG_CTRL] snapshot self=6b78472a8445453b role=LEADER leader=6b78472a8445453b members=1 connected=connected=0 total=1 [10.214.96.47|c=false|p=0|ageMs=-1|n=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:]
+2026-03-07 02:04:27.971 I/ChanelControllerImpl: [DIAG_CTRL] snapshot self=6b78472a8445453b role=LEADER leader=6b78472a8445453b members=1 connected=connected=0 total=1 [10.214.96.47|c=false|p=0|ageMs=-1|n=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:]
+2026-03-07 02:04:29.976 I/ChanelControllerImpl: [DIAG_CTRL] snapshot self=6b78472a8445453b role=LEADER leader=6b78472a8445453b members=1 connected=connected=0 total=1 [10.214.96.47|c=false|p=0|ageMs=-1|n=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:]
+2026-03-07 02:04:31.983 I/ChanelControllerImpl: [DIAG_CTRL] snapshot self=6b78472a8445453b role=LEADER leader=6b78472a8445453b members=1 connected=connected=0 total=1 [10.214.96.47|c=false|p=0|ageMs=-1|n=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:]
+2026-03-07 02:04:33.992 I/ChanelControllerImpl: [DIAG_CTRL] snapshot self=6b78472a8445453b role=LEADER leader=6b78472a8445453b members=1 connected=connected=0 total=1 [10.214.96.47|c=false|p=0|ageMs=-1|n=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:]
+2026-03-07 02:04:35.999 I/ChanelControllerImpl: [DIAG_CTRL] snapshot self=6b78472a8445453b role=LEADER leader=6b78472a8445453b members=1 connected=connected=0 total=1 [10.214.96.47|c=false|p=0|ageMs=-1|n=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:]
+2026-03-07 02:04:38.008 I/ChanelControllerImpl: [DIAG_CTRL] snapshot self=6b78472a8445453b role=LEADER leader=6b78472a8445453b members=1 connected=connected=0 total=1 [10.214.96.47|c=false|p=0|ageMs=-1|n=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:]
+2026-03-07 02:04:40.016 I/ChanelControllerImpl: [DIAG_CTRL] snapshot self=6b78472a8445453b role=LEADER leader=6b78472a8445453b members=1 connected=connected=0 total=1 [10.214.96.47|c=false|p=0|ageMs=-1|n=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:]
+2026-03-07 02:04:42.023 I/ChanelControllerImpl: [DIAG_CTRL] snapshot self=6b78472a8445453b role=LEADER leader=6b78472a8445453b members=1 connected=connected=0 total=1 [10.214.96.47|c=false|p=0|ageMs=-1|n=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:]
+2026-03-07 02:04:44.028 I/ChanelControllerImpl: [DIAG_CTRL] snapshot self=6b78472a8445453b role=LEADER leader=6b78472a8445453b members=1 connected=connected=0 total=1 [10.214.96.47|c=false|p=0|ageMs=-1|n=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:]
+2026-03-07 02:04:46.038 I/ChanelControllerImpl: [DIAG_CTRL] snapshot self=6b78472a8445453b role=LEADER leader=6b78472a8445453b members=1 connected=connected=0 total=1 [10.214.96.47|c=false|p=0|ageMs=-1|n=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:]
+2026-03-07 02:04:46.467 I/DiscoveryListener: onServiceLost: HUAWEI AMN-LX9 9 28: name: SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:, type: _wfwt._tcp., subtypes: , hostAddresses: , hostname: null, port: 0, network: null, expirationTime: 2026-03-06T23:06:37Z, txtRecord: {}
+2026-03-07 02:04:46.472 I/ChanelControllerImpl: [DIAG_CTRL] onServiceLost: name: SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:, type: _wfwt._tcp., subtypes: , hostAddresses: , hostname: null, port: 0, network: null, expirationTime: 2026-03-06T23:06:37Z, txtRecord: {}
+2026-03-07 02:04:46.476 I/ChanelControllerImpl: [DIAG_CTRL] onServiceLost ignored for stability; host=null service=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:
+2026-03-07 02:04:46.479 I/ClientInfoResolver$resolveWithServiceInfoCallback: onServiceLost
+2026-03-07 02:04:48.047 I/ChanelControllerImpl: [DIAG_CTRL] snapshot self=6b78472a8445453b role=LEADER leader=6b78472a8445453b members=1 connected=connected=0 total=1 [10.214.96.47|c=false|p=0|ageMs=-1|n=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:]
+2026-03-07 02:04:50.056 I/ChanelControllerImpl: [DIAG_CTRL] snapshot self=6b78472a8445453b role=LEADER leader=6b78472a8445453b members=1 connected=connected=0 total=1 [10.214.96.47|c=false|p=0|ageMs=-1|n=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:]
+2026-03-07 02:04:52.064 I/ChanelControllerImpl: [DIAG_CTRL] snapshot self=6b78472a8445453b role=LEADER leader=6b78472a8445453b members=1 connected=connected=0 total=1 [10.214.96.47|c=false|p=0|ageMs=-1|n=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:]
+2026-03-07 02:04:54.071 I/ChanelControllerImpl: [DIAG_CTRL] snapshot self=6b78472a8445453b role=LEADER leader=6b78472a8445453b members=1 connected=connected=0 total=1 [10.214.96.47|c=false|p=0|ageMs=-1|n=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:]
+2026-03-07 02:04:56.083 I/ChanelControllerImpl: [DIAG_CTRL] snapshot self=6b78472a8445453b role=LEADER leader=6b78472a8445453b members=1 connected=connected=0 total=1 [10.214.96.47|c=false|p=0|ageMs=-1|n=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:]
+2026-03-07 02:04:56.721 I/DiscoveryListener: DiscoveryListener: HUAWEI AMN-LX9 9 28: name: SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:, type: _wfwt._tcp., subtypes: , hostAddresses: , hostname: null, port: 0, network: null, expirationTime: 2026-03-06T23:06:56Z, txtRecord: {}
+2026-03-07 02:04:56.726 I/ChanelControllerImpl: [DIAG_CTRL] onServiceFound service=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d: current=WGlhb21pIDI0MTE3Uk43NkcgMTUgMzU:6b78472a8445453b: localNode=6b78472a8445453b
+2026-03-07 02:04:56.734 I/ClientInfoResolver: resolve
+2026-03-07 02:04:56.740 I/ClientInfoResolver$resolve: resolveNext name: SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:, type: _wfwt._tcp., subtypes: , hostAddresses: , hostname: null, port: 0, network: null, expirationTime: 2026-03-06T23:06:56Z, txtRecord: {}
+2026-03-07 02:04:56.744 I/ClientInfoResolver$resolveWithServiceInfoCallback: onServiceResolved: /10.214.96.47:9915
+2026-03-07 02:04:56.748 I/ChanelControllerImpl: [DIAG_CTRL] resolved service=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d: host=10.214.96.47 port=9915
+2026-03-07 02:04:56.753 I/SocketClient: [DIAG_SOCK_CLIENT] dialPolicy host=10.214.96.47 shouldDial=true
+2026-03-07 02:04:56.758 I/ClientInfoResolver$resolveWithServiceInfoCallback: onServiceResolved: /10.214.96.47:9915
+2026-03-07 02:04:56.762 I/ChanelControllerImpl: [DIAG_CTRL] resolved service=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d: host=10.214.96.47 port=9915
+2026-03-07 02:04:56.767 I/SocketClient: [DIAG_SOCK_CLIENT] dialPolicy host=10.214.96.47 shouldDial=true
+2026-03-07 02:04:56.770 I/ChanelControllerImpl: [DIAG_CTRL] skipResolveConnect host=10.214.96.47 port=9915 reason=duplicateResolve
+2026-03-07 02:04:58.093 I/ChanelControllerImpl: [DIAG_CTRL] snapshot self=6b78472a8445453b role=LEADER leader=6b78472a8445453b members=1 connected=connected=0 total=1 [10.214.96.47|c=false|p=0|ageMs=-1|n=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:]
+2026-03-07 02:05:00.108 I/ChanelControllerImpl: [DIAG_CTRL] snapshot self=6b78472a8445453b role=LEADER leader=6b78472a8445453b members=1 connected=connected=0 total=1 [10.214.96.47|c=false|p=0|ageMs=-1|n=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:]
+2026-03-07 02:05:02.120 I/ChanelControllerImpl: [DIAG_CTRL] snapshot self=6b78472a8445453b role=LEADER leader=6b78472a8445453b members=1 connected=connected=0 total=1 [10.214.96.47|c=false|p=0|ageMs=-1|n=SFVBV0VJIEFNTi1MWDkgOSAyOA:a699d5b1f727c42d:]

@@ -132,21 +132,25 @@ internal fun WelcomeTutorialOverlay(
         val cardHeight = rememberCardHeight(screenHeight)
         val tutorialGifSize = (screenWidth * 0.16f).coerceIn(46.dp, 86.dp)
         val primaryColor = MaterialTheme.colorScheme.primary
+        val surfaceColor = MaterialTheme.colorScheme.surface
+        val backgroundColor = MaterialTheme.colorScheme.background
+        val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+        val onSurfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
 
         Canvas(modifier = Modifier.fillMaxSize()) {
             val baseStart = lerp(
-                Color(0xFF060B16),
-                Color(0xFF0C1730),
+                backgroundColor,
+                surfaceColor,
                 gradientFlow
             ).copy(alpha = 0.80f)
             val baseMid = lerp(
-                Color(0xFF0C1A30),
-                Color(0xFF152746),
+                surfaceColor,
+                surfaceColor.copy(alpha = 0.88f),
                 gradientFlow
             ).copy(alpha = 0.76f)
             val baseEnd = lerp(
-                Color(0xFF101D34),
-                Color(0xFF1B2D4D),
+                surfaceColor,
+                backgroundColor,
                 gradientFlow
             ).copy(alpha = 0.72f)
             val diagStart = Offset(
@@ -279,7 +283,7 @@ internal fun WelcomeTutorialOverlay(
                     .padding(10.dp),
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFF111827).copy(alpha = 0.97f)
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f)
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 14.dp)
             ) {
@@ -390,13 +394,13 @@ internal fun WelcomeTutorialOverlay(
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     textAlign = TextAlign.Center,
-                                    color = Color.White,
+                                    color = onSurfaceColor,
                                     charDelayMs = titleCharDelayMs
                                 )
                                 TypewriterText(
                                     text = stepBody,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = Color.White.copy(alpha = 0.9f),
+                                    color = onSurfaceVariantColor.copy(alpha = 0.95f),
                                     textAlign = TextAlign.Center,
                                     startDelayMs = bodyStartDelayMs,
                                     charDelayMs = 24,

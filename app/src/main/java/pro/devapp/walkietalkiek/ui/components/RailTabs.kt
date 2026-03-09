@@ -94,7 +94,11 @@ fun RailTabs(
                         if (isPtt) {
                             Surface(
                                 shape = CircleShape,
-                                color = if (isSelected) accent.copy(alpha = 0.28f) else Color(0x1EFFFFFF),
+                                color = if (isSelected) {
+                                    accent.copy(alpha = 0.28f)
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+                                },
                                 shadowElevation = if (isSelected) 10.dp else 3.dp,
                                 modifier = Modifier
                                     .border(

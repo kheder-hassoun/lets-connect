@@ -3,6 +3,7 @@ package pro.devapp.walkietalkiek.feature.ptt.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,14 +44,19 @@ internal fun PTTContentLandscape(
         modifier = Modifier
             .fillMaxSize()
             .padding(contentPadding),
-        verticalArrangement = Arrangement.spacedBy((6 * scale).dp)
+        verticalArrangement = Arrangement.spacedBy((9 * scale).dp)
     ) {
+        Spacer(
+            modifier = Modifier.height((8 * scale).dp)
+        )
         PttStatusBar(
             state = state,
             canTalk = canTalk
         )
         ConnectedPeersList(
-            modifier = Modifier.height(peersPanelHeight),
+            modifier = Modifier
+                .height(peersPanelHeight)
+                .padding(top = (6 * scale).dp),
             devices = state.connectedDevices
         )
         Box(

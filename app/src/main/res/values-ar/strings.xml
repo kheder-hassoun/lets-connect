@@ -7,6 +7,7 @@
     <string name="tab_settings">الإعدادات</string>
     <string name="tab_chat">الدردشة</string>
     <string name="tab_ptt">التحدث</string>
+    <string name="tab_talk">تحدث</string>
     <string name="tab_about">حول</string>
     <string name="tab_status">الحالة</string>
     <string name="tab_ptt_live">البث المباشر</string>
@@ -20,6 +21,8 @@
     <string name="about_how_it_works_body">تكتشف الأجهزة بعضها عبر Wi-Fi، ثم يتم انتخاب أدمن واحد، وبعدها تتم مشاركة التحكم بالدور والصوت بشكل مباشر.</string>
     <string name="about_support_title">الدعم</string>
     <string name="about_support_body">استخدم الإعدادات > التشخيص لتصدير سجلات التطبيق عند الإبلاغ عن مشكلة.</string>
+    <string name="about_designed_developed_by">تم التصميم والتطوير بواسطة:</string>
+    <string name="about_developers_names">Kheder &amp; Haidar Hassoun</string>
     <string name="status_title">الحالة</string>
     <string name="status_role_title">الدور</string>
     <string name="status_ip_title">IP</string>

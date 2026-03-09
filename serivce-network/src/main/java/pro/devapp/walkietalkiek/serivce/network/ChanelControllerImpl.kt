@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.SystemClock
 import android.util.Base64
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -55,13 +56,21 @@ internal class ChanelControllerImpl(
     private var currentServiceName: String? = null
 
     private var pingScope: CoroutineScope? = null
+    private var pingJob: Job? = null
     private var localNodeId: String = ""
     private var localStartedAtMs: Long = 0L
     private var localStartedElapsedMs: Long = 0L
     private var lastSnapshotLoggedAtMs: Long = 0L
     private val resolvedEndpointAtMsByHost = ConcurrentHashMap<String, Long>()
+    private var currentServerPort: Int = -1
+    @Volatile
+    private var nsdDiscovering: Boolean = false
+    @Volatile
+    private var nsdRegistered: Boolean = false
+    private var nsdRetryAttempt: Int = 0
 
     override fun startDiscovery() {
+        stopDiscovery()
         connectedDevicesRepository.clearAll()
         clusterMembershipRepository.clear()
         floorArbitrationState.clear()
@@ -71,32 +80,92 @@ internal class ChanelControllerImpl(
         localStartedAtMs = System.currentTimeMillis()
         localStartedElapsedMs = SystemClock.elapsedRealtime()
         lastSnapshotLoggedAtMs = 0L
+        nsdRetryAttempt = 0
         clusterMembershipRepository.initializeSelf(localNodeId, localStartedAtMs)
+        pingJob?.cancel()
+        pingScope?.cancel()
         pingScope = coroutineContextProvider.createScope(
             coroutineContextProvider.io
         )
         val port = server.initServer()
+        currentServerPort = port
         registerNsdService(port)
+        startHeartbeatLoop()
     }
 
     override fun stopDiscovery() {
-        nsdManager.apply {
-            stopServiceDiscovery(discoveryListener)
-            unregisterService(registrationListener)
+        runCatching {
+            if (nsdDiscovering) {
+                nsdManager.stopServiceDiscovery(discoveryListener)
+            }
+        }.onFailure { error ->
+            Timber.Forest.w(error, "stopServiceDiscovery failed")
         }
+        runCatching {
+            if (nsdRegistered) {
+                nsdManager.unregisterService(registrationListener)
+            }
+        }.onFailure { error ->
+            Timber.Forest.w(error, "unregisterService failed")
+        }
+        nsdDiscovering = false
+        nsdRegistered = false
         client.stop()
         server.stop()
+        currentServerPort = -1
         connectedDevicesRepository.clearAll()
         clusterMembershipRepository.clear()
         floorArbitrationState.clear()
         pttFloorRepository.clear()
+        pingJob?.cancel()
         pingScope?.cancel()
+        pingJob = null
+        pingScope = null
     }
 
     fun onServiceRegister(serviceInfo: NsdServiceInfo) {
         currentServiceName = serviceInfo.serviceName
+        nsdRegistered = true
+        nsdRetryAttempt = 0
         Timber.Forest.i("onServiceRegister: using registered serviceName=%s", currentServiceName)
-        nsdManager.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, discoveryListener)
+        runCatching {
+            nsdManager.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, discoveryListener)
+            nsdDiscovering = true
+        }.onFailure { error ->
+            nsdDiscovering = false
+            Timber.Forest.w(error, "discoverServices failed after registration")
+            scheduleNsdRestart("discoverServices exception after registration")
+        }
+    }
+
+    fun onRegistrationFailed(errorCode: Int) {
+        nsdRegistered = false
+        Timber.Forest.w("NSD registration failed code=%d; scheduling restart", errorCode)
+        scheduleNsdRestart("registration-failed:$errorCode")
+    }
+
+    fun onUnregistrationFailed(errorCode: Int) {
+        Timber.Forest.w("NSD unregistration failed code=%d", errorCode)
+    }
+
+    fun onDiscoveryStarted() {
+        nsdDiscovering = true
+        nsdRetryAttempt = 0
+    }
+
+    fun onDiscoveryStartFailed(errorCode: Int) {
+        nsdDiscovering = false
+        Timber.Forest.w("NSD discovery start failed code=%d; scheduling restart", errorCode)
+        scheduleNsdRestart("discovery-start-failed:$errorCode")
+    }
+
+    fun onDiscoveryStopped() {
+        nsdDiscovering = false
+    }
+
+    fun onDiscoveryStopFailed(errorCode: Int) {
+        nsdDiscovering = false
+        Timber.Forest.w("NSD discovery stop failed code=%d", errorCode)
     }
 
     override fun sendMessage(data: ByteArray) {
@@ -197,15 +266,51 @@ internal class ChanelControllerImpl(
                 NsdManager.PROTOCOL_DNS_SD,
                 registrationListener
             )
-            pingScope?.launch {
-                while (isActive) {
-                    connectedDevicesRepository.markStaleConnectionsDisconnected(STALE_CONNECTION_TIMEOUT_MS)
-                    clusterMembershipRepository.sweepStale(STALE_CONNECTION_TIMEOUT_MS, System.currentTimeMillis())
-                    ping()
-                    logSnapshotIfNeeded()
-                    delay(HEARTBEAT_INTERVAL_MS)
-                }
+        }
+    }
+
+    private fun startHeartbeatLoop() {
+        pingJob?.cancel()
+        pingJob = pingScope?.launch {
+            while (isActive) {
+                connectedDevicesRepository.markStaleConnectionsDisconnected(STALE_CONNECTION_TIMEOUT_MS)
+                clusterMembershipRepository.sweepStale(STALE_CONNECTION_TIMEOUT_MS, System.currentTimeMillis())
+                ping()
+                logSnapshotIfNeeded()
+                delay(HEARTBEAT_INTERVAL_MS)
             }
+        }
+    }
+
+    private fun scheduleNsdRestart(reason: String) {
+        val scope = pingScope ?: return
+        if (currentServerPort <= 0) {
+            Timber.Forest.w("skip NSD restart: invalid server port reason=%s", reason)
+            return
+        }
+        nsdRetryAttempt += 1
+        val delayMs = (800L * nsdRetryAttempt.coerceAtMost(5)).coerceAtMost(4_000L)
+        scope.launch {
+            Timber.Forest.w("Scheduling NSD restart in %dms reason=%s attempt=%d", delayMs, reason, nsdRetryAttempt)
+            delay(delayMs)
+            if (!isActive) return@launch
+            runCatching {
+                if (nsdDiscovering) {
+                    nsdManager.stopServiceDiscovery(discoveryListener)
+                }
+            }.onFailure { error ->
+                Timber.Forest.w(error, "NSD restart: stopServiceDiscovery failed")
+            }
+            runCatching {
+                if (nsdRegistered) {
+                    nsdManager.unregisterService(registrationListener)
+                }
+            }.onFailure { error ->
+                Timber.Forest.w(error, "NSD restart: unregisterService failed")
+            }
+            nsdDiscovering = false
+            nsdRegistered = false
+            registerNsdService(currentServerPort)
         }
     }
 

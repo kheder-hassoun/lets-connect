@@ -45,6 +45,14 @@ class AppSettingsRepository(
         persist(updated)
     }
 
+    fun updateThemeMode(themeMode: ThemeMode) {
+        val updated = _settings.value.copy(
+            themeMode = themeMode
+        )
+        _settings.value = updated
+        persist(updated)
+    }
+
     fun updateAppLanguage(appLanguage: AppLanguage) {
         val updated = _settings.value.copy(
             appLanguage = appLanguage
@@ -74,6 +82,7 @@ class AppSettingsRepository(
         val talkDuration = prefs.getInt(KEY_TALK_DURATION, 10).coerceIn(5, 120)
         val toneEnabled = prefs.getBoolean(KEY_TONE_ENABLED, true)
         val themeName = prefs.getString(KEY_THEME_COLOR, ThemeColor.PURPLE.name)
+        val themeModeName = prefs.getString(KEY_THEME_MODE, ThemeMode.SYSTEM.name)
         val showWelcomeTutorial = prefs.getBoolean(KEY_SHOW_WELCOME_TUTORIAL, true)
         val languageCode = if (prefs.contains(KEY_APP_LANGUAGE)) {
             prefs.getString(KEY_APP_LANGUAGE, AppLanguage.ENGLISH.code)
@@ -84,6 +93,7 @@ class AppSettingsRepository(
             talkDurationSeconds = talkDuration,
             toneEnabled = toneEnabled,
             themeColor = ThemeColor.entries.firstOrNull { it.name == themeName } ?: ThemeColor.PURPLE,
+            themeMode = ThemeMode.entries.firstOrNull { it.name == themeModeName } ?: ThemeMode.SYSTEM,
             appLanguage = AppLanguage.entries.firstOrNull { it.code == languageCode } ?: AppLanguage.ENGLISH,
             showWelcomeTutorial = showWelcomeTutorial
         )
@@ -110,6 +120,7 @@ class AppSettingsRepository(
             .putInt(KEY_TALK_DURATION, settings.talkDurationSeconds)
             .putBoolean(KEY_TONE_ENABLED, settings.toneEnabled)
             .putString(KEY_THEME_COLOR, settings.themeColor.name)
+            .putString(KEY_THEME_MODE, settings.themeMode.name)
             .putString(KEY_APP_LANGUAGE, settings.appLanguage.code)
             .putBoolean(KEY_SHOW_WELCOME_TUTORIAL, settings.showWelcomeTutorial)
             .apply()
@@ -120,6 +131,7 @@ class AppSettingsRepository(
         const val KEY_TALK_DURATION = "talk_duration_seconds"
         const val KEY_TONE_ENABLED = "tone_enabled"
         const val KEY_THEME_COLOR = "theme_color"
+        const val KEY_THEME_MODE = "theme_mode"
         const val KEY_APP_LANGUAGE = "app_language"
         const val KEY_SHOW_WELCOME_TUTORIAL = "show_welcome_tutorial"
     }
@@ -129,6 +141,7 @@ data class AppSettings(
     val talkDurationSeconds: Int = 10,
     val toneEnabled: Boolean = true,
     val themeColor: ThemeColor = ThemeColor.PURPLE,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val appLanguage: AppLanguage = AppLanguage.ENGLISH,
     val showWelcomeTutorial: Boolean = true
 )
@@ -136,6 +149,12 @@ data class AppSettings(
 enum class ThemeColor(val title: String) {
     PURPLE("Purple"),
     BLUE("Blue")
+}
+
+enum class ThemeMode {
+    SYSTEM,
+    LIGHT,
+    DARK
 }
 
 enum class AppLanguage(

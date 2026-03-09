@@ -15,13 +15,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.draw.blur
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.adaptive.currentWindowSize
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldLayout
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -31,7 +35,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -39,11 +42,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
+import androidx.core.view.WindowCompat
 import org.koin.androidx.compose.getViewModel
 import org.koin.compose.koinInject
 import pro.devapp.walkietalkiek.MainViewMode
 import pro.devapp.walkietalkiek.core.settings.AppSettingsRepository
+import pro.devapp.walkietalkiek.core.settings.ThemeMode
 import pro.devapp.walkietalkiek.core.theme.DroidPTTTheme
+import pro.devapp.walkietalkiek.core.theme.rememberBoundedDensity
+import pro.devapp.walkietalkiek.core.theme.rememberResponsiveTypography
 import pro.devapp.walkietalkiek.model.MainScreenAction
 import pro.devapp.walkietalkiek.model.MainScreenEvent
 import pro.devapp.walkietalkiek.model.MainTab
@@ -67,6 +74,12 @@ internal fun RootContent() {
     val state = viewModel.state.collectAsState()
     val settingsRepository = koinInject<AppSettingsRepository>()
     val settings = settingsRepository.settings.collectAsState()
+    val systemDarkTheme = isSystemInDarkTheme()
+    val isDarkTheme = when (settings.value.themeMode) {
+        ThemeMode.SYSTEM -> systemDarkTheme
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
     var showWelcomeTutorial by rememberSaveable(settings.value.showWelcomeTutorial) {
         mutableStateOf(settings.value.showWelcomeTutorial)
     }
@@ -98,110 +111,125 @@ internal fun RootContent() {
         }
     }
 
-    DroidPTTTheme(themeColor = settings.value.themeColor) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Scaffold(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .blur(appBlur),
-                topBar = {
-                    MainTopBar(
-                        state = state.value
-                    )
-                }
-            ) { innerPadding ->
-                val windowSize = with(LocalDensity.current) {
-                    currentWindowSize().toSize().toDpSize()
-                }
-                val imeVisible = rememberKeyboardVisible()
-                val hideBottomTabsForChatIme =
-                    state.value.currentTab == MainTab.CHAT && imeVisible
+    DroidPTTTheme(
+        darkTheme = isDarkTheme,
+        themeColor = settings.value.themeColor,
+        typography = rememberResponsiveTypography()
+    ) {
+        CompositionLocalProvider(LocalDensity provides rememberBoundedDensity()) {
+            SyncSystemBarsAppearance(isDarkTheme = isDarkTheme)
+            Box(modifier = Modifier.fillMaxSize()) {
+                Scaffold(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .blur(appBlur),
+                    topBar = {
+                        MainTopBar(
+                            state = state.value
+                        )
+                    }
+                ) { innerPadding ->
+                    val windowSize = with(LocalDensity.current) {
+                        currentWindowSize().toSize().toDpSize()
+                    }
+                    val imeVisible = rememberKeyboardVisible()
+                    val hideBottomTabsForChatIme =
+                        state.value.currentTab == MainTab.CHAT && imeVisible
 
-                val navLayoutType = if (windowSize.width > windowSize.height) {
-                    // Landscape mode
-                    NavigationSuiteType.NavigationRail
-                } else {
-                    // Portrait mode
-                    NavigationSuiteType.NavigationBar
-                }
+                    val navLayoutType = if (windowSize.width > windowSize.height) {
+                        // Landscape mode
+                        NavigationSuiteType.NavigationRail
+                    } else {
+                        // Portrait mode
+                        NavigationSuiteType.NavigationBar
+                    }
 
-                NavigationSuiteScaffoldLayout(
-                    layoutType = navLayoutType,
-                    navigationSuite = {
-                        when (navLayoutType) {
-                            NavigationSuiteType.NavigationBar -> {
-                                if (!hideBottomTabsForChatIme) {
-                                    BottomTabs(
+                    NavigationSuiteScaffoldLayout(
+                        layoutType = navLayoutType,
+                        navigationSuite = {
+                            when (navLayoutType) {
+                                NavigationSuiteType.NavigationBar -> {
+                                    if (!hideBottomTabsForChatIme) {
+                                        BottomTabs(
+                                            screenState = state.value,
+                                            onAction = viewModel::onAction
+                                        )
+                                    }
+                                }
+
+                                NavigationSuiteType.NavigationRail -> {
+                                    RailTabs(
+                                        modifier = Modifier
+                                            .padding(innerPadding),
                                         screenState = state.value,
                                         onAction = viewModel::onAction
                                     )
                                 }
-                            }
 
-                            NavigationSuiteType.NavigationRail -> {
-                                RailTabs(
-                                    modifier = Modifier
-                                        .padding(innerPadding),
-                                    screenState = state.value,
-                                    onAction = viewModel::onAction
-                                )
-                            }
+                                NavigationSuiteType.NavigationDrawer -> {
 
-                            NavigationSuiteType.NavigationDrawer -> {
-
+                                }
                             }
                         }
-                    }
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                brush = Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color(0xFF050505),
-                                        Color(0xFF0D0D0D),
-                                        Color(0xFF050505)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    brush = Brush.verticalGradient(
+                                        colors = if (isDarkTheme) {
+                                            listOf(
+                                                MaterialTheme.colorScheme.background,
+                                                MaterialTheme.colorScheme.surface,
+                                                MaterialTheme.colorScheme.background
+                                            )
+                                        } else {
+                                            listOf(
+                                                MaterialTheme.colorScheme.background,
+                                                MaterialTheme.colorScheme.surfaceVariant,
+                                                MaterialTheme.colorScheme.background
+                                            )
+                                        }
                                     )
                                 )
+                                .padding(innerPadding)
+                        ) {
+                            TabsContent(
+                                state = state.value,
+                                onAction = viewModel::onAction
                             )
-                            .padding(innerPadding)
-                    ) {
-                        TabsContent(
-                            state = state.value,
-                            onAction = viewModel::onAction
-                        )
-                        if (state.value.requiredPermissions.isNotEmpty()) {
-                            RequiredPermissionsNotification(
-                                requiredPermissions = state.value.requiredPermissions,
-                                onClick = {
-                                    val intent =
-                                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                            data =
-                                                Uri.fromParts("package", context.packageName, null)
-                                        }
-                                    context.startActivity(intent)
-                                }
-                            )
+                            if (state.value.requiredPermissions.isNotEmpty()) {
+                                RequiredPermissionsNotification(
+                                    requiredPermissions = state.value.requiredPermissions,
+                                    onClick = {
+                                        val intent =
+                                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                                data =
+                                                    Uri.fromParts("package", context.packageName, null)
+                                            }
+                                        context.startActivity(intent)
+                                    }
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            if (tutorialVisible) {
-                WelcomeTutorialOverlay(
-                    onFinish = { neverShowAgain ->
-                        showWelcomeTutorial = false
-                        if (neverShowAgain) {
-                            settingsRepository.updateShowWelcomeTutorial(false)
+                if (tutorialVisible) {
+                    WelcomeTutorialOverlay(
+                        onFinish = { neverShowAgain ->
+                            showWelcomeTutorial = false
+                            if (neverShowAgain) {
+                                settingsRepository.updateShowWelcomeTutorial(false)
+                            }
                         }
-                    }
-                )
-            } else if (isLowCallVolume && !lowVolumeWarningDismissed) {
-                LowCallVolumeOverlay(
-                    currentPercent = callVolumePercent,
-                    onOkClick = { lowVolumeWarningDismissed = true }
-                )
+                    )
+                } else if (isLowCallVolume && !lowVolumeWarningDismissed) {
+                    LowCallVolumeOverlay(
+                        currentPercent = callVolumePercent,
+                        onOkClick = { lowVolumeWarningDismissed = true }
+                    )
+                }
             }
         }
     }
@@ -287,4 +315,16 @@ private fun rememberCallVolumePercent(context: Context): Int {
         }
     }
     return percent
+}
+
+@Composable
+private fun SyncSystemBarsAppearance(isDarkTheme: Boolean) {
+    val view = LocalView.current
+    val activity = view.context.findActivity() ?: return
+    SideEffect {
+        WindowCompat.getInsetsController(activity.window, activity.window.decorView).apply {
+            isAppearanceLightStatusBars = !isDarkTheme
+            isAppearanceLightNavigationBars = !isDarkTheme
+        }
+    }
 }

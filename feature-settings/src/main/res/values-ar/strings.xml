@@ -6,6 +6,10 @@
     <string name="settings_ptt_tones_title">نغمات التحدث</string>
     <string name="settings_language_title">اللغة</string>
     <string name="settings_select_language">اختر اللغة</string>
+    <string name="settings_theme_mode_title">وضع الواجهة</string>
+    <string name="settings_use_system_theme">استخدام وضع النظام</string>
+    <string name="settings_light_mode">الوضع الفاتح</string>
+    <string name="settings_theme_mode_current">الوضع الحالي: %1$s</string>
     <string name="settings_theme_color_title">لون الواجهة</string>
     <string name="settings_select_theme">اختر اللون</string>
     <string name="settings_advanced_flags_title">الخيارات المتقدمة</string>
@@ -32,4 +36,7 @@
     <string name="theme_blue">أزرق</string>
     <string name="theme_green">أخضر</string>
     <string name="theme_yellow">أصفر</string>
+    <string name="theme_mode_system">النظام</string>
+    <string name="theme_mode_light">فاتح</string>
+    <string name="theme_mode_dark">داكن</string>
 </resources>

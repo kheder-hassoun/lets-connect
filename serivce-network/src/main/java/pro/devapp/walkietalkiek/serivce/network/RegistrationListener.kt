@@ -7,7 +7,8 @@ import timber.log.Timber
 internal class RegistrationListener(private val chanelController: ChanelControllerImpl) :
     NsdManager.RegistrationListener {
     override fun onUnregistrationFailed(serviceInfo: NsdServiceInfo?, errorCode: Int) {
-        Timber.Forest.e("onRegistrationFailed: $serviceInfo ($errorCode)")
+        Timber.Forest.e("onUnregistrationFailed: $serviceInfo ($errorCode)")
+        chanelController.onUnregistrationFailed(errorCode)
     }
 
     override fun onServiceUnregistered(serviceInfo: NsdServiceInfo?) {
@@ -15,7 +16,8 @@ internal class RegistrationListener(private val chanelController: ChanelControll
     }
 
     override fun onRegistrationFailed(serviceInfo: NsdServiceInfo?, errorCode: Int) {
-        Timber.Forest.i("onUnregistrationFailed: $serviceInfo ($errorCode)")
+        Timber.Forest.e("onRegistrationFailed: $serviceInfo ($errorCode)")
+        chanelController.onRegistrationFailed(errorCode)
     }
 
     override fun onServiceRegistered(serviceInfo: NsdServiceInfo) {

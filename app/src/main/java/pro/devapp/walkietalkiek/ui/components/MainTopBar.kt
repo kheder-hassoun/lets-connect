@@ -1,6 +1,11 @@
 package pro.devapp.walkietalkiek.ui.components
 
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,30 +15,27 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import org.koin.compose.koinInject
 import pro.devapp.walkietalkiek.R
 import pro.devapp.walkietalkiek.model.MainScreenState
@@ -46,7 +48,6 @@ fun MainTopBar(
     modifier: Modifier = Modifier,
     state: MainScreenState
 ) {
-    val accent = MaterialTheme.colorScheme.primary
     val clusterMembershipRepository = koinInject<ClusterMembershipRepository>()
     val talkingStateRepository = koinInject<TalkingStateRepository>()
     val clusterStatus by clusterMembershipRepository.status.collectAsState()
@@ -64,67 +65,141 @@ fun MainTopBar(
     val minScreen = cfg.screenWidthDp.dp.coerceAtMost(cfg.screenHeightDp.dp)
     val scale = (minScreen / 400.dp).coerceIn(0.84f, 1.18f)
     val topBarGifSize = (minScreen * 0.12f).coerceIn(42.dp, 64.dp)
+    val view = LocalView.current
+    val density = LocalDensity.current
+    val safeTopInsetPx = ViewCompat.getRootWindowInsets(view)
+        ?.getInsets(WindowInsetsCompat.Type.statusBars())
+        ?.top
+        ?: 0
+    val safeTopInset = with(density) { safeTopInsetPx.toDp() }
 
-    Surface(
+    val topBarGradient = Brush.verticalGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.96f),
+            MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+            MaterialTheme.colorScheme.background.copy(alpha = 0.90f)
+        )
+    )
+    val titleColor = MaterialTheme.colorScheme.primary
+    val metaColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+    Column(
         modifier = modifier
-            .statusBarsPadding()
             .fillMaxWidth()
-            .padding(horizontal = (10 * scale).dp, vertical = (6 * scale).dp),
-        shape = RoundedCornerShape((22 * scale).dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-        tonalElevation = 6.dp,
-        shadowElevation = 10.dp
+            .background(topBarGradient)
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(safeTopInset)
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height((4 * scale).dp)
+        )
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            accent.copy(alpha = 0.26f),
-                            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.16f),
-                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)
-                        )
-                    )
-                )
-                .padding(horizontal = (14 * scale).dp, vertical = (10 * scale).dp),
+                .padding(
+                    start = (14 * scale).dp,
+                    top = (8 * scale).dp,
+                    end = (14 * scale).dp,
+                    bottom = (10 * scale).dp
+                ),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy((4 * scale).dp)
+            ) {
                 Text(
                     text = stringResource(id = R.string.app_name),
-                    fontSize = (16 * scale).sp,
+                    fontSize = (17 * scale).sp,
                     fontWeight = FontWeight.Bold,
+                    color = titleColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    text = currentTabTitle,
-                    fontSize = (12 * scale).sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = roleLabel,
-                    fontSize = (11 * scale).sp,
-                    color = if (isLeader) Color(0xFFE53935) else Color(0xFF1E88E5),
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1
-                )
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy((6 * scale).dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f),
+                                shape = RoundedCornerShape(50)
+                            )
+                            .padding(horizontal = (10 * scale).dp, vertical = (3 * scale).dp)
+                    ) {
+                        Text(
+                            text = currentTabTitle,
+                            fontSize = (11 * scale).sp,
+                            color = metaColor,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                color = if (isLeader) {
+                                    Color(0xFFE53935).copy(alpha = 0.18f)
+                                } else {
+                                    Color(0xFF1E88E5).copy(alpha = 0.18f)
+                                },
+                                shape = RoundedCornerShape(50)
+                            )
+                            .padding(horizontal = (10 * scale).dp, vertical = (3 * scale).dp)
+                    ) {
+                        Text(
+                            text = roleLabel,
+                            fontSize = (11 * scale).sp,
+                            color = metaColor,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1
+                        )
+                    }
+                }
             }
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy((8 * scale).dp)
+            Box(
+                modifier = Modifier
+                    .background(
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .padding(horizontal = (8 * scale).dp, vertical = (6 * scale).dp)
             ) {
-                WalkieConnectionGlyph(
-                    iconSize = topBarGifSize,
-                    isSomeoneTalking = isSomeoneTalking
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy((8 * scale).dp)
+                ) {
+                    WalkieConnectionGlyph(
+                        iconSize = topBarGifSize,
+                        isSomeoneTalking = isSomeoneTalking
+                    )
+                }
             }
         }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f))
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(2.dp)
+                .background(MaterialTheme.colorScheme.background.copy(alpha = 0.30f))
+        )
     }
 }
 
